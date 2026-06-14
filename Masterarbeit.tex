@@ -3,7 +3,7 @@
 \usepackage{amsmath,amssymb,amsthm,bm}     % ams stuff should be before font loading
 \usepackage{lmodern}
 \usepackage[T1]{fontenc}        % should be after font loading
-\usepackage{fixltx2e,babel}
+\usepackage{babel}
 \usepackage[numbers,round,authoryear]{natbib}    % bibtex package
 %\usepackage{typearea}           % custom type area
 %   \areaset[0mm]{135mm}{210mm}  % typearea configuration
@@ -60,15 +60,13 @@
 \usepackage[capitalise]{cleveref}
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf,width=0.92\textwidth}
+\usepackage{fancyhdr}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{assumption}{Assumption}
 
-\usepackage{fancyhdr}
-
 % Das ist nur fuer den Blindtext zustaending
 \usepackage{blindtext}
-
 
 % Blattlayout
 \textwidth15cm
@@ -81,19 +79,17 @@
 \parindent0em
 \parskip0.5em
 % Header, Footer
-\usepackage{fancyhdr}
- % Text in Kopfzeile aussen
-\fancyhead[LE,RO]{\nouppercase{\leftmark} }
-% Text in Kopfzeile innen
-\fancyhead[RE,LO]{}
-% Text in Fusszeile mittig
-\fancyfoot[CE,CO]{\thepage}
+\setlength{\headheight}{14.5pt}
+\fancyhf{}
+\fancyhead[R]{\nouppercase{\leftmark}}
+\fancyfoot[C]{\thepage}
 \pagestyle{fancy}
 
 \begin{document}
 
 \pagenumbering{Alph}
 \renewcommand{\thepage}{C-\Roman{page}}
+\hypersetup{pageanchor=false}
 \begin{titlepage}
       \textsf{
     \begin{center}
@@ -118,6 +114,7 @@
 %
 }
 \end{titlepage}
+\hypersetup{pageanchor=true}
 
 
 \clearpage

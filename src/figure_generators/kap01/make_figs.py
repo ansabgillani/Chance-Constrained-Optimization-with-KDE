@@ -238,6 +238,168 @@ def fig_spectrum():
     finish(fig, "fig_spectrum")
 
 
+# ==========================================================================
+# Figure 4  --  fig_hardness
+# (a) non-convex feasible set; (b) indicator vs smooth surrogates.
+# ==========================================================================
+def fig_hardness():
+    a = np.array([1.0, 0.15])
+    b = np.array([0.15, 1.0])
+    g = np.linspace(-0.5, 3.0, 500)
+    X, Y = np.meshgrid(g, g)
+    inA = (a[0] * X + a[1] * Y <= 1)
+    inB = (b[0] * X + b[1] * Y <= 1)
+    feas = (inA | inB).astype(float)
+    both = (inA & inB).astype(float)
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.1))
+
+    # ---- panel (a): union of half-spaces ----
+    ax = axes[0]
+    ax.contourf(X, Y, feas, levels=[0.5, 1.5], colors=[BLUE], alpha=0.18,
+                zorder=1)
+    ax.contourf(X, Y, both, levels=[0.5, 1.5], colors=[BLUE], alpha=0.18,
+                zorder=1)
+    ax.plot(g, (1 - a[0] * g) / a[1], color=RED, lw=1.4, zorder=3,
+            label="$\\xi^{(1)\\top}x=1$")
+    ax.plot(g, (1 - b[0] * g) / b[1], color=ORANGE, lw=1.4, zorder=3,
+            label="$\\xi^{(2)\\top}x=1$")
+
+    p1 = np.array([0.05, 2.4])
+    p2 = np.array([2.4, 0.05])
+    mid = 0.5 * (p1 + p2)
+    ax.plot([p1[0], p2[0]], [p1[1], p2[1]], "k--", lw=1.0, zorder=3)
+    ax.scatter(*p1, color="k", s=22, zorder=6)
+    ax.scatter(*p2, color="k", s=22, zorder=6)
+    ax.scatter(*mid, facecolor="white", edgecolor="k", s=32, zorder=6)
+
+    ax.text(-0.1, 2.62, "feasible", fontsize=8.3, zorder=8, bbox=WBOX)
+    ax.text(2.15, 0.30, "feasible", fontsize=8.3, zorder=8, bbox=WBOX)
+    ax.annotate("midpoint\ninfeasible", xy=mid, xytext=(1.95, 1.75),
+                fontsize=8.3, ha="center", zorder=8, bbox=WBOX,
+                arrowprops=dict(arrowstyle="->", lw=0.8, shrinkB=5))
+
+    ax.set_xlim(-0.3, 3.0)
+    ax.set_ylim(-0.3, 3.0)
+    ax.set_xlabel("$x_1$")
+    ax.set_ylabel("$x_2$")
+    ax.set_title("(a) Feasible set is a union of half-spaces")
+    styled_legend(ax, loc="upper right", fontsize=8.0)
+
+    # ---- panel (b): indicator vs smooth surrogates ----
+    ax = axes[1]
+    y = np.linspace(-3, 3, 600)
+    ax.step(y, (y <= 0).astype(float), where="post", color=RED, lw=1.7,
+            zorder=4, label="indicator $\\mathbf{1}\\{y\\leq 0\\}$")
+    for h, c in [(0.6, BLUE), (1.2, GREEN)]:
+        ax.plot(y, stats.norm.cdf(-y / h), color=c, lw=1.6, zorder=3,
+                label="smooth surrogate, $h=%.1f$" % h)
+    ax.set_xlabel("constraint residual $y$")
+    ax.set_ylabel("contribution to $P(Y\\leq 0)$")
+    ax.set_title("(b) The discontinuity at the heart of the problem")
+    styled_legend(ax, loc="upper right", fontsize=6.0)
+
+    fig.tight_layout()
+    finish(fig, "fig_hardness")
+
+
+# ==========================================================================
+# Figure 5  --  fig_mismatch
+# (a) bimodal truth vs Gaussian fit; (b) skewed tail underestimate (log y).
+# ==========================================================================
+def fig_mismatch():
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.9))
+
+    # ---- panel (a): bimodal shape mismatch ----
+    m = np.concatenate([rng.normal(-1.6, 0.45, 60_000),
+                        rng.normal(1.1, 0.7, 40_000)])
+    xs = np.linspace(-3.6, 3.6, 700)
+    kdem = stats.gaussian_kde(m)
+    gfit = stats.norm(m.mean(), m.std())
+    ax = axes[0]
+    ax.plot(xs, kdem(xs), color=BLUE, lw=1.8, zorder=4,
+            label="true law (bimodal)")
+    ax.plot(xs, gfit.pdf(xs), color=RED, lw=1.6, ls="--", zorder=3,
+            label="fitted Gaussian")
+    ax.set_xlabel("disturbance value")
+    ax.set_ylabel("density")
+    ax.set_title("(a) Shape mismatch")
+    styled_legend(ax, loc="upper right", fontsize=8.0)
+
+    # ---- panel (b): skewed law, Gaussian tail underestimate (log scale) ----
+    gdist = stats.gamma(2.0)
+    samp = gdist.rvs(400_000, random_state=3) - 2.0
+    gf = stats.norm(samp.mean(), samp.std())
+    thr = 4.0
+    p_true = (samp > thr).mean()
+    p_g = 1 - gf.cdf(thr)
+    xs2 = np.linspace(-3, 8, 800)
+
+    ax = axes[1]
+    ax.semilogy(xs2, gdist.pdf(xs2 + 2.0), color=BLUE, lw=1.8, zorder=4,
+                label="true law (skewed)")
+    ax.semilogy(xs2, gf.pdf(xs2), color=RED, lw=1.6, ls="--", zorder=3,
+                label="fitted Gaussian")
+    ax.axvline(thr, color="k", lw=1.0, zorder=2)
+    ax.fill_between(xs2, gdist.pdf(xs2 + 2.0), 1e-7, where=xs2 > thr,
+                    color=BLUE, alpha=0.25, zorder=1)
+    ax.set_ylim(1e-6, 1.2)
+
+    # two stacked labels parked low and just right of the threshold line,
+    # well clear of the legend in the upper-right corner
+    ax.text(5, 3e-3, "true tail: %.1f%%" % (p_true * 100),
+            fontsize=8.3, color=BLUE, ha="left", zorder=8, bbox=WBOX)
+    ax.text(4.35, 6e-5, "Gaussian: %.2f%%" % (p_g * 100),
+            fontsize=8.3, color=RED, ha="left", zorder=8, bbox=WBOX)
+    ax.set_xlabel("forecast error")
+    ax.set_ylabel("density (log scale)")
+    ax.set_title("(b) Tail mass underestimated ~%.0fx" % (p_true / p_g))
+    styled_legend(ax, loc="upper right", fontsize=8.0)
+
+    fig.tight_layout()
+    finish(fig, "fig_mismatch")
+
+
+# ==========================================================================
+# Figure 6  --  fig_residual
+# Residual-space construction: samples, KDE, shaded safe region.
+# ==========================================================================
+def fig_residual():
+    N = 400
+    ximix = np.concatenate([rng.normal(-0.9, 0.35, int(N * 0.65)),
+                            rng.normal(0.7, 0.5, N - int(N * 0.65))])
+    ynodes = np.linspace(-2.6, 2.6, 700)
+    kdey = stats.gaussian_kde(ximix, bw_method=0.25)
+    dens = kdey(ynodes)
+    psafe = kdey.integrate_box_1d(-np.inf, 0.0)
+
+    fig, ax = plt.subplots(figsize=(6.0, 3.0))
+    ax.hist(ximix, bins=34, density=True, color=GRAY, alpha=0.30, zorder=1,
+            label="residual samples $y_j=g(x,\\xi_j)$, $N=%d$" % N)
+    ax.plot(ynodes, dens, color=BLUE, lw=1.9, zorder=4,
+            label="KDE $\\hat{\\rho}_{Y(x)}$")
+    ax.fill_between(ynodes, dens, where=ynodes <= 0, color=GREEN, alpha=0.28,
+                    zorder=2)
+    ax.axvline(0, color="k", lw=1.1, zorder=3)
+
+    ax.set_ylim(0, dens.max() * 1.28)
+
+    # probability label parked top-left, clear of the curve
+    ax.text(-2.75, dens.max() * 1.15,
+            "$\\hat{P}(Y(x)\\leq 0)=\\int_{-\\infty}^{0}\\hat{\\rho}\\,dy"
+            "\\approx %.2f$" % psafe,
+            fontsize=8.0, color=GREEN, ha="left", va="center",
+            zorder=8, bbox=WBOX)
+    ax.text(-1.0, 0.06, "safe", fontsize=9.0, color=GREEN, ha="center",
+            zorder=8, bbox=WBOX)
+    ax.text(0.95, 0.06, "unsafe", fontsize=9.0, color=RED, ha="center",
+            zorder=8, bbox=WBOX)
+
+    ax.set_xlabel("constraint residual $y$")
+    ax.set_ylabel("density")
+    styled_legend(ax, loc="upper right", fontsize=8.0)
+    fig.tight_layout()
+    finish(fig, "fig_residual")
 
 
 # --------------------------------------------------------------------------
@@ -245,4 +407,7 @@ if __name__ == "__main__":
     fig_meanvalue()
     fig_violations()
     fig_spectrum()
-    print("\nAll six figures written to ./%s/ (PDF + PNG)." % OUT)
+    fig_hardness()
+    fig_mismatch()
+    fig_residual()
+    print("\nAll six figures written to ./%s/ (PDF)." % OUT)

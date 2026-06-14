@@ -1,15 +1,21 @@
+% !TeX root = ../Masterarbeit.tex
 % =====================================================================
 % Chapter 1: The Problem of Optimization Under Uncertainty
 % MSc Thesis: Chance-Constrained Optimization with Kernel Density
 % Estimation: A Data-Driven Reformulation for Nonlinear Optimization
 % and Optimal Control under Uncertainty
 %
-% Compile standalone:  pdflatex chapter1.tex  (run twice for refs)
-% To embed in a thesis: strip the preamble and \input the body.
+% Compile from the thesis root:  pdflatex Masterarbeit.tex  (run twice for refs)
+% This file is included via \input and relies on the main preamble.
 % Figures are searched in both kap01/figures/ and ./figures/
 % =====================================================================
 
 \graphicspath{{kap01/figures/}{./figures/}}
+
+% Bimodal residual density shared across all three panels
+\pgfmathdeclarefunction{dens}{2}{%
+  \pgfmathparse{exp(-(#1-#2)^2/0.5) + 0.55*exp(-(#1-#2-1.5)^2/0.18)}%
+}
 
 \section{The Problem of Optimization Under Uncertainty}
 \label{ch:problem}
@@ -260,6 +266,83 @@ probability is far below any operational concern
   \label{fig:spectrum}
 \end{figure}
 
+\begin{figure}[tbp]
+  \centering
+  \begin{tikzpicture}
+    \begin{groupplot}[
+      group style={group size=3 by 1, horizontal sep=1.15cm},
+      width=5.7cm, height=4.6cm,
+      domain=-5:1.5, samples=200,
+      every axis plot/.append style={smooth},
+      xmin=-5, xmax=1.6, ymin=0, ymax=1.45,
+      axis lines=left,
+      ytick=\empty,
+      % xtick={0},
+      xticklabels={$0$},
+      xlabel={$Y_x = g(x,\xi)$},
+      xlabel style={font=\small, yshift=2pt},
+      every axis title/.style={font=\scriptsize, align=center,
+                               at={(0.5,-0.30)}, anchor=north},
+      clip=false
+    ]
+      % ---------- (a) Mean-value ----------
+      \nextgroupplot[title={(a) Mean-value\\optimistic, risk unquantified}]
+      \addplot[draw=none, fill=violred!35, domain=0:1.5]
+        {dens(x,-0.8)} \closedcycle;
+      \addplot[draw=none, fill=safegray!25, domain=-5:0]
+        {dens(x,-0.8)} \closedcycle;
+      \addplot[thick, black] {dens(x,-0.8)};
+      \draw[thick] (axis cs:0,0) -- (axis cs:0,1.32);
+      \draw[dashed, accblue, thick] (axis cs:-0.35,0) -- (axis cs:-0.35,1.18);
+      \node[font=\scriptsize, accblue, anchor=south west]
+        at (axis cs:-2.5,1.2) {feasible at $\bar{\xi}$};
+      \node[font=\scriptsize, violred, anchor=west, align=left]
+        at (axis cs:0.42,0.92) {violation mass\\unaccounted};
+      \draw[violred, ->, thin]
+        (axis cs:0.55,0.78) -- (axis cs:0.42,0.40);
+
+      % ---------- (b) Worst-case robust ----------
+      \nextgroupplot[title={(b) Worst-case robust\\safe, conservative}]
+      \addplot[draw=none, fill=safegray!25, domain=-5:0]
+        {dens(x,-3.6)} \closedcycle;
+      \addplot[thick, black] {dens(x,-3.6)};
+      \draw[thick] (axis cs:0,0) -- (axis cs:0,1.32);
+      \draw[dashed, safegray] (axis cs:-1.5,0) -- (axis cs:-1.5,0.9);
+      % \node[font=\scriptsize, anchor=south] at (axis cs:-1.5,0.9) {$\sup \Xi$};
+      \draw[{Stealth}-{Stealth}, accblue, thick]
+        (axis cs:-1.45,0.28) -- (axis cs:-0.05,0.28);
+      \node[font=\scriptsize, accblue, anchor=south, align=center]
+        at (axis cs:-0.68,0.44) {unused margin\\(lost objective)};
+
+      % ---------- (c) Chance-constrained ----------
+      \nextgroupplot[title={(c) Chance-constrained\\risk explicit: $\varepsilon$ chosen}]
+      \addplot[draw=none, fill=violred!35, domain=0:1.5]
+        {dens(x,-2.2)} \closedcycle;
+      \addplot[draw=none, fill=safegray!25, domain=-5:0]
+        {dens(x,-2.2)} \closedcycle;
+      \addplot[thick, black] {dens(x,-2.2)};
+      \draw[thick] (axis cs:0,0) -- (axis cs:0,1.32);
+      \node[font=\scriptsize, anchor=center, fill=white, fill opacity=0.75,
+        text opacity=1, inner sep=1pt] at (axis cs:-2.55,0.38)
+        {$\mathbb{P}(Y_x \le 0) \ge 1-\varepsilon$};
+      \node[font=\scriptsize, violred, anchor=west]
+        at (axis cs:0.32,0.30) {$\le \varepsilon$};
+      \draw[violred, ->, thin]
+        (axis cs:0.30,0.27) -- (axis cs:0.12,0.12);
+    \end{groupplot}
+  \end{tikzpicture}
+  \caption{Three responses to constraint uncertainty, shown on the density of the
+  residual $Y_x = g(x,\xi)$; the constraint is satisfied for $Y_x \leq 0$.
+  \textbf{(a)}~The mean-value solution satisfies the constraint at $\bar{\xi}$ but
+  leaves an unquantified violation mass (red).
+  \textbf{(b)}~The worst-case robust solution eliminates all violations by pushing the
+  distribution well clear of zero, at the cost of large unused margin.
+  \textbf{(c)}~The chance-constrained solution places exactly the permitted fraction
+  $\varepsilon$ of probability mass beyond the boundary, making the accepted risk
+  explicit and controllable.}
+  \label{fig:three_approaches}
+\end{figure}
+
 \subsubsection{When each extreme is the right tool}
 \label{ssec:homes}
 
@@ -308,4 +391,635 @@ requirement, which is why it is the right framing for most engineering and
 operational problems, and why the difficulty of solving it, the subject of
 \cref{sec:hard}, has remained an active research frontier for over six
 decades.
+
+Figure~\ref{fig:three_approaches} makes the three positions concrete. Each panel shows the
+same bimodal residual density $Y_x = g(x,\xi)$, with the constraint boundary at zero;
+the two modes reflect the non-Gaussian disturbance shapes that motivate the nonparametric
+approach developed from subsection~\ref{sec:nonparametric} onward
+
+\subsection{What Chance Constraints Are and Why They Are Hard}
+\label{sec:hard}
+
+\subsubsection{Individual and joint chance constraints}
+\label{ssec:definitions}
+
+This subsection fixes notation used throughout the thesis and isolates the
+three structural sources of computational difficulty. Let $x \in X
+\subseteq \R^{n}$ be the decision vector, let $\xi$ be a random vector on
+a probability space $(\Omega, \mathcal{F}, \Prob)$ taking values in
+$\R^{d}$, and let $g : \R^{n} \times \R^{d} \to \R$ be a constraint
+function. The \emph{individual chance constraint} is
+\begin{equation}
+  \Prob\bigl( g(x, \xi) \leq 0 \bigr) \geq 1 - \varepsilon .
+  \label{eq:icc}
+\end{equation}
+When the system carries several uncertain requirements
+$g_1, \dots, g_R$ that must hold simultaneously, the correct model is the
+\emph{joint chance constraint}
+\begin{equation}
+  \Prob\bigl( g_r(x, \xi) \leq 0, \; r = 1, \dots, R \bigr)
+  \geq 1 - \varepsilon ,
+  \label{eq:jcc}
+\end{equation}
+which bounds the probability that \emph{all} requirements hold at once. The
+distinction matters: enforcing each $g_r$ individually at level
+$1-\varepsilon$ does not bound the joint failure probability, while the
+classical repair via Boole's inequality, splitting the budget as
+$\sum_r \varepsilon_r \leq \varepsilon$, is sound but conservative
+\citep{prekopa1995,keil2021}. The full chance-constrained program studied
+in this thesis is
+\begin{equation}
+  \minimize_{x \in X} \; f(x)
+  \quad \text{subject to} \quad
+  \Prob\bigl( g(x, \xi) \leq 0 \bigr) \geq 1 - \varepsilon .
+  \label{eq:ccp}
+\end{equation}
+
+A word on the role of $\varepsilon$ is warranted, because it is the one
+quantity in \cref{eq:ccp} that mathematics cannot supply. The risk
+tolerance is a design parameter set by the consequences of failure and by
+external requirements: a $5\%$ daily shortfall tolerance may be acceptable
+for a microgrid with backup supply \citep{ciftci2019}, while a descent
+constraint may demand $\varepsilon \leq 10^{-2}$ or far less
+\citep{blackmore2010}. Two facts about this parameter shape everything
+downstream. First, the difficulty of the problem grows as $\varepsilon$
+shrinks, because the constraint then probes ever deeper into the tail of a
+distribution that must be known or estimated ever more accurately there.
+Second, $\varepsilon$ is a budget, and for joint constraints
+\cref{eq:jcc} the budget must cover all $R$ requirements simultaneously,
+which is what makes the joint form strictly harder than the individual
+one. Throughout the thesis, $\varepsilon$ is treated as given and the
+question is how to honor it efficiently and honestly.
+
+\subsubsection{Three structural sources of difficulty}
+\label{ssec:difficulties}
+
+Writing \cref{eq:ccp} is easy; solving it is not, and the obstruction is
+threefold. Each difficulty below is independent of the others, and any
+viable solution method must answer all three. The pattern repeats through
+the entire methodological literature, so these three points are the lens
+through which every method in this thesis, including the KDE reformulation
+itself, should be judged.
+
+\paragraph{Difficulty 1: the feasible set is generally non-convex.}
+Convexity of $g$ in $x$ does not transfer to the probabilistic feasible
+set $\{x : \Prob(g(x,\xi) \leq 0) \geq 1-\varepsilon\}$. A minimal
+example makes the geometry vivid. Take a linear constraint
+$\xi^{\top} x \leq 1$ where $\xi$ takes one of two values
+$\xi^{(1)}, \xi^{(2)}$ with probability one half each, and set
+$\varepsilon = 0.5$. The chance constraint then requires
+$\xi^{\top} x \leq 1$ for \emph{at least one} of the two scenarios, so the
+feasible set is the union of two half-spaces.
+\Cref{fig:hardness}(a) shows the result: two points, each satisfying a
+different scenario, are individually feasible, while their midpoint
+satisfies neither and is infeasible. A union of convex sets is not convex,
+and this toy construction scales up: with general discrete or continuous
+distributions the feasible set can shatter into combinatorially many
+pieces. Convexity survives only under special structure, most famously
+when the distribution of $\xi$ is log-concave and $g$ has suitable form,
+the celebrated theory of \citet{prekopa1995}, or when $\xi$ is Gaussian and
+the constraint is linear in $\xi$, in which case \cref{eq:icc} collapses to
+a second-order cone constraint \citep{charnes1963,shapiro2014}. Outside
+these islands, non-convexity is the rule, and global optimality claims must
+be abandoned in favor of high-quality local solutions, which is precisely
+the regime in which nonlinear programming solvers operate.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_hardness.pdf}
+  \caption{The two geometric faces of chance-constraint hardness. (a) For
+  a two-point distribution of $\xi$ and $\varepsilon = 0.5$, the feasible
+  set of $\Prob(\xi^{\top}x \leq 1) \geq 0.5$ is the union of two
+  half-spaces (shaded). The marked endpoints are feasible while their
+  midpoint is not, certifying non-convexity. (b) The contribution of a
+  single sample to the probability is the discontinuous indicator
+  $\ind\{y \leq 0\}$ of the residual; its derivative is zero almost
+  everywhere and undefined at the jump. Smooth surrogates obtained by
+  integrating a kernel, shown for two bandwidths $h$, restore the
+  differentiability that gradient-based solvers require, at the price of a
+  bias controlled by $h$. This single picture contains the central tension
+  of the thesis.}
+  \label{fig:hardness}
+\end{figure}
+
+\paragraph{Difficulty 2: the probability has no closed form.} Define the
+parameterized failure region $M(x) = \{\xi : g(x,\xi) > 0\}$. Evaluating
+the constraint in \cref{eq:ccp} means computing
+\begin{equation}
+  \Prob\bigl(g(x,\xi) \leq 0\bigr)
+  = 1 - \int_{M(x)} \rho_{\xi}(\xi) \, d\xi ,
+  \label{eq:integral}
+\end{equation}
+an integral of the density $\rho_{\xi}$ over a region whose shape changes
+with every candidate decision $x$. For nonlinear $g$ the region $M(x)$ is
+curved and possibly disconnected, the integral is multidimensional, and a
+closed form exists only in textbook cases. Worse, in the data-driven
+settings that motivate this thesis the density $\rho_{\xi}$ itself is
+unknown; all that exists is a finite collection of samples from
+simulation, historical records, or experiments. The constraint function
+that the optimizer must evaluate, thousands of times, at thousands of
+points $x$, is therefore an unknown integral of an unknown density over an
+intractable region. Any practical method replaces \cref{eq:integral} with
+an approximation, and the quality of that approximation governs everything
+downstream.
+
+\paragraph{Difficulty 3: the probability is built from a discontinuous
+function.} Rewriting the probability as an expectation,
+\begin{equation}
+  \Prob\bigl(g(x,\xi) \leq 0\bigr)
+  = \E\bigl[\, \ind\{ g(x,\xi) \leq 0 \} \,\bigr],
+  \label{eq:indicator}
+\end{equation}
+exposes the third obstruction: the indicator $\ind\{\cdot\}$ jumps from
+one to zero at the constraint boundary, as plotted in
+\cref{fig:hardness}(b). The natural sample-based estimate of
+\cref{eq:indicator}, count the fraction of samples satisfying the
+constraint, inherits this discontinuity. As a function of $x$ it is
+piecewise constant: its gradient is zero almost everywhere and undefined
+on a measure-zero set, which is the worst possible input for the
+sequential quadratic programming and interior-point methods that dominate
+nonlinear optimization \citep{shapiro2014}. The established escape routes
+each pay a recognizable price. Mixed-integer reformulations of the
+counting constraint are exact but combinatorial and scale poorly
+\citep{luedtke2008}. The scenario approach enforces the constraint on all
+$N$ sampled scenarios, regaining convexity and even finite-sample
+feasibility certificates for convex problems
+\citep{calafiore2006,campi2008}, but it cannot exploit the slack that
+$\varepsilon$ permits and grows conservative as $N$ increases. Conservative
+convex surrogates such as conditional value-at-risk restrict the feasible
+set from inside \citep{rockafellar2000,nemirovski2006}, guaranteeing
+feasibility at a cost in objective value. Smoothing methods, the family to
+which this thesis belongs, replace the indicator with a differentiable
+approximation \citep{penaordieres2020}, restoring the gradients that
+nonlinear solvers need while introducing a controlled bias, visible in
+\cref{fig:hardness}(b) as the gap between the step and the smooth curves.
+
+\begin{figure}[htbp]
+  \centering
+  \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}[font=\small]
+      % ============================================================
+      % (a) NON-CONVEX FEASIBLE SET
+      % ============================================================
+      \begin{scope}[shift={(0,0)}]
+        \def\W{4.2}\def\H{4.2}
+        % frame
+        \draw[->,thick] (0,0) -- (\W+0.25,0) node[right,font=\scriptsize] {$x_1$};
+        \draw[->,thick] (0,0) -- (0,\H+0.25) node[above,font=\scriptsize] {$x_2$};
+
+        % non-convex feasible region (a curved, crescent-like blob)
+        \fill[feasgreen!22, draw=feasgreen!80!black, thick]
+          plot[smooth cycle, tension=0.9] coordinates {
+            (0.8,1.0) (1.9,0.7) (3.2,1.1) (3.6,2.2)
+            (2.6,2.4) (2.9,3.3) (1.7,3.4) (1.3,2.4)
+            (0.6,2.2) };
+
+        % two feasible points whose connecting segment exits the set
+        \fill (2.55,3.05) circle (1.5pt) node[above left,font=\scriptsize,inner sep=1pt] {$x^a$};
+        \fill (3.25,1.25) circle (1.5pt) node[below right,font=\scriptsize,inner sep=1pt] {$x^b$};
+        % the chord between them leaves the feasible region (convexity fails)
+        \draw[violred, thick, dashed] (2.55,3.05) -- (3.25,1.25);
+        \node[violred, font=\scriptsize, align=center] at (4.05,2.3)
+          {chord exits\\the set};
+        \draw[violred,->,thin] (3.6,2.3) -- (3.12,2.2);
+
+        \node[feasgreen!60!black, font=\scriptsize] at (1.7,1.6)
+          {$\{x : \mathbb{P}(g\le 0)\ge 1-\varepsilon\}$};
+
+        \node[font=\scriptsize, anchor=north, align=center] at (\W/2,-0.55)
+          {\textbf{(a) Non-convex feasible set}\\convexity is lost in general};
+      \end{scope}
+
+      % ============================================================
+      % (b) NO CLOSED FORM: integral over a moving safe region
+      % ============================================================
+      \begin{scope}[shift={(6.0,0)}]
+        \def\W{4.2}\def\H{4.2}
+        \draw[->,thick] (0,0) -- (\W+0.25,0) node[right,font=\scriptsize] {$\xi_1$};
+        \draw[->,thick] (0,0) -- (0,\H+0.25) node[above,font=\scriptsize] {$\xi_2$};
+
+        % density "contours" of xi (concentric blobs)
+        \foreach \r/\op in {1.5/8, 1.05/14, 0.6/22} {
+          \fill[safegray!\op]
+            (2.1,2.2) ellipse ({1.25*\r} and {0.95*\r});
+        }
+        \node[safegray!80!black, font=\scriptsize] at (2.1,2.2) {$p(\xi)$};
+
+        % safe region at iterate x^(k): a half-plane boundary
+        \draw[accblue, thick] (0.5,3.8) -- (3.6,0.4);
+        % shade the safe side lightly
+        \begin{scope}
+          \clip (0.5,3.8) -- (3.6,0.4) -- (0,0.4) -- (0,3.8) -- cycle;
+          \fill[accblue!8] (0,0) rectangle (\W,\H);
+        \end{scope}
+        \node[accblue, font=\scriptsize, anchor=east] at (1.25,3.55)
+          {$g(x^{(k)},\xi)\le 0$};
+
+        % the boundary moves to x^(k+1)
+        \draw[accblue!55, thick, dashed] (1.5,3.9) -- (3.95,1.1);
+        \draw[-{Stealth}, accblue, thick, decorate,
+          decoration={snake,amplitude=0.5pt,segment length=6pt}]
+          (2.0,2.05) -- (2.7,2.55);
+        \node[accblue!70!black, font=\scriptsize, align=center] at (3.55,3.0)
+          {boundary\\moves with $x$};
+
+        \node[font=\scriptsize, anchor=north, align=center] at (\W/2,-0.55)
+          {\textbf{(b) No closed form}\\integrate $p(\xi)$ over a moving region};
+      \end{scope}
+
+      % ============================================================
+      % (c) NON-SMOOTHNESS of the probability function
+      % ============================================================
+      \begin{scope}[shift={(12.0,0)}]
+        \def\W{4.2}\def\H{4.2}
+        \draw[->,thick] (0,0) -- (\W+0.25,0) node[right,font=\scriptsize] {$x$};
+        \draw[->,thick] (0,0) -- (0,\H+0.25)
+          node[above,font=\scriptsize,align=center] {$\mathbb{P}(g\le 0)$};
+
+        % target reliability line 1 - eps
+        \draw[safegray, dashed] (0,3.1) -- (\W,3.1);
+        \node[safegray!80!black, font=\scriptsize, anchor=east] at (1.4,3.32)
+          {$1-\varepsilon$};
+
+        % staircase / near-flat empirical probability: flat plateaus + jumps
+        \draw[violred, thick]
+          (0.2,0.7) -- (1.1,0.7)        % flat
+          (1.1,0.7) -- (1.1,1.5)        % jump
+          (1.1,1.5) -- (2.0,1.5)        % flat
+          (2.0,1.5) -- (2.0,2.55)       % jump
+          (2.0,2.55) -- (2.9,2.55)      % flat
+          (2.9,2.55) -- (2.9,3.45)      % jump (crosses target)
+          (2.9,3.45) -- (3.9,3.45);     % flat
+
+        % highlight: flat = no gradient
+        \node[violred, font=\scriptsize, anchor=south] at (1.55,1.5)
+          {flat: $\nabla = 0$};
+        % highlight: jump = no derivative
+        \draw[accblue,->,thin] (3.55,1.95) -- (2.95,2.65);
+        \node[accblue, font=\scriptsize, anchor=west, align=left] at (3.2,1.55)
+          {jump:\\undefined\\gradient};
+
+        \node[font=\scriptsize, anchor=north, align=center] at (\W/2,-0.55)
+          {\textbf{(c) Non-smooth probability}\\flat regions and jumps defeat gradients};
+      \end{scope}
+    \end{tikzpicture}
+  }
+  \caption{The three structural sources of difficulty in chance-constrained
+programming: \textbf{(a)} the feasible set is non-convex, \textbf{(b)} the
+constraint probability has no closed form because the safe region moves with
+$x$, and \textbf{(c)} the probability function is flat almost everywhere and
+non-differentiable at the boundary.}
+  \label{fig:three_difficulties}
+\end{figure}
+
+
+The combination of the three difficulties, and not any one of them alone,
+is what makes \cref{eq:ccp} fundamentally harder than a deterministic NLP.
+Non-convexity rules out global guarantees, the missing closed form rules
+out exact evaluation, and non-smoothness rules out naive sample averaging
+inside derivative-based solvers. Every approximation method discussed in
+this thesis is an attempt to buy back tractability by conceding something:
+exactness, generality, or a margin of conservatism. The contribution of the
+KDE-based reformulation is a specific and unusually favorable bargain on
+all three fronts, and the remainder of this chapter explains why.
+
+\subsection{The Case for Nonparametric Estimation}
+\label{sec:nonparametric}
+
+\subsubsection{The parametric assumption and its routine failure}
+\label{ssec:parametric}
+
+Among the classical escape routes from \cref{sec:hard}, the oldest and
+still most widely used is parametric: assume the law of $\xi$ belongs to a
+named family, almost always the Gaussian, and exploit the structure that
+follows. Under Gaussian $\xi$ and a constraint linear in $\xi$, the chance
+constraint \cref{eq:icc} reduces exactly to a deterministic second-order
+cone constraint involving the mean, the covariance, and a quantile of the
+standard normal \citep{charnes1963,shapiro2014}. The reformulation is
+convex, smooth, and supported by every modern conic solver. When the
+Gaussian assumption is true, nothing in this thesis improves on it, and the
+experimental chapters use it as the reference baseline for exactly that
+reason.
+
+The assumption, however, is routinely false in the very domains where
+chance constraints matter most, and the evidence is not anecdotal.
+Wind-power forecast errors are skewed and heavy-tailed, with documented
+deviations from normality that grow in the tails, which is precisely where
+a chance constraint lives \citep{hodge2011,wan2020}. Equity and commodity
+returns exhibit heavy tails and aggregational Gaussianity only at long
+horizons; at decision-relevant horizons their kurtosis is far above three
+\citep{cont2001}. Thrust disturbances and navigation errors in powered
+descent arise from mixtures of operating regimes and are naturally
+multimodal \citep{keil2021}. Process feedstocks vary by supplier and batch
+in ways no single unimodal family captures \citep{calfa2015}. The
+Gaussian is chosen for the convenience of the analyst, not the behavior of
+the system.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_mismatch.pdf}
+  \caption{What a wrong distributional assumption does to a chance
+  constraint. (a) A bimodal disturbance law, of the kind produced by
+  two-regime actuator behavior, against its best Gaussian fit: the fit
+  places probability mass between the modes where the true law has almost
+  none, and misplaces both shoulders. (b) A skewed forecast-error law
+  (centered Gamma) on a logarithmic density scale. Beyond the marked
+  threshold the Gaussian fit reports $0.23\%$ tail mass where the true law
+  carries $1.7\%$, an underestimate by a factor of about seven. A planner
+  who certifies a $0.5\%$ risk level with the Gaussian model deploys a
+  system whose true failure rate is more than three times the certificate.}
+  \label{fig:mismatch}
+\end{figure}
+
+\subsubsection{What a wrong distribution does to the guarantee}
+\label{ssec:mismatch}
+
+The consequences of the mismatch are asymmetric and quantifiable.
+\Cref{fig:mismatch} dissects both failure modes. Panel (a) shows a bimodal
+disturbance law next to its moment-matched Gaussian fit: the fit invents
+probability where there is none and erases the two modes that actually
+govern system behavior. Panel (b) shows the more dangerous case on a
+logarithmic scale. For a skewed forecast-error law, the Gaussian fit
+underestimates the mass beyond a critical threshold by a factor of seven:
+it reports $0.23\%$ where the truth is $1.7\%$. A decision certified to a
+$0.5\%$ failure probability under the Gaussian model in fact fails more
+than three times as often as certified. The error can also point the other
+way: when the true law is lighter-tailed than the fit, the parametric
+constraint is needlessly conservative and pays an invisible objective
+penalty. Falsely optimistic or falsely conservative, the direction is
+decided by distributional geometry the analyst assumed away, and the
+certificate that the chance constraint was supposed to provide,
+$\Prob(\text{failure}) \leq \varepsilon$, silently becomes false. A
+reliability guarantee that depends on an unverified distributional
+assumption is not a guarantee; it is a hope with a confidence interval of
+unknown width.
+
+\subsubsection{Kernel density estimation and its fit to optimization}
+\label{ssec:kdefit}
+
+The alternative pursued in this thesis is to estimate the distribution
+from the data instead of assuming it. Kernel density estimation, the
+canonical nonparametric estimator introduced by \citet{rosenblatt1956} and
+\citet{parzen1962}, reconstructs a density from samples
+$y_1, \dots, y_N$ as
+\begin{equation}
+  \hat{\rho}_h(y) = \frac{1}{N h} \sum_{j=1}^{N}
+  K\!\left( \frac{y - y_j}{h} \right),
+  \label{eq:kde}
+\end{equation}
+where the kernel $K$ is a smooth density and the bandwidth $h > 0$ sets
+the degree of smoothing. The estimator makes no shape commitment: given
+enough data it recovers skewness, multimodality, and heavy tails alike,
+with well-understood consistency theory and practical bandwidth rules
+\citep{silverman1986,devroye1985}. Three properties make KDE specifically
+suited to the optimization context, rather than merely to statistics.
+First, $\hat{\rho}_h$ is as smooth as its kernel, so quantities built from
+it are differentiable, which addresses Difficulty 3 head-on. Second, its
+integral is available in closed form whenever the kernel's cumulative
+distribution function is, which addresses the evaluation half of
+Difficulty 2. Third, it is distribution-free, which removes the silent
+assumption dismantled above.
+
+This is not a speculative combination. A coherent body of work already
+demonstrates KDE-based chance constraints across the application domains
+of \cref{sec:deterministic}: kernel-smoothed individual and joint chance
+constraints in process planning \citep{calfa2015}, KDE-reformulated
+optimal control for launcher ascent and the Goddard problem
+\citep{caillau2018}, biased-KDE optimal control for soft lunar landing
+\citep{keil2020,keil2021,keil2021warm}, adaptive-KDE microgrid energy
+management \citep{ciftci2017,ciftci2019,babic2023}, multivariate-KDE joint
+chance constraints for economic dispatch and power-system scheduling
+\citep{wu2021,wu2023}, KDE-driven distributionally robust load shedding
+\citep{qi2026}, and KDE-based tail-risk portfolio optimization
+\citep{liu2022}. Adjacent nonparametric formulations reinforce the same
+direction in robotics and forecasting \citep{gopalakrishnan2018,wan2020,
+wang2021}. What this literature has lacked, until recently, is a unifying
+account connecting the engineering constructions to convergence theory;
+supplying and stress-testing that connection is the work of this thesis.
+
+\subsubsection{The price of going nonparametric}
+\label{ssec:price}
+
+A nonparametric estimator does not come free, and the costs are named now
+because they structure the experimental program of
+Chapters~7. KDE suffers the curse of dimensionality: its
+convergence rate degrades rapidly as the dimension of the estimated
+variable grows \citep{silverman1986}. The bandwidth $h$ is a genuine
+hyperparameter whose role inside an optimization problem, where it shapes
+the feasible region and the gradients the solver sees, is more delicate
+than its role in density estimation. And a plain KDE smooths in both
+directions, so it can overestimate the safe probability and thereby
+violate the very bound it is meant to enforce. Each of these costs has a
+specific answer in this thesis: the first is neutralized by the
+residual-space construction of \cref{sec:residual}, the second is treated as
+a first-class experimental question, and the third is resolved by the
+biased-KDE construction of \citet{keil2021}.
+
+\subsection{The Residual-Space Insight}
+\label{sec:residual}
+
+\subsubsection{From uncertainty space to residual space}
+\label{ssec:changevar}
+
+Everything assembled so far converges on a single conceptual move, simple
+to state and consequential enough to carry the thesis. The naive way to
+use KDE in \cref{eq:ccp} is to estimate the density of the uncertainty
+$\xi$ itself and then integrate the estimate over the safe region
+$\R^{d} \setminus M(x)$. This inherits both halves of Difficulty 2: the
+estimation runs in $d$ dimensions, exactly where the curse of
+dimensionality bites, and the integration region still deforms with every
+candidate $x$. The correct object to estimate is not the uncertainty. It
+is the \emph{constraint residual}
+\begin{equation}
+  Y(x) = g(x, \xi),
+  \label{eq:residual}
+\end{equation}
+the scalar random variable obtained by pushing the uncertainty through the
+constraint function at the current decision. The residual is the quantity
+the constraint actually speaks about: $Y(x) \leq 0$ \emph{is} constraint
+satisfaction, by definition, and the chance constraint \cref{eq:icc} is
+nothing but a statement about the cumulative distribution function of
+$Y(x)$ at zero,
+\begin{equation}
+  \Prob\bigl( Y(x) \leq 0 \bigr) = F_{Y(x)}(0) \geq 1 - \varepsilon .
+  \label{eq:cdf}
+\end{equation}
+\citet{schuster2025} makes this change of variables the foundation of the
+convergence theory: the probability is rewritten as an integral of the
+density of the \emph{transformed} variable $g(x,\xi)$ over the fixed set
+$(-\infty, 0]$, rather than an integral of the density of $\xi$ over the
+moving set $\R^{d} \setminus M(x)$.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.84\textwidth]{fig_residual.pdf}
+  \caption{The residual-space construction at a fixed candidate decision
+  $x$. Samples $\xi_j$ of the uncertainty are pushed through the
+  constraint to give residual samples $y_j = g(x,\xi_j)$ (histogram,
+  $N = 400$, bimodal by construction); a KDE
+  $\hat{\rho}_{Y(x)}$ smooths them, and its integral over the fixed safe
+  region $(-\infty,0]$ (shaded) estimates the safe probability,
+  here $\hat{P} \approx 0.67$. The estimation problem is one-dimensional
+  regardless of the dimension of $\xi$, and the resulting constraint
+  $\hat{F}_{Y(x)}(0) \geq 1-\varepsilon$ is a smooth, differentiable
+  function of $x$.}
+  \label{fig:residual}
+\end{figure}
+
+\subsubsection{Three dividends of the change of variables}
+\label{ssec:dividends}
+
+The dividends of this shift are worth enumerating, because each one
+disarms a specific difficulty from \cref{sec:hard}.
+
+First, \emph{dimensionality collapses}. The uncertainty $\xi$ may live in
+ten or a hundred dimensions; the residual of an individual constraint is
+a scalar, always, and the residuals of a joint constraint form a vector of
+dimension $R$, the number of constraint components, which in the problems
+of this thesis is small. KDE is being asked to do the one job it does
+excellently, one-dimensional density estimation from a few hundred
+samples, and the curse of dimensionality in $d$ is bypassed entirely. The
+constraint function $g$ itself performs the dimension reduction, and it
+does so without information loss for the question being asked, since
+\cref{eq:cdf} is an identity, not an approximation.
+
+Second, \emph{the integration region freezes}. The safe region in residual
+space is $(-\infty, 0]$ for every decision $x$; all dependence on $x$ has
+migrated into the samples $y_j = g(x, \xi_j)$ themselves. Integrating the
+kernel estimate over a fixed half-line is elementary: substituting
+\cref{eq:kde} gives the estimated CDF
+\begin{equation}
+  \hat{F}_{Y(x)}(0)
+  = \frac{1}{N} \sum_{j=1}^{N}
+    \mathcal{K}\!\left( \frac{-\,g(x, \xi_j)}{h} \right),
+  \qquad
+  \mathcal{K}(t) = \int_{-\infty}^{t} K(s)\, ds ,
+  \label{eq:kdecdf}
+\end{equation}
+a finite sum of evaluations of the kernel's CDF $\mathcal{K}$, available
+in closed form for every kernel used in this thesis.
+
+Third, \emph{smoothness is restored}. Comparing \cref{eq:kdecdf} with the
+sample-average form \cref{eq:indicator} reveals the substitution at the
+heart of the method: the discontinuous indicator $\ind\{g(x,\xi_j) \leq
+0\}$ has been replaced by the smooth sigmoid $\mathcal{K}(-g(x,\xi_j)/h)$,
+exactly the curves drawn in \cref{fig:hardness}(b). If $g$ is
+differentiable in $x$, then so is $\hat{F}_{Y(x)}(0)$, with gradients
+obtained by the chain rule through $\mathcal{K}$. The chance constraint
+\cref{eq:icc} thereby becomes the deterministic, smooth, nonlinear
+constraint
+\begin{equation}
+  \hat{F}_{Y(x)}(0) \geq 1 - \varepsilon ,
+  \label{eq:reformulated}
+\end{equation}
+which any sequential quadratic programming, interior-point, or
+direct-collocation solver consumes natively. \Cref{fig:residual} shows the
+whole construction in one frame: residual samples, the kernel estimate, the
+frozen safe region, and the resulting probability estimate.
+
+\subsubsection{Joint constraints, bandwidth, and the safety guarantee}
+\label{ssec:openquestions}
+
+The construction extends to joint chance constraints with one further
+idea that previews the extension studied in this thesis. For
+\cref{eq:jcc}, the natural scalar summary of the constraint system is the
+worst violation, $Y(x) = \max_{r} g_r(x, \xi)$, since all requirements
+hold exactly when the maximum residual is nonpositive. The maximum
+preserves the one-dimensionality of the estimation problem but
+reintroduces a kink; smoothing it with a log-sum-exp surrogate restores
+differentiability at the cost of a second, controllable approximation
+layer. This scalar violation statistic, its interaction with the KDE
+layer, and the alternative of low-dimensional multivariate KDE over the
+residual vector form the substance of research question RQ4 and are
+developed in Part~3.
+
+The reformulation \cref{eq:reformulated} is where the thesis begins
+rather than ends, because the two costs flagged in
+\cref{sec:nonparametric} are still standing and they define the
+methodological arc of Part~3. The bandwidth $h$ now controls the geometry
+of an optimization problem, not just the fidelity of a density plot:
+$h \to 0$ recovers the non-smooth indicator and its numerical pathologies,
+while large $h$ oversmooths and distorts the feasible region, and no
+classical bandwidth rule was derived with either effect in mind. And
+because an ordinary KDE can overestimate $F_{Y(x)}(0)$, the constraint
+\cref{eq:reformulated} can certify a reliability the true system does not
+possess. The constructive answer is the biased KDE of
+\citet{keil2020,keil2021}: kernels engineered so that their integral
+function bounds the indicator from the safe side, making
+\cref{eq:reformulated} a guaranteed conservative approximation of the true
+chance constraint while remaining smooth and bounded. The theoretical
+answer is the convergence framework of \citet{schuster2025}, which
+establishes conditions under which solutions of the KDE-approximated
+problem converge to solutions of the true problem as $N \to \infty$.
+Engineering construction and convergence theory, developed independently,
+meet in residual space, and their meeting is the subject of this thesis.
+
+\subsection{Thesis Scope and Positioning}
+\label{sec:scope}
+
+\subsubsection{Disciplinary positioning and anchor literature}
+\label{ssec:positioning}
+
+A thesis at the intersubsection of three fields must say plainly what it is
+and what it is not. This thesis is not a contribution to nonparametric
+statistics: it proves no new properties of kernel density estimators, and
+it takes the consistency theory of
+\citet{parzen1962,silverman1986,devroye1985} as given. It is not a
+contribution to control theory: it establishes no stability or recursive
+feasibility results for closed-loop predictive control. It is a data
+science and applied optimization contribution. Its object of study is the
+KDE-based reformulation pipeline itself, from samples through residuals
+through \cref{eq:reformulated} into a numerical solver, and its method is
+to implement that pipeline rigorously, analyze its behavior, compare it
+against the established alternatives, and validate it across problem
+settings chosen to stress its assumptions.
+
+Two anchor papers bound the territory. \citet{keil2021}, with the earlier
+preprint \citet{keil2020} and the computational follow-up
+\citet{keil2021warm}, supply the constructive, engineering side: biased
+kernels whose integral functions bound the indicator, a safety-preserving
+deterministic reformulation, and a demonstration on chance-constrained
+soft lunar landing solved by direct collocation. \citet{schuster2025}
+supplies the analytical side: convergence theorems guaranteeing that, under
+verifiable conditions on the kernel, the bandwidth, and the problem,
+solving the estimated problem is asymptotically equivalent to solving the
+true one. The first anchor gives the method its practical credibility, the
+second its mathematical license; the thesis builds the bridge between
+them and load-tests it experimentally. The surrounding evidence base
+spans aerospace \citep{caillau2018}, energy systems
+\citep{ciftci2019,wu2021,wu2023,qi2026}, process systems \citep{calfa2015},
+and finance \citep{liu2022}, and the comparative baselines are the
+classical ones: scenario optimization \citep{calafiore2006,campi2008},
+sample average approximation \citep{luedtke2008,pagnoncelli2009},
+parametric reformulation \citep{charnes1963}, and convex risk surrogates
+\citep{rockafellar2000,nemirovski2006}.
+
+\subsubsection{Research questions and roadmap}
+\label{ssec:rqs}
+
+Four research questions organize everything that follows.
+\begin{itemize}
+  \item \textbf{RQ1 (formulation):} how is a chance-constrained problem
+  reformulated through KDE over constraint residuals, for individual and
+  joint constraints, and under what conditions is the reformulation
+  mathematically justified?
+  \item \textbf{RQ2 (numerical behavior):} how does the KDE
+  reformulation compare with deterministic, scenario-based, and
+  parametric approaches in feasibility, objective value, conservatism,
+  runtime, and sensitivity to sample size?
+  \item \textbf{RQ3 (bandwidth and smoothing):} how do bandwidth and
+  smoothing choices shape feasibility, conservatism, and solver
+  performance, given that $h$ acts on the optimization geometry and not
+  only on estimation error?
+  \item \textbf{RQ4 (extension):} can the framework be strengthened
+  through one focused extension, specifically scalar violation statistics
+  for joint chance constraints, optionally with log-sum-exp smoothing?
+\end{itemize}
+
+The argument now proceeds in three movements. Chapter~2 supplies the
+technical vocabulary. Chapters~3 --- 6 develop the mathematics in the order a practitioner would
+discover it. Chapter~7 onwards validates the framework
+experimentally. The destination is a defensible answer to a question every one of the systems in
+\cref{sec:deterministic} silently poses: how safe is safe enough, and what
+is the cheapest decision that honestly delivers it?
 
