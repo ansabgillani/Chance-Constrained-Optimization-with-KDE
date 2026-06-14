@@ -1,0 +1,62 @@
+# LaTeX build files
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.nav
+*.snm
+*.vrb
+
+# Bibliography and indexing
+*.idx
+*.ilg
+*.ind
+*.ist
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.glsdefs
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+*.backup
+
+
+# latexmk
+*.dvi
+*.ps
+
+# minted / pygments
+_minted-*/
+*.pyg
+*.pytxcode
+
+# arara
+*.ara
+
+# Editors
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini

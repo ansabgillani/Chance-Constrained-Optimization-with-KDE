@@ -1,0 +1,311 @@
+% =====================================================================
+% Chapter 1: The Problem of Optimization Under Uncertainty
+% MSc Thesis: Chance-Constrained Optimization with Kernel Density
+% Estimation: A Data-Driven Reformulation for Nonlinear Optimization
+% and Optimal Control under Uncertainty
+%
+% Compile standalone:  pdflatex chapter1.tex  (run twice for refs)
+% To embed in a thesis: strip the preamble and \input the body.
+% Figures are searched in both kap01/figures/ and ./figures/
+% =====================================================================
+
+\graphicspath{{kap01/figures/}{./figures/}}
+
+\section{The Problem of Optimization Under Uncertainty}
+\label{ch:problem}
+
+Every optimization model is a promise. It promises that if the decision it
+recommends is implemented, the constraints of the system will hold and the
+objective will be as good as the mathematics claims. That promise is honest
+only if the numbers inside the model are honest, and in almost every real
+deployment they are not. The demand a grid operator schedules against is a
+forecast, not a fact. The thrust a lander commands is corrupted by
+disturbances no sensor fully resolves. The returns a portfolio is built on
+are realizations of a process nobody has ever observed in closed form. This
+chapter establishes precisely what goes wrong when uncertainty is ignored,
+why the two classical remedies, ignoring it and armoring against the worst
+case, both fail in practice, and why the chance constraint, a constraint
+required to hold with a prescribed probability, is the correct middle
+ground. It then exposes the three structural reasons chance constraints are
+computationally hard, builds the case for estimating the relevant
+probability distributions from data rather than assuming them, and
+introduces the single conceptual shift on which the entire thesis rests:
+moving the estimation problem from the space of the uncertainty to the
+space of the constraint residual. The chapter closes by fixing the scope,
+the anchor literature, and the research questions of the thesis.
+
+\subsection{Where Deterministic Optimization Falls Short}
+\label{sec:deterministic}
+
+\subsubsection{The mean-value approach and the flaw of averages}
+\label{ssec:meanvalue}
+
+The standard nonlinear program
+\begin{equation}
+  \minimize_{x \in X} \; f(x)
+  \quad \text{subject to} \quad g(x, \xi) \leq 0
+  \label{eq:detNLP}
+\end{equation}
+treats the parameter vector $\xi$ as a known constant. Decades of solver
+development have made problems of the form \cref{eq:detNLP} routinely
+solvable at scale, and this success has had a quiet side effect: the
+deterministic template is applied by default, even when $\xi$ is plainly a
+random quantity. The usual workaround is to replace $\xi$ with a point
+estimate, most often its mean or a nominal forecast, and solve the
+resulting deterministic problem. This is the mean-value approach, and it
+fails in a way that is systematic rather than occasional.
+
+The failure mechanism is worth stating carefully, because it is the
+engine behind every example in this subsection. An optimizer pushes its
+solution to the boundary of the feasible region; that is what optimality
+means whenever a constraint is binding. If the constraint
+$g(x, \bar{\xi}) \leq 0$ is active at the mean-value optimum
+$x^{\star}_{\mathrm{mv}}$, then the residual $g(x^{\star}_{\mathrm{mv}},
+\xi)$ sits exactly at zero when $\xi$ equals its mean. The moment $\xi$ is
+allowed to fluctuate around that mean, roughly half of its realizations
+push the residual positive and the constraint is violated. The optimizer
+does not merely tolerate risk; it actively seeks out the configuration in
+which risk is maximal, because that configuration is where the objective
+is best. Optimization and uncertainty are adversaries by construction, a
+phenomenon known in the planning literature as the flaw of averages
+\citep{savage2009}: a plan built on average inputs is not an average plan,
+it is a fragile one.
+
+\subsubsection{Four domains where uncertainty bites}
+\label{ssec:domains}
+
+Four application domains make this concrete. They are chosen
+deliberately, because each reappears later in the thesis as a benchmark or
+a case study, and because together they span the distributional pathologies
+that motivate the nonparametric approach of \cref{sec:nonparametric}.
+
+\paragraph{Autonomous lunar landing.} A powered-descent guidance problem
+asks for a thrust profile that brings a lander from orbit to a designated
+site while respecting bounds on velocity, glide slope, and fuel. The
+dynamics are integrated forward under thrust perturbations and imperfectly
+known gravitational and terrain parameters. \citet{keil2021} show that
+disturbance distributions in this setting are naturally non-Gaussian; a
+mixture arises, for example, when a thruster operates in one of two regimes.
+A trajectory optimized for nominal thrust grazes the velocity constraint at
+touchdown, so under perturbation the lander exceeds its safe impact speed on
+a large fraction of descents. There is no second attempt at a lunar landing.
+Chance-constrained formulations of exactly this problem are the application
+anchor of the thesis \citep{keil2020,keil2021,blackmore2010}.
+
+\paragraph{Energy dispatch under renewable generation.} A system operator
+commits generation a day ahead against uncertain demand and uncertain wind
+and solar output. Forecast errors for renewable infeed are well documented
+to be skewed and heavy-tailed rather than Gaussian
+\citep{hodge2011,bienstock2014}. A dispatch that balances the forecast
+exactly is short of energy whenever net demand lands above its forecast,
+which by construction happens with probability near one half, and reserve
+activations, load shedding, or price spikes follow. This domain has
+produced some of the strongest data-driven chance-constraint literature
+\citep{ciftci2019,wu2021,wu2023}.
+
+\paragraph{Chemical process control.} A reactor recipe is optimized for
+yield subject to temperature and purity limits, but the composition of the
+feed material varies from batch to batch. Running the process at the
+deterministic optimum places the temperature constraint on the boundary,
+and ordinary feedstock variation then produces off-specification batches
+at a steady rate. Process systems engineering was, in fact, the field where
+data-driven kernel-smoothed chance constraints were first formulated
+\citep{calfa2015}.
+
+\paragraph{Portfolio allocation.} An investor maximizes expected return
+subject to a cap on the probability of a large loss. Asset returns exhibit
+heavy tails and volatility clustering; these are among the most robust
+stylized facts in empirical finance \citep{cont2001}. A portfolio
+optimized as if returns were fixed at their historical means concentrates
+in the highest-mean assets and breaches its loss cap far more often than
+any Gaussian calculation predicts \citep{rockafellar2000,liu2022}.
+
+\subsubsection{A worked example: the cost of trusting the mean}
+\label{ssec:worked}
+
+The mechanism is easiest to see in a problem small enough to solve by
+inspection. Consider a single-bus dispatch model. A controllable resource
+of capacity $x$ megawatts must cover an uncertain net demand $\xi$, and
+capacity is costly, so the planner solves
+\begin{equation}
+  \minimize_{x \geq 0} \; c\,x
+  \quad \text{subject to} \quad \xi - x \leq 0 .
+  \label{eq:dispatch}
+\end{equation}
+Let net demand follow a moderately skewed lognormal law with mean
+$\bar{\xi} \approx 102$\,MW, a realistic shape for net load once renewable
+infeed is subtracted \citep{hodge2011}. The mean-value method replaces
+$\xi$ by $\bar{\xi}$ and returns $x^{\star}_{\mathrm{mv}} = \bar{\xi}$:
+build exactly average capacity. \Cref{fig:meanvalue}(a) shows what this
+decision looks like against the actual demand density. The constraint is
+violated on every day that demand exceeds its mean, and for this
+distribution that is $46\%$ of all days. A plan that appears exact on
+paper fails almost every other day in operation.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_meanvalue.pdf}
+  \caption{The mean-value fallacy in a one-dimensional dispatch problem
+  with lognormal net demand (Monte Carlo with $2 \times 10^{5}$ samples).
+  (a) The mean-value plan $x = \bar{\xi} \approx 102$\,MW leaves the
+  shaded shortfall region uncovered, so the constraint $\xi \leq x$ fails
+  on $46\%$ of days; covering demand with $95\%$ reliability requires
+  $x = q_{0.95} \approx 134$\,MW. (b) Required capacity as a function of
+  the accepted shortfall probability $\varepsilon$. Reliability is bought
+  at an accelerating price as $\varepsilon \to 0$; the chance constraint
+  makes this price explicit and lets the planner choose a point on the
+  curve deliberately.}
+  \label{fig:meanvalue}
+\end{figure}
+
+The repair is equally easy to read off the figure. If the planner is
+willing to accept a shortfall on at most $5\%$ of days, the correct
+decision is the $95\%$ quantile of demand, $x = q_{0.95} \approx 134$\,MW,
+about $32\%$ more capacity than the mean-value plan.
+\Cref{fig:meanvalue}(b) generalizes this observation into the central
+trade-off of the thesis: required capacity, and hence cost, rises steeply
+as the accepted violation probability $\varepsilon$ shrinks, and rises
+without bound as $\varepsilon \to 0$ because the lognormal has unbounded
+support. Reliability is a commodity with a price, and the role of a
+properly formulated stochastic optimization problem is to make that price
+visible and chooseable rather than implicit and accidental.
+
+\subsubsection{A near-universal failure rate}
+\label{ssec:universal}
+
+One might hope that the $46\%$ value is an artifact of the simple model.
+It is not. \Cref{fig:violations} repeats the experiment for stylized
+versions of three of the domains above: dispatch under skewed demand, a
+landing-corridor constraint under bimodal thrust disturbance, and a
+portfolio loss cap under heavy-tailed (Student-$t$) returns. In every
+case the mean-value solution violates its constraint between $46\%$ and
+$50\%$ of the time, an order of magnitude beyond any tolerable design
+target. The violation frequency hovers near one half precisely because of
+the boundary mechanism described above: wherever the constraint is
+binding at the deterministic optimum, the median of the residual sits at
+or near zero, regardless of the application. The number is not a
+property of energy systems or of finance; it is a property of
+optimization itself.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.78\textwidth]{fig_violations.pdf}
+  \caption{Empirical violation frequency of the mean-value solution in
+  three stylized problems drawn from the application domains of this
+  thesis (Monte Carlo estimates). A typical engineering target of
+  $\varepsilon = 5\%$ is shown for scale. The near-universal value close
+  to $50\%$ reflects the boundary mechanism: optimizers drive binding
+  constraints to the edge of feasibility, where half of all perturbations
+  cause failure.}
+  \label{fig:violations}
+\end{figure}
+
+\subsection{Two Extremes and the Gap Between Them}
+\label{sec:extremes}
+
+\subsubsection{Ignoring uncertainty and worst-case robustness}
+\label{ssec:extremes}
+
+Once the inadequacy of the mean-value approach is accepted, the
+conversation moves to what should replace it. Two answers dominate, and
+they sit at opposite ends of a spectrum.
+
+The first answer is to ignore uncertainty entirely, which is the
+mean-value approach already dismantled in \cref{sec:deterministic}. Its
+defining property deserves restating in the language used for the rest of
+the thesis: the deterministic solution carries no reliability statement of
+any kind. Nothing in the formulation \cref{eq:detNLP} bounds the
+probability of failure; \cref{fig:violations} shows that this probability
+is typically near one half. Whatever reliability a deployed mean-value
+solution exhibits is an accident of safety margins added by hand, outside
+the optimization, by engineers who do not trust the model. Hand-tuned
+margins are a tacit admission that the optimization solved the wrong
+problem.
+
+The second answer is worst-case robust optimization
+\citep{soyster1973,bental2009}. The uncertain parameter is confined to an
+uncertainty set $\Xi$, and the constraint is enforced for every element of
+that set:
+\begin{equation}
+  g(x, \xi) \leq 0 \quad \text{for all } \xi \in \Xi .
+  \label{eq:robust}
+\end{equation}
+Robust optimization is a mature and elegant theory; for many set
+geometries, \cref{eq:robust} admits exact tractable reformulations, and
+when failure is truly never acceptable it is the correct model. Its
+weakness is the obverse of its strength: protection is purchased against
+every point of $\Xi$, including points that are vanishingly unlikely or
+physically implausible, and the objective pays for all of them. In the
+dispatch example, the demand distribution has unbounded support, so a
+literal worst-case formulation has no feasible solution at all; the set
+$\Xi$ must be truncated by fiat, and the answer then depends sensitively
+on a truncation the data does not specify. Even with a defensible
+truncation, the protection level is an all-or-nothing property of the set,
+not a dial the decision maker controls. Empirically, robust solutions in
+power systems and aerospace routinely sacrifice a large fraction of
+attainable objective value to guard against scenarios whose combined
+probability is far below any operational concern
+\citep{bental2009,keil2021}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.8\textwidth]{fig_spectrum.pdf}
+  \caption{The reliability spectrum for the dispatch example of
+  \cref{fig:meanvalue}. The deterministic mean-value plan is cheap and
+  offers no guarantee; the worst-case robust plan is guaranteed and
+  expensive, and is not even well defined under unbounded support. Chance
+  constraints parameterize the entire curve between the extremes: the
+  decision maker selects a reliability level $1-\varepsilon$, and the
+  optimization returns the cheapest decision that honors it.}
+  \label{fig:spectrum}
+\end{figure}
+
+\subsubsection{When each extreme is the right tool}
+\label{ssec:homes}
+
+Fairness demands an acknowledgment before the middle ground is claimed:
+each extreme has a legitimate home. The mean-value approach is correct
+when uncertainty is genuinely negligible relative to the constraint
+margins, or when violations carry only a linear cost that the objective
+already prices in, as in inventory models where a shortfall is simply an
+expense. Worst-case robustness is correct when the uncertainty set is
+small, well characterized, and physically bounded, and when a single
+failure is catastrophic and irreversible: structural safety factors live
+here for good reason. The problems this thesis targets sit in neither
+home. Their uncertainties are large, data-described, and unbounded or
+effectively so, and their failures are costly but tolerable at a small,
+explicit rate. A lander program accepts a quantified risk per descent; a
+grid code tolerates a bounded loss-of-load expectation per year. For this
+regime, neither extreme expresses what the decision maker actually wants.
+
+\subsubsection{Chance constraints as the unifying middle ground}
+\label{ssec:middleground}
+
+Between a method with no guarantee and a method that guarantees too much
+lies the formulation this thesis is about. A chance constraint, introduced
+by \citet{charnes1959} and developed into a full branch of stochastic
+programming by \citet{prekopa1995}, requires the constraint to hold with a
+prescribed probability:
+\begin{equation}
+  \Prob\bigl( g(x, \xi) \leq 0 \bigr) \geq 1 - \varepsilon .
+  \label{eq:ccIntro}
+\end{equation}
+The risk tolerance $\varepsilon \in (0,1)$ is small, typically between
+$0.001$ and $0.1$ depending on the stakes, and $1-\varepsilon$ is the
+reliability level. \Cref{fig:spectrum} places the three formulations on a
+single axis for the dispatch example. The chance constraint is not a
+compromise between the extremes; it is a strict generalization of both.
+As $\varepsilon \to 0$ it recovers worst-case protection over the support
+of $\xi$, and at $\varepsilon = 0.5$ it roughly reproduces the mean-value
+behavior for symmetric residuals. Every intermediate point is available,
+and each carries an explicit, auditable meaning: the system fails at most
+a fraction $\varepsilon$ of the time. This is exactly the language in
+which engineering requirements are written. Grid codes prescribe loss-of-load
+expectations, flight rules prescribe acceptable failure probabilities per
+descent, and risk mandates prescribe loss probabilities per quarter. The
+chance constraint is the optimization-native translation of a reliability
+requirement, which is why it is the right framing for most engineering and
+operational problems, and why the difficulty of solving it, the subject of
+\cref{sec:hard}, has remained an active research frontier for over six
+decades.
+
