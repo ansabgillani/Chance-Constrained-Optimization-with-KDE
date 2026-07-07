@@ -26,13 +26,14 @@ objective will be as good as the mathematics claims. That promise is honest
 only if the numbers inside the model are honest, and in almost every real
 deployment they are not. The demand a grid operator schedules against is a
 forecast, not a fact. The thrust a lander commands is corrupted by
-disturbances no sensor fully resolves. The returns a portfolio is built on
-are realizations of a process nobody has ever observed in closed form. This
+disturbances that sensors resolve only imperfectly. The returns a portfolio is built on
+are realizations of a process that is not available in closed form. This
 chapter establishes precisely what goes wrong when uncertainty is ignored,
 why the two classical remedies, ignoring it and armoring against the worst
-case, both fail in practice, and why the chance constraint, a constraint
-required to hold with a prescribed probability, is the correct middle
-ground. It then exposes the three structural reasons chance constraints are
+case, each have important limitations in the settings this thesis targets,
+and why the chance constraint, a constraint required to hold with a
+prescribed probability, offers a principled middle ground between them. 
+It then exposes the three structural reasons chance constraints are
 computationally hard, builds the case for estimating the relevant
 probability distributions from data rather than assuming them, and
 introduces the single conceptual shift on which the entire thesis rests:
@@ -43,13 +44,20 @@ the anchor literature, and the research questions of the thesis.
 \subsection{Where Deterministic Optimization Falls Short}
 \label{sec:deterministic}
 
+This section establishes why the deterministic template struggles under
+uncertainty. It first identifies the mechanism behind the failure, then
+illustrates it across four application domains, works through a numerical
+example in which the failure can be quantified exactly, and closes by
+showing that the observed failure rate is largely independent of the
+application.
+
 \subsubsection{The mean-value approach and the flaw of averages}
 \label{ssec:meanvalue}
 
 The standard nonlinear program
 \begin{equation}
   \minimize_{x \in X} \; f(x)
-  \quad \text{subject to} \quad g(x, \xi) \leq 0
+  \quad \text{subject to} \quad g(x, \xi) \leq 0 ,
   \label{eq:detNLP}
 \end{equation}
 treats the parameter vector $\xi$ as a known constant. Decades of solver
@@ -58,11 +66,11 @@ solvable at scale, and this success has had a quiet side effect: the
 deterministic template is applied by default, even when $\xi$ is plainly a
 random quantity. The usual workaround is to replace $\xi$ with a point
 estimate, most often its mean or a nominal forecast, and solve the
-resulting deterministic problem. This is the mean-value approach, and it
-fails in a way that is systematic rather than occasional.
-
+resulting deterministic problem. This is the mean-value approach, and its shortcomings are systematic
+rather than occasional.
+ 
 The failure mechanism is worth stating carefully, because it is the
-engine behind every example in this subsection. An optimizer pushes its
+mechanism behind the examples in this section. An optimizer pushes its
 solution to the boundary of the feasible region; that is what optimality
 means whenever a constraint is binding. If the constraint
 $g(x, \bar{\xi}) \leq 0$ is active at the mean-value optimum
@@ -70,12 +78,13 @@ $x^{\star}_{\mathrm{mv}}$, then the residual $g(x^{\star}_{\mathrm{mv}},
 \xi)$ sits exactly at zero when $\xi$ equals its mean. The moment $\xi$ is
 allowed to fluctuate around that mean, roughly half of its realizations
 push the residual positive and the constraint is violated. The optimizer
-does not merely tolerate risk; it actively seeks out the configuration in
-which risk is maximal, because that configuration is where the objective
-is best. Optimization and uncertainty are adversaries by construction, a
-phenomenon known in the planning literature as the flaw of averages
-\citep{savage2009}: a plan built on average inputs is not an average plan,
-it is a fragile one.
+does not merely tolerate risk; it tends to select the configuration in
+which the risk of violation is largest, because that configuration is
+where the objective is best. In this sense optimization and uncertainty
+often work against each other, a phenomenon known in the planning
+literature as the flaw of averages \citep{savage2009}: a plan built on
+average inputs need not behave like an average plan, and can be
+considerably more fragile.
 
 \subsubsection{Four domains where uncertainty bites}
 \label{ssec:domains}
@@ -94,11 +103,11 @@ disturbance distributions in this setting are naturally non-Gaussian; a
 mixture arises, for example, when a thruster operates in one of two regimes.
 A trajectory optimized for nominal thrust grazes the velocity constraint at
 touchdown, so under perturbation the lander exceeds its safe impact speed on
-a large fraction of descents. There is no second attempt at a lunar landing.
+a large fraction of descents. A lunar landing offers no opportunity to repeat a failed attempt.
 Chance-constrained formulations of exactly this problem are the application
 anchor of the thesis \citep{keil2020,keil2021,blackmore2010}.
 
-\paragraph{Energy dispatch under renewable generation.} A system operator
+\paragraph{Energy dispatch under renewable generation.}  A system operator
 commits generation a day ahead against uncertain demand and uncertain wind
 and solar output. Forecast errors for renewable infeed are well documented
 to be skewed and heavy-tailed rather than Gaussian
@@ -165,7 +174,7 @@ paper fails almost every other day in operation.
 \end{figure}
 
 The repair is equally easy to read off the figure. If the planner is
-willing to accept a shortfall on at most $5\%$ of days, the correct
+willing to accept a shortfall on at most $5\%$ of days, the appropriate
 decision is the $95\%$ quantile of demand, $x = q_{0.95} \approx 134$\,MW,
 about $32\%$ more capacity than the mean-value plan.
 \Cref{fig:meanvalue}(b) generalizes this observation into the central
@@ -176,22 +185,22 @@ support. Reliability is a commodity with a price, and the role of a
 properly formulated stochastic optimization problem is to make that price
 visible and chooseable rather than implicit and accidental.
 
-\subsubsection{A near-universal failure rate}
+\subsubsection{A failure rate that recurs across problems}
 \label{ssec:universal}
 
-One might hope that the $46\%$ value is an artifact of the simple model.
+One might hope that the $46\%$ figure is an artifact of the simple model.
 It is not. \Cref{fig:violations} repeats the experiment for stylized
 versions of three of the domains above: dispatch under skewed demand, a
 landing-corridor constraint under bimodal thrust disturbance, and a
 portfolio loss cap under heavy-tailed (Student-$t$) returns. In every
 case the mean-value solution violates its constraint between $46\%$ and
-$50\%$ of the time, an order of magnitude beyond any tolerable design
-target. The violation frequency hovers near one half precisely because of
-the boundary mechanism described above: wherever the constraint is
-binding at the deterministic optimum, the median of the residual sits at
-or near zero, regardless of the application. The number is not a
-property of energy systems or of finance; it is a property of
-optimization itself.
+$50\%$ of the time, well beyond a typical design target. The violation
+frequency stays near one half largely because of the boundary mechanism
+described above: where the constraint is binding at the deterministic
+optimum, the median of the residual sits at or near zero, and this holds
+across the applications considered. The value therefore reflects a
+property of the optimization itself rather than of any particular
+application domain.
 
 \begin{figure}[t]
   \centering
@@ -199,35 +208,41 @@ optimization itself.
   \caption{Empirical violation frequency of the mean-value solution in
   three stylized problems drawn from the application domains of this
   thesis (Monte Carlo estimates). A typical engineering target of
-  $\varepsilon = 5\%$ is shown for scale. The near-universal value close
+  $\varepsilon = 5\%$ is shown for scale. The recurring value close
   to $50\%$ reflects the boundary mechanism: optimizers drive binding
-  constraints to the edge of feasibility, where half of all perturbations
-  cause failure.}
+  constraints to the edge of feasibility, where roughly half of all
+  perturbations cause failure.}
   \label{fig:violations}
 \end{figure}
 
 \subsection{Two Extremes and the Gap Between Them}
 \label{sec:extremes}
 
+This section examines the two classical responses to the failure just
+described, the deterministic status quo and worst-case robustness,
+identifies the settings in which each is appropriate, and introduces the
+chance constraint as a formulation that connects the two through a
+tunable reliability level.
+
 \subsubsection{Ignoring uncertainty and worst-case robustness}
 \label{ssec:extremes}
 
-Once the inadequacy of the mean-value approach is accepted, the
-conversation moves to what should replace it. Two answers dominate, and
+Once the limitations of the mean-value approach are recognized, the
+question becomes what should replace it. Two answers dominate, and
 they sit at opposite ends of a spectrum.
-
+ 
 The first answer is to ignore uncertainty entirely, which is the
-mean-value approach already dismantled in \cref{sec:deterministic}. Its
-defining property deserves restating in the language used for the rest of
-the thesis: the deterministic solution carries no reliability statement of
-any kind. Nothing in the formulation \cref{eq:detNLP} bounds the
-probability of failure; \cref{fig:violations} shows that this probability
-is typically near one half. Whatever reliability a deployed mean-value
-solution exhibits is an accident of safety margins added by hand, outside
-the optimization, by engineers who do not trust the model. Hand-tuned
-margins are a tacit admission that the optimization solved the wrong
-problem.
-
+mean-value approach already examined in \cref{sec:deterministic}. Its
+defining property is worth restating in the language used for the rest of
+the thesis: the deterministic solution carries essentially no reliability
+statement. The formulation \cref{eq:detNLP} does not bound the
+probability of failure, and \cref{fig:violations} shows that this
+probability is typically near one half. Whatever reliability a deployed
+mean-value solution exhibits usually comes from safety margins added by
+hand, outside the optimization. Such hand-tuned margins can be read as an
+indication that the optimization, as posed, did not capture the intended
+requirement.
+ 
 The second answer is worst-case robust optimization
 \citep{soyster1973,bental2009}. The uncertain parameter is confined to an
 uncertainty set $\Xi$, and the constraint is enforced for every element of
@@ -238,7 +253,8 @@ that set:
 \end{equation}
 Robust optimization is a mature and elegant theory; for many set
 geometries, \cref{eq:robust} admits exact tractable reformulations, and
-when failure is truly never acceptable it is the correct model. Its
+when a failure is not acceptable under any circumstance it is arguably
+the model of choice. Its
 weakness is the obverse of its strength: protection is purchased against
 every point of $\Xi$, including points that are vanishingly unlikely or
 physically implausible, and the objective pays for all of them. In the
@@ -246,13 +262,13 @@ dispatch example, the demand distribution has unbounded support, so a
 literal worst-case formulation has no feasible solution at all; the set
 $\Xi$ must be truncated by fiat, and the answer then depends sensitively
 on a truncation the data does not specify. Even with a defensible
-truncation, the protection level is an all-or-nothing property of the set,
-not a dial the decision maker controls. Empirically, robust solutions in
+truncation, the protection level is largely a fixed property of the set
+rather than a dial the decision maker controls. Empirically, robust solutions in
 power systems and aerospace routinely sacrifice a large fraction of
 attainable objective value to guard against scenarios whose combined
 probability is far below any operational concern
 \citep{bental2009,keil2021}.
-
+ 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.8\textwidth]{fig_spectrum.pdf}
@@ -353,8 +369,8 @@ margins, or when violations carry only a linear cost that the objective
 already prices in, as in inventory models where a shortfall is simply an
 expense. Worst-case robustness is correct when the uncertainty set is
 small, well characterized, and physically bounded, and when a single
-failure is catastrophic and irreversible: structural safety factors live
-here for good reason. The problems this thesis targets sit in neither
+failure would be severe and difficult to reverse: structural safety
+factors are a familiar example. The problems this thesis targets sit in neither
 home. Their uncertainties are large, data-described, and unbounded or
 effectively so, and their failures are costly but tolerable at a small,
 explicit rate. A lander program accepts a quantified risk per descent; a
@@ -375,23 +391,26 @@ prescribed probability:
 \end{equation}
 The risk tolerance $\varepsilon \in (0,1)$ is small, typically between
 $0.001$ and $0.1$ depending on the stakes, and $1-\varepsilon$ is the
-reliability level. \Cref{fig:spectrum} places the three formulations on a
-single axis for the dispatch example. The chance constraint is not a
-compromise between the extremes; it is a strict generalization of both.
-As $\varepsilon \to 0$ it recovers worst-case protection over the support
-of $\xi$, and at $\varepsilon = 0.5$ it roughly reproduces the mean-value
-behavior for symmetric residuals. Every intermediate point is available,
+reliability level. Parts of the literature, including the convergence
+theory of \citet{schuster2025}, write the required satisfaction
+probability directly as $\alpha = 1-\varepsilon$; the two conventions
+are interchangeable, and this thesis works with $\varepsilon$
+throughout. \Cref{fig:spectrum} places the three formulations on a
+single axis for the dispatch example. Rather than a compromise between the extremes, the chance constraint can
+be viewed as generalizing both of them. As $\varepsilon \to 0$ it
+approaches worst-case protection over the support of $\xi$, and at
+$\varepsilon = 0.5$ it roughly reproduces the mean-value behavior for
+symmetric residuals. Every intermediate point is available,
 and each carries an explicit, auditable meaning: the system fails at most
-a fraction $\varepsilon$ of the time. This is exactly the language in
-which engineering requirements are written. Grid codes prescribe loss-of-load
+a fraction $\varepsilon$ of the time. This closely mirrors the language in
+which engineering requirements are commonly written. Grid codes prescribe loss-of-load
 expectations, flight rules prescribe acceptable failure probabilities per
 descent, and risk mandates prescribe loss probabilities per quarter. The
 chance constraint is the optimization-native translation of a reliability
-requirement, which is why it is the right framing for most engineering and
+requirement, which is why it is a natural framing for many engineering and
 operational problems, and why the difficulty of solving it, the subject of
 \cref{sec:hard}, has remained an active research frontier for over six
 decades.
-
 Figure~\ref{fig:three_approaches} makes the three positions concrete. Each panel shows the
 same bimodal residual density $Y_x = g(x,\xi)$, with the constraint boundary at zero;
 the two modes reflect the non-Gaussian disturbance shapes that motivate the nonparametric
@@ -399,11 +418,16 @@ approach developed from subsection~\ref{sec:nonparametric} onward
 
 \subsection{What Chance Constraints Are and Why They Are Hard}
 \label{sec:hard}
+This section fixes the notation used throughout the thesis, formalizes
+individual and joint chance constraints, and isolates the three
+structural properties that make probabilistic constraints computationally
+demanding. These three difficulties also organize the survey of solution
+methods in Chapter~2.
 
 \subsubsection{Individual and joint chance constraints}
 \label{ssec:definitions}
 
-This subsection fixes notation used throughout the thesis and isolates the
+This section fixes notation used throughout the thesis and isolates the
 three structural sources of computational difficulty. Let $x \in X
 \subseteq \R^{n}$ be the decision vector, let $\xi$ be a random vector on
 a probability space $(\Omega, \mathcal{F}, \Prob)$ taking values in
@@ -414,7 +438,7 @@ function. The \emph{individual chance constraint} is
   \label{eq:icc}
 \end{equation}
 When the system carries several uncertain requirements
-$g_1, \dots, g_R$ that must hold simultaneously, the correct model is the
+$g_1, \dots, g_R$ that must hold simultaneously, the appropriate model is the
 \emph{joint chance constraint}
 \begin{equation}
   \Prob\bigl( g_r(x, \xi) \leq 0, \; r = 1, \dots, R \bigr)
@@ -460,7 +484,7 @@ viable solution method must answer all three. The pattern repeats through
 the entire methodological literature, so these three points are the lens
 through which every method in this thesis, including the KDE reformulation
 itself, should be judged.
-
+ 
 \paragraph{Difficulty 1: the feasible set is generally non-convex.}
 Convexity of $g$ in $x$ does not transfer to the probabilistic feasible
 set $\{x : \Prob(g(x,\xi) \leq 0) \geq 1-\varepsilon\}$. A minimal
@@ -477,7 +501,7 @@ and this toy construction scales up: with general discrete or continuous
 distributions the feasible set can shatter into combinatorially many
 pieces. Convexity survives only under special structure, most famously
 when the distribution of $\xi$ is log-concave and $g$ has suitable form,
-the celebrated theory of \citet{prekopa1995}, or when $\xi$ is Gaussian and
+the well-known theory of \citet{prekopa1995}, or when $\xi$ is Gaussian and
 the constraint is linear in $\xi$, in which case \cref{eq:icc} collapses to
 a second-order cone constraint \citep{charnes1963,shapiro2014}. Outside
 these islands, non-convexity is the rule, and global optimality claims must
@@ -536,9 +560,9 @@ one to zero at the constraint boundary, as plotted in
 \cref{eq:indicator}, count the fraction of samples satisfying the
 constraint, inherits this discontinuity. As a function of $x$ it is
 piecewise constant: its gradient is zero almost everywhere and undefined
-on a measure-zero set, which is the worst possible input for the
-sequential quadratic programming and interior-point methods that dominate
-nonlinear optimization \citep{shapiro2014}. The established escape routes
+on a measure-zero set, which is poorly suited to the
+sequential quadratic programming and interior-point methods that are
+widely used in nonlinear optimization \citep{shapiro2014}. The established escape routes
 each pay a recognizable price. Mixed-integer reformulations of the
 counting constraint are exact but combinatorial and scale poorly
 \citep{luedtke2008}. The scenario approach enforces the constraint on all
@@ -553,7 +577,6 @@ which this thesis belongs, replace the indicator with a differentiable
 approximation \citep{penaordieres2020}, restoring the gradients that
 nonlinear solvers need while introducing a controlled bias, visible in
 \cref{fig:hardness}(b) as the gap between the step and the smooth curves.
-
 \begin{figure}[htbp]
   \centering
   \resizebox{\textwidth}{!}{%
@@ -674,10 +697,10 @@ non-differentiable at the boundary.}
 
 
 The combination of the three difficulties, and not any one of them alone,
-is what makes \cref{eq:ccp} fundamentally harder than a deterministic NLP.
-Non-convexity rules out global guarantees, the missing closed form rules
-out exact evaluation, and non-smoothness rules out naive sample averaging
-inside derivative-based solvers. Every approximation method discussed in
+is what makes \cref{eq:ccp} substantially harder than a deterministic NLP.
+Non-convexity generally precludes global guarantees, the missing closed
+form precludes exact evaluation, and non-smoothness makes naive sample
+averaging unsuitable inside derivative-based solvers. Every approximation method discussed in
 this thesis is an attempt to buy back tractability by conceding something:
 exactness, generality, or a margin of conservatism. The contribution of the
 KDE-based reformulation is a specific and unusually favorable bargain on
@@ -685,6 +708,13 @@ all three fronts, and the remainder of this chapter explains why.
 
 \subsection{The Case for Nonparametric Estimation}
 \label{sec:nonparametric}
+
+This section develops the argument for estimating distributions from
+data. It reviews the parametric alternative and the evidence against its
+default assumptions, quantifies the consequences of a misspecified
+distribution, introduces kernel density estimation, and closes with an
+account of the costs that the nonparametric route incurs.
+
 
 \subsubsection{The parametric assumption and its routine failure}
 \label{ssec:parametric}
@@ -697,10 +727,10 @@ constraint \cref{eq:icc} reduces exactly to a deterministic second-order
 cone constraint involving the mean, the covariance, and a quantile of the
 standard normal \citep{charnes1963,shapiro2014}. The reformulation is
 convex, smooth, and supported by every modern conic solver. When the
-Gaussian assumption is true, nothing in this thesis improves on it, and the
-experimental chapters use it as the reference baseline for exactly that
-reason.
-
+Gaussian assumption holds, this reformulation is difficult to improve
+upon, and the experimental chapters use it as the reference baseline for
+that reason.
+ 
 The assumption, however, is routinely false in the very domains where
 chance constraints matter most, and the evidence is not anecdotal.
 Wind-power forecast errors are skewed and heavy-tailed, with documented
@@ -712,8 +742,8 @@ horizons; at decision-relevant horizons their kurtosis is far above three
 descent arise from mixtures of operating regimes and are naturally
 multimodal \citep{keil2021}. Process feedstocks vary by supplier and batch
 in ways no single unimodal family captures \citep{calfa2015}. The
-Gaussian is chosen for the convenience of the analyst, not the behavior of
-the system.
+Gaussian is often chosen more for analytical convenience than for its fit
+to the observed behavior of the system.
 
 \begin{figure}[t]
   \centering
@@ -746,13 +776,13 @@ $0.5\%$ failure probability under the Gaussian model in fact fails more
 than three times as often as certified. The error can also point the other
 way: when the true law is lighter-tailed than the fit, the parametric
 constraint is needlessly conservative and pays an invisible objective
-penalty. Falsely optimistic or falsely conservative, the direction is
-decided by distributional geometry the analyst assumed away, and the
-certificate that the chance constraint was supposed to provide,
-$\Prob(\text{failure}) \leq \varepsilon$, silently becomes false. A
-reliability guarantee that depends on an unverified distributional
-assumption is not a guarantee; it is a hope with a confidence interval of
-unknown width.
+penalty. Whether the result is optimistic or conservative, the direction is
+governed by distributional geometry that the parametric fit does not
+capture, and the certificate that the chance constraint was intended to
+provide, $\Prob(\text{failure}) \leq \varepsilon$, may no longer hold. A
+reliability guarantee that rests on an unverified distributional
+assumption therefore provides considerably weaker assurance than its
+form suggests.
 
 \subsubsection{Kernel density estimation and its fit to optimization}
 \label{ssec:kdefit}
@@ -777,9 +807,9 @@ First, $\hat{\rho}_h$ is as smooth as its kernel, so quantities built from
 it are differentiable, which addresses Difficulty 3 head-on. Second, its
 integral is available in closed form whenever the kernel's cumulative
 distribution function is, which addresses the evaluation half of
-Difficulty 2. Third, it is distribution-free, which removes the silent
-assumption dismantled above.
-
+Difficulty 2. Third, it is distribution-free, which removes the implicit
+distributional assumption discussed above.
+ 
 This is not a speculative combination. A coherent body of work already
 demonstrates KDE-based chance constraints across the application domains
 of \cref{sec:deterministic}: kernel-smoothed individual and joint chance
@@ -801,35 +831,47 @@ supplying and stress-testing that connection is the work of this thesis.
 \label{ssec:price}
 
 A nonparametric estimator does not come free, and the costs are named now
-because they structure the experimental program of
-Chapters~7. KDE suffers the curse of dimensionality: its
+because they structure the experimental program of the application
+chapter. KDE suffers the curse of dimensionality: its
 convergence rate degrades rapidly as the dimension of the estimated
 variable grows \citep{silverman1986}. The bandwidth $h$ is a genuine
 hyperparameter whose role inside an optimization problem, where it shapes
 the feasible region and the gradients the solver sees, is more delicate
-than its role in density estimation. And a plain KDE smooths in both
+than its role in density estimation. A plain KDE smooths in both
 directions, so it can overestimate the safe probability and thereby
-violate the very bound it is meant to enforce. Each of these costs has a
-specific answer in this thesis: the first is neutralized by the
+weaken the very bound it is meant to enforce. A fourth cost concerns the
+tails: a chance constraint with a small violation budget asks about a
+rare event, and a kernel estimate is least accurate in sparsely sampled
+tail regions. The severity of this effect is problem dependent rather
+than universal, since at moderate risk levels the binding region lies in
+the bulk of the distribution, where the estimator behaves well, while
+stringent levels push it into the tails. Each of these costs has a
+specific answer in this thesis: the first is mitigated by the
 residual-space construction of \cref{sec:residual}, the second is treated as
-a first-class experimental question, and the third is resolved by the
-biased-KDE construction of \citet{keil2021}.
+a first-class experimental question, the third is addressed by the
+biased-KDE construction of \citet{keil2021}, and the fourth is handled by
+reporting results across a range of risk levels.
 
 \subsection{The Residual-Space Insight}
 \label{sec:residual}
+This section introduces the change of variables on which the
+methodological part of the thesis is built. It defines the constraint
+residual, explains why estimating its distribution is preferable to
+estimating the distribution of the uncertainty itself, and previews the
+treatment of joint constraints together with the role of the bandwidth.
 
 \subsubsection{From uncertainty space to residual space}
 \label{ssec:changevar}
 
-Everything assembled so far converges on a single conceptual move, simple
-to state and consequential enough to carry the thesis. The naive way to
+Everything assembled so far points toward a single conceptual move,
+simple to state and central to the approach developed in this thesis. The naive way to
 use KDE in \cref{eq:ccp} is to estimate the density of the uncertainty
 $\xi$ itself and then integrate the estimate over the safe region
 $\R^{d} \setminus M(x)$. This inherits both halves of Difficulty 2: the
 estimation runs in $d$ dimensions, exactly where the curse of
 dimensionality bites, and the integration region still deforms with every
-candidate $x$. The correct object to estimate is not the uncertainty. It
-is the \emph{constraint residual}
+candidate $x$. A more effective object to estimate is not the
+uncertainty itself but the \emph{constraint residual}
 \begin{equation}
   Y(x) = g(x, \xi),
   \label{eq:residual}
@@ -869,19 +911,29 @@ moving set $\R^{d} \setminus M(x)$.
 \subsubsection{Three dividends of the change of variables}
 \label{ssec:dividends}
 
-The dividends of this shift are worth enumerating, because each one
-disarms a specific difficulty from \cref{sec:hard}.
-
+The benefits of this shift are worth enumerating, because each one
+addresses a specific difficulty from \cref{sec:hard}.
+ 
 First, \emph{dimensionality collapses}. The uncertainty $\xi$ may live in
 ten or a hundred dimensions; the residual of an individual constraint is
 a scalar, always, and the residuals of a joint constraint form a vector of
 dimension $R$, the number of constraint components, which in the problems
-of this thesis is small. KDE is being asked to do the one job it does
-excellently, one-dimensional density estimation from a few hundred
-samples, and the curse of dimensionality in $d$ is bypassed entirely. The
-constraint function $g$ itself performs the dimension reduction, and it
-does so without information loss for the question being asked, since
-\cref{eq:cdf} is an identity, not an approximation.
+of this thesis is small. This is where the \emph{curse of dimensionality},
+named as the first cost of nonparametric estimation in \cref{ssec:price},
+is addressed. The convergence rate of a kernel estimator deteriorates
+rapidly with the dimension of the estimated variable, so that holding the
+accuracy fixed requires a sample size that grows roughly exponentially in
+that dimension \citep{silverman1986}. The decisive observation is that
+the relevant dimension for the residual-space construction is the
+dimension of the estimated variable, not of the uncertainty: KDE is asked
+to perform one-dimensional density estimation from a few hundred samples,
+the task it is best suited to, and the curse in $d$ is largely avoided by
+construction. The constraint function $g$ itself performs the dimension
+reduction, and it does so without information loss for the question being
+asked, since \cref{eq:cdf} is an identity, not an approximation. The
+mitigation is not unconditional, however; it weakens when many
+constraints must hold jointly, since the residual vector then carries the
+dimension $R$, a point taken up in \cref{ssec:openquestions}.
 
 Second, \emph{the integration region freezes}. The safe region in residual
 space is $(-\infty, 0]$ for every decision $x$; all dependence on $x$ has
@@ -956,11 +1008,15 @@ meet in residual space, and their meeting is the subject of this thesis.
 
 \subsection{Thesis Scope and Positioning}
 \label{sec:scope}
+This closing section delimits the scope of the thesis. It positions the
+work between its two anchor papers, states which questions lie outside
+the scope, and formulates the four research questions together with a
+roadmap of the remaining chapters.
 
 \subsubsection{Disciplinary positioning and anchor literature}
 \label{ssec:positioning}
 
-A thesis at the intersubsection of three fields must say plainly what it is
+A thesis at the intersection of three fields must say plainly what it is
 and what it is not. This thesis is not a contribution to nonparametric
 statistics: it proves no new properties of kernel density estimators, and
 it takes the consistency theory of
@@ -972,8 +1028,15 @@ KDE-based reformulation pipeline itself, from samples through residuals
 through \cref{eq:reformulated} into a numerical solver, and its method is
 to implement that pipeline rigorously, analyze its behavior, compare it
 against the established alternatives, and validate it across problem
-settings chosen to stress its assumptions.
-
+settings chosen to stress its assumptions. One further boundary deserves
+explicit mention. Every guarantee developed in this thesis is a statement
+about the distribution from which the samples were drawn. Whether such a
+guarantee transfers to the distribution encountered in deployment, when
+samples come from a simulator or from historical records that represent
+the target system imperfectly, is a separate question that this thesis
+does not address; distributionally robust formulations
+\citep{chen2024} are a natural direction for that question.
+ 
 Two anchor papers bound the territory. \citet{keil2021}, with the earlier
 preprint \citet{keil2020} and the computational follow-up
 \citet{keil2021warm}, supply the constructive, engineering side: biased
@@ -992,34 +1055,44 @@ and finance \citep{liu2022}, and the comparative baselines are the
 classical ones: scenario optimization \citep{calafiore2006,campi2008},
 sample average approximation \citep{luedtke2008,pagnoncelli2009},
 parametric reformulation \citep{charnes1963}, and convex risk surrogates
-\citep{rockafellar2000,nemirovski2006}.
+\citep{rockafellar2000,nemirovski2006}. Further smooth alternatives
+exist for structured settings, notably polynomial chaos expansions
+\citep{xiu2002} and spheric-radial gradient formulae for Gaussian-like
+laws \citep{vanackooij2014}; a systematic benchmark against these lies
+outside the scope of this thesis and is noted as future work.
 
 \subsubsection{Research questions and roadmap}
 \label{ssec:rqs}
 
 Four research questions organize everything that follows.
 \begin{itemize}
-  \item \textbf{RQ1 (formulation):} how is a chance-constrained problem
+  \item \textbf{RQ1: formulation} how is a chance-constrained problem
   reformulated through KDE over constraint residuals, for individual and
   joint constraints, and under what conditions is the reformulation
   mathematically justified?
-  \item \textbf{RQ2 (numerical behavior):} how does the KDE
+  \item \textbf{RQ2: numerical behavior} how does the KDE
   reformulation compare with deterministic, scenario-based, and
   parametric approaches in feasibility, objective value, conservatism,
   runtime, and sensitivity to sample size?
-  \item \textbf{RQ3 (bandwidth and smoothing):} how do bandwidth and
+  \item \textbf{RQ3: bandwidth and smoothing} how do bandwidth and
   smoothing choices shape feasibility, conservatism, and solver
   performance, given that $h$ acts on the optimization geometry and not
   only on estimation error?
-  \item \textbf{RQ4 (extension):} can the framework be strengthened
+  \item \textbf{RQ4: extension} can the framework be strengthened
   through one focused extension, specifically scalar violation statistics
   for joint chance constraints, optionally with log-sum-exp smoothing?
 \end{itemize}
 
-The argument now proceeds in three movements. Chapter~2 supplies the
-technical vocabulary. Chapters~3 --- 6 develop the mathematics in the order a practitioner would
-discover it. Chapter~7 onwards validates the framework
-experimentally. The destination is a defensible answer to a question every one of the systems in
-\cref{sec:deterministic} silently poses: how safe is safe enough, and what
-is the cheapest decision that honestly delivers it?
-
+The argument now proceeds in three movements. Part~2 supplies the
+technical vocabulary: the taxonomy of optimization under uncertainty, the
+theory of kernel density estimation, and the elements of numerical optimal
+control. Part~3 develops the mathematics in the order a practitioner would
+discover it: the blackbox sample-counting approach and its failure inside
+gradient-based solvers, the smooth unbiased KDE reformulation, the biased
+construction that restores the safety guarantee, and the convergence
+theory that certifies the whole. Part~4 validates the framework
+experimentally, from controlled benchmarks through the lunar landing
+problem, and distills the results into practical guidance. The aim
+is a defensible answer to a question that each of the systems in
+\cref{sec:deterministic} raises implicitly: how safe is safe enough, and
+what is the cheapest decision that reliably delivers it?
