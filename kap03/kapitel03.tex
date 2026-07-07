@@ -1,0 +1,326 @@
+\section{Smooth Approximation with Standard (Unbiased) KDE}
+\label{ch:unbiasedkde}
+
+Chapter~2 ended on a specification written by the failure of the
+blackbox: a single deterministic constraint that approximates the safe
+probability, depends smoothly on the decision, and carries an analytic
+gradient. This chapter constructs that object. The construction has five
+steps, and the order matters because each step is what makes the next
+one possible: the change of variables that moves estimation into
+residual space (\cref{sec:residualtransform}), the residual samples that
+the change of variables produces (\cref{sec:residualsamples}), the
+kernel density estimate built on them (\cref{sec:residualkde}), the
+integrated-kernel identity that collapses the probability into a finite
+smooth sum (\cref{sec:integratedkernel}), and the analytic gradient that
+the identity makes available (\cref{sec:gradient}). With the object
+built, \cref{sec:reformulation} assembles the full reformulated
+nonlinear program, and \cref{sec:properties} states its properties with
+the candor the thesis owes them, including the one property it lacks,
+whose repair is the business of Chapter~5.
+
+\subsection{The Residual-Space Transformation}
+\label{sec:residualtransform}
+
+The fundamental insight behind the KDE approach, previewed in Chapter~1
+and made load-bearing here, is a change of the space in which
+probabilities are estimated. The question the chance constraint
+literally poses is geometric: what is the probability that $\xi$ lands
+in the safe region $M(x) = \{\xi : g(x,\xi) \leq 0\}$, a subset of
+$\R^d$ whose shape deforms with every candidate decision? The question
+this thesis poses instead is scalar: what is the probability that the
+constraint residual
+\begin{equation}
+  Y(x) \;=\; g(x,\xi) ,
+  \label{eq:residual4}
+\end{equation}
+is non-positive? The two questions have the same answer, identically and
+without approximation,
+\begin{equation}
+  \Prob\bigl(Y(x) \leq 0\bigr)
+  \;=\; \Prob\bigl(g(x,\xi) \leq 0\bigr)
+  \;\geq\; 1-\varepsilon ,
+  \label{eq:equivalence}
+\end{equation}
+because the event $\{Y(x) \leq 0\}$ \emph{is} the event
+$\{\xi \in M(x)\}$, written in the variable the constraint actually
+speaks about.
+
+What changes is not the answer but the tractability of computing it,
+and the change is substantial rather than cosmetic. The original question demands
+the integral of an unknown $d$-dimensional density over a moving region,
+the second of the three difficulties catalogued in Chapter~1, with the
+curse of dimensionality of Chapter~2 attached to any attempt to estimate
+that density nonparametrically. The transformed question asks for a
+one-dimensional cumulative distribution function evaluated at a fixed
+point, zero. The dimension of $\xi$ no longer enters the estimation
+problem: whether the uncertainty lives in two dimensions or two
+hundred, the residual of an individual constraint is a scalar, and the
+constraint map $g$ itself has performed the dimension reduction, without
+information loss, because \cref{eq:equivalence} is an identity. This is
+the construction \citet{schuster2025} places at the foundation of the
+convergence theory, and it is the reason the KDE machinery of Chapter~2
+can be deployed in exactly the one-dimensional regime where it is
+strongest.
+
+\subsection{Residual Samples}
+\label{sec:residualsamples}
+
+For a fixed decision $x$ and the samples $\xi_1,\dots,\xi_N$ of
+Chapter~3, define the residual samples
+\begin{equation}
+  y_j(x) \;=\; g(x,\xi_j), \qquad j = 1,\dots,N .
+  \label{eq:ressamples}
+\end{equation}
+These are realizations of the random variable $Y(x)$, obtained by
+pushing each uncertainty sample through the constraint map at the
+current decision, and they are the raw material of everything that
+follows.
+ 
+One property of \cref{eq:ressamples} must be understood precisely,
+because it is the property that distinguishes this construction from
+ordinary density estimation and shapes the analysis of the entire
+thesis: the residual samples are functions of the decision variable.
+The uncertainty samples $\xi_j$ are drawn once and frozen; the residual
+cloud $\{y_j(x)\}$ moves whenever the optimizer moves $x$. Estimation
+and optimization are therefore not sequential stages but a single
+coupled process. The estimator is rebuilt, implicitly, at every iterate,
+and the constraint the solver sees is not a fixed statistical object but
+a family of them indexed by $x$. This coupling is what makes the
+smoothness of the next two sections consequential rather than
+decorative: a smooth estimator of a fixed density would be a statistical
+convenience, while a smooth estimator of a moving one is a differentiable
+constraint.
+
+\subsection{KDE of the Residual Distribution}
+\label{sec:residualkde}
+
+The Parzen-Rosenblatt estimator of Chapter~2, applied to the residual
+samples, estimates the density of $Y(x)$ as
+\begin{equation}
+  \hat{\rho}_h(z;x)
+  \;=\; \frac{1}{Nh}\sum_{j=1}^{N}
+  K\!\left(\frac{z - y_j(x)}{h}\right),
+  \label{eq:reskde}
+\end{equation}
+with kernel $K$ and bandwidth $h > 0$ carrying the meanings and the
+selection theory established there. The estimated probability that the
+constraint is satisfied is the mass this density places on the safe
+half-line,
+\begin{equation}
+  \hat{p}_h(x)
+  \;=\; \int_{-\infty}^{0} \hat{\rho}_h(z;x)\, dz .
+  \label{eq:phat-integral}
+\end{equation}
+Two features of \cref{eq:phat-integral} should be recognized as the
+direct payoff of the residual-space transformation. The integration
+region is fixed: it is $(-\infty, 0]$ for every decision, every problem,
+and every distribution, because all dependence on $x$ has migrated into
+the samples. And the integrand is a known finite sum of kernel bumps,
+not an unknown density, so the integral is not a numerical task but an
+algebraic one, which the next section carries out.
+
+\subsection{The Integrated Kernel Reformulation}
+\label{sec:integratedkernel}
+
+Substituting \cref{eq:reskde} into \cref{eq:phat-integral} and
+integrating term by term against the integrated kernel
+$F_K(t) = \int_{-\infty}^{t} K(s)\,ds$ yields the closed form
+\begin{equation}
+  \boxed{\;
+  \hat{p}_h(x)
+  \;=\; \frac{1}{N}\sum_{j=1}^{N}
+  F_K\!\left(\frac{-\,y_j(x)}{h}\right)
+  \;=\; \frac{1}{N}\sum_{j=1}^{N}
+  F_K\!\left(\frac{-\,g(x,\xi_j)}{h}\right)
+  \;} \, ,
+  \label{eq:integrated}
+\end{equation}
+and, for the Gaussian kernel, $F_K = \Phi$, the standard normal CDF, so
+\begin{equation}
+  \hat{p}_h(x)
+  \;=\; \frac{1}{N}\sum_{j=1}^{N}
+  \Phi\!\left(\frac{-\,g(x,\xi_j)}{h}\right) .
+  \label{eq:gaussiancase}
+\end{equation}
+The deterministic approximation of the chance constraint is then the
+single smooth inequality
+\begin{equation}
+  \hat{p}_h(x) \;\geq\; 1-\varepsilon .
+  \label{eq:smoothcc}
+\end{equation}
+ 
+\Cref{eq:integrated} is among the most important equations in
+this thesis, and the claim deserves its justification. Set
+\cref{eq:integrated} beside the indicator estimator of Chapter~3: the
+two expressions are term-for-term identical except that the
+discontinuous indicator $\ind\{g(x,\xi_j) \leq 0\}$ has been replaced by
+the smooth sigmoid $F_K(-g(x,\xi_j)/h)$, exactly the substitution drawn
+in Chapter~2's kernel figure. Every sample still votes on feasibility,
+but the vote is no longer binary; a sample near the constraint boundary
+contributes a graded value that responds continuously as the decision
+moves. The staircase has been replaced by a ramp, and the entire
+discontinuous probabilistic feasibility requirement of Chapter~3 by a
+smooth, differentiable, deterministic nonlinear constraint. \Cref{fig:smoothing}(a) shows the
+replacement on the dispatch problem: the staircase, the true
+probability, and the KDE constraint at three bandwidths, with the
+bandwidth visibly controlling how tightly the ramp hugs the step.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{kap03/figures/fig_smoothing.pdf}
+  \caption{What the reformulation hands the solver, computed on the
+  dispatch problem with $N = 200$ samples. (a) The empirical staircase,
+  the true probability $p(x)$, and the KDE constraint $\hat{p}_h(x)$ at
+  three bandwidths: small $h$ tracks the staircase including its noise,
+  Silverman's $h = 5.4$ tracks the truth, and large $h$ distorts the
+  curve and shifts the feasibility boundary where it crosses
+  $1-\varepsilon$. (b) The derivatives. The staircase derivative is zero
+  between samples and undefined at them (ticks on the axis); the KDE
+  derivative is an honest, analytically available density estimate that
+  gives the solver usable directional information at every $x$.}
+  \label{fig:smoothing}
+\end{figure}
+
+\subsection{Gradient Computation}
+\label{sec:gradient}
+
+Differentiating \cref{eq:integrated} by the chain rule, using
+$F_K' = K$, gives the gradient in closed form,
+\begin{equation}
+  \nabla_x\, \hat{p}_h(x)
+  \;=\; -\,\frac{1}{Nh}\sum_{j=1}^{N}
+  K\!\left(\frac{-\,g(x,\xi_j)}{h}\right)\nabla_x\, g(x,\xi_j) .
+  \label{eq:gradient}
+\end{equation}
+The formula repays a moment of reading, because its structure is
+central to the mechanism of the method. The gradient is a kernel-weighted average
+of the constraint gradients $\nabla_x g(x,\xi_j)$, and the weights
+$K(-g(x,\xi_j)/h)$ are largest for the samples whose residuals lie
+within a bandwidth of the boundary. The estimator automatically
+concentrates the solver's attention on the scenarios that are about to
+change status, which is exactly the directional information Chapter~3
+showed the indicator withholds. For the Gaussian kernel every quantity
+in \cref{eq:gradient} is elementary, second derivatives follow by the
+same chain rule, and sequential quadratic programming and
+interior-point methods receive exact first- and second-order
+information rather than finite differences of a staircase
+\citep{waechter2006}. \Cref{fig:smoothing}(b) displays the comparison
+directly: the staircase derivative is
+zero except at isolated undefined points, while the KDE derivative is a
+smooth, analytically available function at every decision. This
+differentiability is the core computational advantage of the KDE
+reformulation over blackboxes.
+
+\subsection{Stochastic Optimization Reformulated via Unbiased KDE}
+\label{sec:reformulation}
+
+Assembling the pieces, the chance-constrained program of Chapters~1
+through~3,
+\begin{equation}
+  \minimize_{x \in X}\; f(x)
+  \quad\text{subject to}\quad
+  \Prob\bigl(g(x,\xi) \leq 0\bigr) \geq 1-\varepsilon,
+  \label{eq:original4}
+\end{equation}
+becomes, after the KDE substitution,
+\begin{equation}
+  \minimize_{x \in X}\; f(x)
+  \quad\text{subject to}\quad
+  \frac{1}{N}\sum_{j=1}^{N}
+  F_K\!\left(\frac{-\,g(x,\xi_j)}{h}\right) \geq 1-\varepsilon .
+  \label{eq:reformulated4}
+\end{equation}
+Problem \cref{eq:reformulated4} is a deterministic nonlinear program,
+and its structure should be read off explicitly because it answers,
+point by point, the specification Chapter~3 issued. One smooth nonlinear
+inequality replaces one probabilistic constraint; the program does not
+grow with the sample size, in deliberate contrast to the scenario
+approach, because the samples $\xi_j$ enter as fixed parameters inside a
+single sum. The decision variable enters only through the residuals
+$g(x,\xi_j)$, so the constraint is exactly as smooth as the constraint
+map itself. Standard solvers, IPOPT, SNOPT, and SQP implementations,
+consume \cref{eq:reformulated4} directly, with the analytic derivatives
+of \cref{sec:gradient} supplied through the modeling layer
+\citep{waechter2006}. \Cref{fig:pipeline} draws the complete loop: the
+frozen samples and the moving decision meet in the residuals, the KDE
+turns the residuals into a smooth constraint value and gradient, and the
+solver feeds the next iterate back into the residual map. This loop is
+the computational object the remainder of the thesis studies, extends,
+and stress-tests.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\textwidth]{kap03/figures/fig_pipeline.pdf}
+  \caption{TThe reformulation as a computational loop. Uncertainty
+  samples are drawn once and frozen; at each iterate the constraint map
+  produces the residual cloud $y_j(x)$, the kernel estimator converts
+  the cloud into the smooth constraint $\hat{p}_h(x) \geq 1-\varepsilon$
+  with value and analytic gradient, and the nonlinear programming solver
+  returns the next iterate to the residual map. One smooth inequality
+  replaces one probabilistic constraint, and the program size is
+  independent of $N$.}
+  \label{fig:pipeline}
+\end{figure}
+
+\subsection{Properties of the Unbiased KDE Approximation}
+\label{sec:properties}
+
+The reformulation \cref{eq:reformulated4} has four properties, and the
+thesis states all four with equal directness because the fourth is a
+genuine limitation. First, it is smooth: for kernels with differentiable
+$F_K$, the Gaussian above all, the constraint is twice continuously
+differentiable in $x$ wherever $g$ is, and the derivatives are the
+closed forms of \cref{sec:gradient}. Second, it is consistent: as
+$N \to \infty$ with $h \to 0$ and $Nh \to \infty$, the estimate
+$\hat{p}_h(x)$ converges to the true probability
+$\Prob(g(x,\xi) \leq 0)$, inheriting the classical consistency of the
+kernel estimator \citep{parzen1962,silverman1986}, and under the
+conditions of \citet{schuster2025} the convergence lifts from the
+constraint to the optimization problem itself, optimal values and
+solution sets included. It is instructive to separate the two error
+sources at play, as anticipated in Chapter~3: a random sampling error of
+order $N^{-1/2}$, inherited from the finite sample, and a deterministic
+smoothing error controlled by the bandwidth, introduced by the kernel
+\citep{silverman1986,wand1995}. The conditions $h \to 0$ and
+$Nh \to \infty$ balance exactly these two contributions, and the
+biased construction of Chapter~5 acts on the second source alone,
+giving it a sign rather than removing it. Third, the bandwidth controls a genuine
+trade-off: \cref{fig:smoothing}(a) shows small $h$ reproducing the
+staircase together with its sampling noise and large $h$ distorting the
+feasible boundary, so $h$ is not a nuisance parameter but a design
+variable, the optimization-versus-AMISE question flagged in Chapter~2
+and studied experimentally in Part~4.
+ 
+Fourth, and importantly for the structure of this thesis, the
+approximation is not conservative. A symmetric kernel smooths the
+indicator from both sides, so in finite samples the estimate
+$\hat{p}_h(x)$ can exceed the true probability, and the constraint
+$\hat{p}_h(x) \geq 1-\varepsilon$ can certify a decision the true chance
+constraint rejects. \Cref{fig:optimism} measures the consequence on the
+dispatch problem: across three thousand independent trials at
+$N = 100$, the decision certified by the unbiased KDE violates the true
+reliability target in $39\%$ of trials. The failures are individually
+small, the estimator is consistent and the misses concentrate near the
+target, but they are systematic, and a reformulation whose certificate
+fails in roughly four of ten trials functions as an accuracy method
+rather than a safety method. For applications where $\varepsilon$ is a
+hard requirement, a lander, a grid code, a risk mandate, accuracy alone
+does not meet the requirement; a conservative guarantee is needed. Constructing a KDE reformulation that keeps every
+property of this chapter while erring, by design, only on the safe side
+is the contribution of the biased kernels of \citet{keil2021}, and it is
+the business of the next chapter.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.82\textwidth]{kap03/figures/fig_optimism.pdf}
+  \caption{The unbiased reformulation is accurate but not safe. For
+  $3000$ independent trials of the dispatch problem at $N = 100$, the
+  decision certified by the unbiased KDE constraint at
+  $1-\varepsilon = 0.95$ is evaluated against the true demand law. The
+  achieved reliability concentrates near the target, the signature of a
+  consistent estimator, but falls below it in $39\%$ of trials: the
+  certificate $\hat{p}_h(x) \geq 1-\varepsilon$ is optimistic almost as
+  often as not. This finite-sample optimism is the defect the biased
+  construction of Chapter~5 removes.}
+  \label{fig:optimism}
+\end{figure}
