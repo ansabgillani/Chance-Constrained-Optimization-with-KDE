@@ -1,98 +1,113 @@
 \section{Stochastic Optimization and Chance Constraints}
 \label{ch:background}
 
-Chapter~1 settled two points this chapter builds on. First, the chance
-constraint is the right way to express reliability requirements, since it
-is the only formulation in which the decision maker sets the protection
-level directly. Second, it is hard to enforce, for three structural
-reasons: a usually non-convex feasible set, a probability with no closed
-form, and an indicator function with no usable derivative. Chapter~1
-explained why this matters; this chapter supplies the tools.
-
-The order is deliberate, as each part prepares the next.
-\Cref{sec:taxonomy} sets out the taxonomy of optimization under
-uncertainty, since the special place of chance constraints only makes
-sense once the alternatives are defined. \Cref{sec:classical} presents
-the classical theory and the cases where convexity holds, showing how
-little of that structure survives under realistic distributions.
-\Cref{sec:methods} then surveys six approximation methods, each described
-through its core idea, main advantage, and main limitation, and each
-answering a weakness of the previous one. 
-
-With the gap identified, \cref{sec:kde} introduces the tool used to fill
-it, kernel density estimation, presented from first principles because
-optimization readers will rarely have seen it this way.
-\Cref{sec:litmap} closes by drawing the existing work that combines KDE
-with chance constraints into a single account, whose one open thread is
-this thesis.
+Chapter 1 established two observations that this chapter takes as its
+starting point. The chance constraint is a natural mathematical language
+for reliability requirements, because its protection level is an explicit
+parameter under the decision maker's control. And it is hard to enforce
+for exactly three structural reasons: a generally non-convex feasible
+set, a probability with no closed form, and an indicator function with no
+usable derivative. What Chapter~1 motivated, this chapter equips. The
+argument proceeds in a deliberate order, because each piece is the
+precondition of the next. \Cref{sec:taxonomy} fixes the taxonomy of
+optimization under uncertainty, since the claim that chance constraints
+occupy a unique position can only be defended once the alternatives are
+stated precisely. \Cref{sec:classical} develops the classical theory and
+its convexity islands, establishing both how much structure the field has
+secured and how little of it survives contact with realistic
+distributions. \Cref{sec:methods} then confronts the consequence: six
+approximation methods, surveyed in a fixed rhythm of core idea, main
+advantage, and primary limitation, each method responding to a
+limitation of the one before it. The survey includes the blackbox approach, the most
+assumption-free option of all and the deliberate starting point of the
+methodological development in Part~3. With the landscape mapped and its
+gap identified, \cref{sec:kde} introduces the instrument this thesis uses
+to fill it, kernel density estimation, built up from first principles
+because optimization readers will rarely have met it as an optimization
+tool. \Cref{sec:litmap} closes the chapter by organizing the literature
+that has already combined KDE with chance constraints into a single
+narrative, whose one open end is the work of this thesis.
 
 \subsection{A Taxonomy of Optimization Under Uncertainty}
 \label{sec:taxonomy}
 
+This section organizes the main paradigms of optimization under
+uncertainty along two axes, the distributional information a model
+consumes and the protection its solution provides. It first
+characterizes the four classical answers and then places them on a
+single conceptual map, which locates the position that chance-constrained
+programming occupies.
+
 \subsubsection{Four paradigms}
 \label{ssec:paradigms}
 
-Every approach to optimization under uncertainty answers two questions:
-how much information about the random parameter $\xi$ the model uses, and
-how much feasibility against $\xi$ the solution guarantees. These two axes are
-not just a way of organizing the discussion; they are how the field
-actually divides. Four answers cover the classical landscape, and fixing
-them precisely now is what turns the claim made for chance constraints in
-\cref{ssec:map} into a real statement.
-
-\emph{Deterministic optimization} uses the least information and
-guarantees the least feasibility. The random parameter is replaced by a
-single representative value, usually a mean or nominal forecast, and the
-problem is solved as if that value were certain. Its formulation,
-failure mechanism, and near $50\%$ violation rates were treated in
-Chapter~1 and need no repetition; here it is simply the zero point
-against which the other paradigms are measured.
-
-\emph{Robust optimization} uses set information. The modeler specifies an
-uncertainty set $\Xi$ assumed to contain every relevant realization, and
-feasibility is enforced for all of them at once, $g(x,\xi) \leq 0$ for all
-$\xi \in \Xi$ \citep{soyster1973,bental2009}. The problems are minimax,
-and a mature duality theory turns many into tractable deterministic
-equivalents. Feasibility is maximal over $\Xi$ but all-or-nothing. Every
-point is covered equally, including points of vanishing probability, and
-the objective pays for all of them.
-
-\emph{Stochastic programming} uses the full distribution and optimizes in
-expectation. In its two-stage form, a here-and-now decision $x$ is taken
-before $\xi$ is revealed and a recourse decision $y(\xi)$ repairs the
-outcome afterwards, with objective $f(x) + \E[\,Q(x,\xi)\,]$, where $Q$ is
-the optimal recourse cost \citep{dantzig1955,birge2011}. It is the natural
-choice when violations are costs rather than failures. Its coverage is
-in turn soft. The solution is good on average, but nothing guarantees the 
-probability that a given realization behaves poorly.
-
-\emph{Chance-constrained programming}, the framework of this thesis, also
-uses the complete distribution (or samples from it), but spends that
-information on a hard probabilistic guarantee rather than an average:
-$\Prob(g(x,\xi) \leq 0) \geq 1-\varepsilon$
-\citep{charnes1959,prekopa1995}. In stochastic programming, violations are 
-treated as costs. In chance constraints, violations are limited directly. 
-The allowed limit, represented by $\varepsilon$, 
-is chosen by the decision maker. This approach is appropriate when violations 
-are clear failure events, such as a crash, load shedding, or a risk-limit breach,
-and the main concern is how often they occur.
+Every approach to optimization under uncertainty answers the same two
+questions: how much information about the random parameter $\xi$ the
+model consumes, and how much protection against $\xi$ the solution
+provides. These two axes are more than a convenience of exposition; they capture
+much of how the field divides in practice. Four canonical answers
+organize the classical landscape, and fixing them precisely now supports
+the position claimed for chance constraints in \cref{ssec:map}.
+ 
+\emph{Deterministic optimization} consumes the least information and
+provides the least protection. The random parameter is replaced by a
+single representative value, almost always its mean or a nominal
+forecast, and the problem is solved as if that value were certain. The
+formulation, its systematic failure mechanism, and the near $50\%$
+violation rates it produces were dissected at length in Chapter~1 and
+need no repetition; in this taxonomy it serves as the zero point against
+which every other paradigm is measured.
+ 
+\emph{Robust optimization} consumes set information: the modeler
+specifies an uncertainty set $\Xi$ believed to contain every relevant
+realization, and feasibility is enforced for all of them simultaneously,
+$g(x,\xi) \leq 0$ for all $\xi \in \Xi$ \citep{soyster1973,bental2009}.
+The resulting problems are minimax in character, and a mature duality
+theory converts many of them into tractable deterministic equivalents.
+Protection is maximal over $\Xi$, but it is an all-or-nothing property:
+every point of the set is defended at equal priority, including points of
+vanishing probability, and the objective pays for all of them.
+ 
+\emph{Stochastic programming} consumes the full distribution and
+optimizes in expectation. In its two-stage form, a here-and-now decision
+$x$ is taken before $\xi$ is revealed and a recourse decision $y(\xi)$
+repairs the outcome afterwards, with the objective
+$f(x) + \E[\,Q(x,\xi)\,]$ where $Q$ is the optimal recourse cost
+\citep{dantzig1955,birge2011}. The paradigm is the natural choice when
+violations are not failures but costs: a shortfall that can be bought
+back at a price belongs in the objective, not in a constraint. Its
+protection statement is correspondingly soft. The solution is good on
+average, but nothing bounds the probability that any individual
+realization behaves badly.
+ 
+\emph{Chance-constrained programming}, the framework this thesis lives
+in, also consumes the full distribution (or samples from it) but spends
+that information on a hard probabilistic guarantee rather than an
+average: $\Prob(g(x,\xi) \leq 0) \geq 1-\varepsilon$
+\citep{charnes1959,prekopa1995}. Where stochastic programming prices
+violations, chance constraints ration them, and the ration $\varepsilon$
+is chosen by the decision maker. This is the correct paradigm when a
+violation is a discrete failure event whose frequency, not whose average
+cost, is regulated: a lander crash, a load-shedding event, a breach of a
+risk mandate.
 
 \subsubsection{A conceptual map and where this thesis sits}
 \label{ssec:map}
 
-\Cref{fig:taxonomy} places the four paradigms on the two axes above.
-Reading the map gives three observations that recur throughout the thesis.
-First, the paradigms are not competitors on a single scale; they sit at
-different points of a two-dimensional trade-off, and each is the right
-tool somewhere, as Chapter~1 noted for the two extremes. Second,
-chance-constrained programming is the only paradigm whose protection level
-is a continuous dial rather than a fixed point: moving $\varepsilon$ from
-$0.5$ toward $0$ shifts the solution continuously from mean-value behavior
-toward worst-case behavior over the support. Third, this dial comes at the
-price identified in Chapter~1: the probability operator destroys the
-convexity, evaluability, and smoothness that the other three paradigms
-keep, which is why the approximation methods of \cref{sec:methods} are
-needed at all.
+\Cref{fig:taxonomy} arranges the four paradigms on the two axes just
+described. Reading the map yields three observations that recur
+throughout the thesis. First, the paradigms are not competitors on a
+single scale of sophistication; they occupy different points of a
+two-dimensional trade-off, and each is the right tool somewhere, as
+Chapter~1 acknowledged for the two extremes. Second, chance-constrained
+programming is the only paradigm whose protection level is a continuous
+dial rather than a fixed point: sweeping $\varepsilon$ from $0.5$ toward
+$0$ moves the solution continuously from mean-value behavior toward
+worst-case behavior over the support. Third, the dial comes at the price
+identified in Chapter~1: the probability operator destroys the convexity,
+the evaluability, and the smoothness that the other three paradigms
+retain, which is why the approximation methods of \cref{sec:methods}
+exist at all.
 
 \begin{figure}[t]
   \centering
@@ -109,22 +124,24 @@ needed at all.
   \label{fig:taxonomy}
 \end{figure}
 
-Two remarks complete the map. Hybrid formulations exist and are actively
-studied: distributionally robust chance constraints enforce the guarantee
-for every distribution in an ambiguity ball around the empirical law,
-combining the chance-constrained dial with robust-style protection against
-estimation error \citep{chen2024,liu2022}. They return in
-\cref{ssec:tradeoffs} as a row of the comparison table. Also, the
-boundaries between paradigms are modeling choices, not laws of nature: the
-same problem can often be written in several of them, and part of the
-modeler's craft is matching the paradigm to the reliability language of
-the application. The applications of this thesis, surveyed in Chapter~1,
-all speak in failure probabilities, which fixes the choice.
+Two boundary remarks complete the map. Hybrid formulations exist and are
+actively studied: distributionally robust chance constraints enforce the
+probabilistic guarantee for every distribution in an ambiguity ball
+around the empirical law, combining the chance-constrained dial with
+robust-style protection against estimation error
+\citep{chen2024,liu2022}. They reappear in \cref{ssec:tradeoffs} as a row
+of the comparison table. And the boundaries between paradigms are
+formulation choices, not laws of nature: the same engineering problem can
+often be written in several of them, and part of the modeler's craft is
+recognizing which paradigm matches the actual reliability language of the
+application. The applications of this thesis, surveyed in Chapter~1, all
+speak in failure probabilities, which fixes the choice.
+
 \subsection{Classical Chance-Constrained Programming}
 \label{sec:classical}
 
 The taxonomy assigned chance-constrained programming its position; this
-subsection establishes its content. The order of business is the one any
+section establishes its content. The order of business is the one any
 mature theory imposes: first the canonical formulations and the
 equivalent forms the rest of the thesis computes with, then the strongest
 structural result the field possesses, and finally an honest accounting
@@ -136,16 +153,16 @@ size of the problem this thesis addresses.
 \subsubsection{Origins and canonical formulations}
 \label{ssec:origins}
 
-Chance constraints were not invented as mathematics; they were forced
-into existence by a scheduling problem. Planning heating-oil production
-at a refinery, \citet{charnes1959} faced demands that no fixed plan could
-satisfy on every realization, and drew the conclusion the field has
-operated on ever since: a planning constraint need not hold always, only
-sufficiently often, and the required frequency belongs in the model as a
-first-class quantity. \citet{charnes1963} supplied the first
-deterministic equivalents for the resulting programs, and
-\citet{miller1965} extended the framework from individual to joint
-constraints, recognizing that a system of requirements demands a
+Chance constraints emerged from a concrete scheduling problem. Planning
+heating-oil production under uncertain demand, \citet{charnes1958} faced
+requirements that no fixed plan could satisfy on every realization, and
+drew a conclusion the field has built on since: a planning constraint
+need not hold always, only sufficiently often, and the required frequency
+belongs in the model as a first-class quantity. \citet{charnes1959}
+formalized the resulting notion of chance-constrained programming,
+\citet{charnes1963} supplied early deterministic equivalents for such
+programs, and \citet{miller1965} extended the framework from individual
+to joint constraints, recognizing that a system of requirements demands a
 probability statement about the system, not about each row separately.
 The decisive consolidation came with Pr{\'e}kopa, whose log-concavity
 theory (\cref{ssec:logconcavity}) and monograph \citep{prekopa1995}
@@ -178,12 +195,12 @@ Throughout Part~3, the scalar random variable $Y(x) = g(x,\xi)$
 introduced in Chapter~1 carries this event: $\{g(x,\xi) > 0\}$ is exactly
 $\{Y(x) > 0\}$, and every approximation method in this chapter is at
 bottom a different way of estimating the upper tail of $Y(x)$ at zero.
-
+ 
 The pair in \cref{eq:ccpair} conceals an asymmetry that practitioners
 learn quickly. Individual constraints control each requirement in
 isolation and say nothing about simultaneous satisfaction; the joint
 constraint controls the system but is strictly harder, both statistically
-(the event is an intersubsection) and computationally (the feasible set
+(the event is an intersection) and computationally (the feasible set
 geometry worsens). The classical bridge is Boole's inequality: enforcing
 individual constraints at levels $\varepsilon_r$ with
 $\sum_r \varepsilon_r \leq \varepsilon$ implies the joint constraint at
@@ -202,7 +219,7 @@ theorem states that if $\xi$ has a log-concave distribution and the set
 $\{(x,\xi) : g(x,\xi) \leq 0\}$ is convex, then the probability function
 $p(x) = \Prob(g(x,\xi) \leq 0)$ is log-concave in $x$, and consequently
 every upper level set $\{x : p(x) \geq 1-\varepsilon\}$ is convex
-\citep{prekopa1971,prekopa1995}. On this island, chance-constrained
+\citep{prekopa1971,prekopa1995,prekopa2003}. On this island, chance-constrained
 programming is convex programming: local solutions are global, duality
 holds, and mature solvers apply.
 
@@ -227,22 +244,22 @@ $90\%$ level set of $p(x)$ is convex, panel (a). Replacing the Gaussian
 by a two-component mixture, a minimal departure from log-concavity,
 produces the non-convex level set of panel (b), the continuous analogue
 of the union-of-half-spaces construction in Chapter~1. The figure
-settles a question of attribution that matters for everything downstream:
-non-convexity is not caused by the constraint function, which is
-identical in both panels, but by the shape of the distribution. The
-geometry of the feasible set is inherited from the geometry of the law of
-$\xi$, and no amount of cleverness on the constraint side can repair what
-the distribution side has broken.
-
+clarifies a question of attribution that matters for everything
+downstream: the non-convexity here is not caused by the constraint
+function, which is identical in both panels, but by the shape of the
+distribution. The geometry of the feasible set is inherited from the
+geometry of the law of $\xi$, and modifications on the constraint side
+alone cannot restore what the distributional side has removed.
+ 
 This inheritance is exactly why the log-concavity island, elegant as it
 is, carries so little of the practical load. The distributions documented
 in the application domains of Chapter~1, skewed and heavy-tailed forecast
 errors, multimodal disturbance mixtures, heavy-tailed returns, are
 precisely the laws that leave the log-concave class. The conclusion is
-unavoidable and worth stating without decoration: the positive theory
-applies where the uncertainty is well behaved, and the uncertainty that
-motivates chance constraints in the first place rarely is. The general
-case is not an edge case. It is the case.
+worth stating plainly: the positive theory applies where the uncertainty
+is well behaved, and the uncertainty that motivates chance constraints in
+the first place often is not. For the problems considered in this thesis,
+the general case is therefore the typical case rather than an exception.
 
 \subsubsection{The general case}
 \label{ssec:generalcase}
@@ -250,7 +267,7 @@ case is not an edge case. It is the case.
 Outside the islands, the three difficulties of Chapter~1 stand in full
 force, and restating them in the violation-form language of
 \cref{eq:violation} is more than housekeeping: the methods of the next
-subsection are organized by which difficulty each one attacks, and the
+section are organized by which difficulty each one attacks, and the
 restatement is the index of that organization. The feasible set
 $\{x : \Prob(Y(x) > 0) \leq \varepsilon\}$ is in general non-convex, so
 global optimality is out of reach and the realistic target is a
@@ -261,16 +278,16 @@ estimated, almost always from samples. And the natural sample estimate is
 an average of indicator functions, a piecewise-constant object whose
 gradient is zero almost everywhere, useless to exactly the solvers that
 handle nonlinearity well.
-
+ 
 The landscape of \cref{sec:methods} is best previewed as a matrix of
-concessions. Every classical method buys back tractability by
-surrendering one of three things: \emph{generality} (the parametric
+concessions. Each classical method buys back tractability by
+conceding one of three things: \emph{generality} (the parametric
 route assumes the distribution), \emph{exactness} (the convex
 restrictions enforce a stronger constraint than required), or
 \emph{smoothness} (the sample-enforcement routes hand the solver a
-non-differentiable or combinatorial problem). No classical method
-preserves all three; this is not an accident of history but a record of
-where six decades of effort have found the trade-offs to lie. The case
+non-differentiable or combinatorial problem). To the best of our
+knowledge, no classical method preserves all three at once, which
+reflects where decades of research have located the trade-offs. The case
 this thesis builds, beginning in \cref{sec:kde}, is that estimating the
 density of $Y(x)$ with a kernel estimator concedes none of the three
 outright, paying instead with a bias that can be controlled and, in the
@@ -279,7 +296,7 @@ biased-KDE construction, even directed to the safe side.
 \subsection{Standard Approximation Methods and Their Trade-offs}
 \label{sec:methods}
 
-This subsection positions the thesis relative to the landscape of existing
+This section positions the thesis relative to the landscape of existing
 approaches, and it is built as a progression rather than a catalogue.
 Each method is presented in the same fixed rhythm, core idea, main
 advantage, primary limitation, and each method enters the survey as the
@@ -290,7 +307,7 @@ scenario approach forfeits, the convex restrictions restore the
 tractability that sample averaging destroys, quantile smoothing recovers
 the exactness the restrictions surrender, and the blackbox approach
 strips away the last remaining assumption and pays the full price of
-doing so. The subsection closes with the comparison this ordering has been
+doing so. The section closes with the comparison this ordering has been
 building toward, first as a table and then as a computed experiment on a
 problem where the truth is known exactly.
 
@@ -315,22 +332,23 @@ where $\Phi^{-1}$ is the standard normal quantile
 \citep{charnes1963,shapiro2014}. For $\varepsilon \leq 1/2$ the right
 side of \cref{eq:socp} is a second-order cone constraint: convex, smooth,
 and solvable at scale by every modern conic solver.
-
-The advantage is total within its domain: exactness, convexity,
+ 
+The advantages within its domain are substantial: exactness, convexity,
 smoothness, and speed, simultaneously. This is why the Gaussian
 reformulation dominates practice in fields such as chance-constrained
 optimal power flow \citep{bienstock2014} and why it serves as the
 reference baseline of the experimental chapters of this thesis. When the
 Gaussian assumption holds, the problem identified in Chapter~1 simply
 does not exist.
-
-The limitation is that the entire construction is the assumption. Every
-step of \cref{eq:socp} flows from the normality of $Y(x)$, and Chapter~1
-quantified what happens when that normality is false: a skewed law whose
-tail mass is underestimated by a factor of seven turns a certified
-$0.5\%$ failure rate into an actual rate above $1.5\%$. The reformulation
-does not degrade gracefully; it reports a guarantee with full confidence
-whether or not the guarantee is true. Extensions to other named families
+ 
+The limitation is that the construction rests entirely on the
+distributional assumption. Each step of \cref{eq:socp} follows from the
+normality of $Y(x)$, and Chapter~1 quantified what can happen when that
+normality does not hold: a skewed law whose tail mass is underestimated
+by a factor of seven turns a certified $0.5\%$ failure rate into an
+actual rate above $1.5\%$. The reformulation offers no internal warning
+in such cases; it reports the same certificate whether or not the
+underlying assumption is met. Extensions to other named families
 and to Gaussian-like laws exist, including analytic gradient formulae for
 the probability function via spheric-radial decomposition
 \citep{vanackooij2014}, but they relocate the assumption rather than
@@ -351,7 +369,7 @@ chance constraint is replaced by $N$ hard deterministic constraints,
 The randomness now lives in the optimization problem itself, whose
 solution $x^{\star}_N$ is a random variable, and the theory asks how
 likely that solution is to satisfy the original chance constraint.
-
+ 
 The advantage is the strength of the answer. For convex problems,
 \citet{calafiore2006} showed that
 $N \geq \tfrac{2}{\varepsilon}\bigl(\ln\tfrac{1}{\beta} + n\bigr)$
@@ -396,13 +414,13 @@ solutions of the approximated problem converge to solutions of the true
 one under mild conditions \citep{luedtke2008,pagnoncelli2009}. Unlike the
 scenario approach, SAA is allowed to discard its worst samples, so it
 tracks the true constraint rather than restricting it.
-
+ 
 The advantage is exactly this statistical fidelity: \cref{eq:saa} is the
 right quantity to compute, the empirical frequency of the event the
 constraint speaks about, with tunable conservatism through
 $\hat{\varepsilon}$ and well-developed asymptotic theory.
-
-The limitation is that \cref{eq:saa} is computationally hostile. The
+ 
+The limitation is that \cref{eq:saa} is computationally challenging. The
 indicator makes $\hat{v}_N$ piecewise constant in $x$: its gradient
 vanishes almost everywhere and fails to exist on the boundary, so
 derivative-based nonlinear solvers receive no signal. The standard
@@ -427,18 +445,17 @@ $\varepsilon$, the Rockafellar-Uryasev representation
   \CVaR_{1-\varepsilon}\bigl(Y(x)\bigr)
   = \min_{t \in \R}\;
   \Bigl\{\, t + \tfrac{1}{\varepsilon}\,
-  \E\bigl[(Y(x) - t)_{+}\bigr] \Bigr\}
+  \E\bigl[(Y(x) - t)_{+}\bigr] \Bigr\} ,
   \label{eq:cvar}
 \end{equation}
 defines the average of the worst $\varepsilon$ fraction of outcomes
 \citep{rockafellar2000}. Since the conditional value-at-risk dominates
-the value-at-risk, the implication
-$\CVaR_{1-\varepsilon}(Y(x)) \leq 0 \Rightarrow
-\Prob(Y(x) > 0) \leq \varepsilon$ always holds: the CVaR constraint is an
+the value-at-risk, enforcing $\CVaR_{1-\varepsilon}(Y(x)) \leq 0$
+implies $\Prob(Y(x) > 0) \leq \varepsilon$, so the CVaR constraint is an
 inner approximation of the chance constraint, and
 \citet{nemirovski2006} established it as the tightest convex one in a
 natural family.
-
+ 
 The advantages are convexity and safety in the same package. If
 $Y(x)$ is convex in $x$, then so is the CVaR constraint, the
 representation \cref{eq:cvar} is smooth after the standard reformulation
@@ -447,7 +464,7 @@ provably feasible for the original chance constraint. Nothing in the
 construction requires knowing the distribution; the expectation in
 \cref{eq:cvar} is routinely replaced by a sample average, which preserves
 convexity.
-
+ 
 The limitation is the direction of the inequality. CVaR controls the
 magnitude of violations, not merely their frequency, so it enforces more
 than the chance constraint asks: a decision with rare but large
@@ -482,7 +499,7 @@ it, constructing a differentiable sample-based approximation of
 $Q_{1-\varepsilon}(Y(x))$ and embedding it in a sequential quadratic
 programming framework with trust regions tailored to the resulting
 nonlinear program.
-
+ 
 The advantages mirror those claimed for KDE in Chapter~1:
 distribution-free operation, smoothness, gradients that mainstream
 nonlinear solvers consume, and statistical guarantees for the smoothed
@@ -490,7 +507,7 @@ estimator. The method demonstrates convincingly that the
 smooth-sample-approximation paradigm works at scale, and its existence is
 part of the evidence that this paradigm, rather than enforcement or
 restriction, is the right one for nonlinear problems.
-
+ 
 The difference, and the limitation relative to this thesis, is the object
 being smoothed. Quantile smoothing approximates one functional of the
 residual law, the $(1-\varepsilon)$-quantile, and its smoothing is tied
@@ -523,15 +540,15 @@ Optimization then proceeds with methods that consume only function
 values: penalty formulations driven by derivative-free solvers such as
 Nelder-Mead or pattern search, surrogate-assisted search, or
 grid-and-refine heuristics over low-dimensional decision spaces.
-
+ 
 The advantage is universality. The blackbox approach applies to
 discontinuous simulators, legacy codes, and constraint maps with no
-analytic form, settings where every other method in this subsection is
+analytic form, settings where every other method in this section is
 inapplicable in principle. It is also honest: $\hat{v}_N(x)$ is an
 unbiased estimate of the true violation probability, so the quantity
 being thresholded is statistically the right one, with none of the
 conservatism of scenarios or CVaR.
-
+ 
 The limitations are what Part~3 is built to overcome, and they are worth
 stating sharply because they motivate everything that follows. The
 response surface seen by the optimizer is a staircase: piecewise
@@ -541,16 +558,17 @@ corrupted by sampling noise of order $N^{-1/2}$. Derivative-free methods
 tolerate this landscape but pay in evaluations, and their cost grows
 rapidly with the dimension of $x$; in the optimal control problems of
 this thesis, where $x$ is a discretized trajectory with hundreds of
-components, the approach is computationally out of the question. The
-blackbox is not wrong; it is blind. Chapter~3 develops it carefully,
-quantifies exactly where it fails, and uses that failure to motivate the
-smooth reformulation that the rest of the thesis studies.
+components, the approach becomes computationally impractical. The
+blackbox approach is statistically sound but offers the solver no
+directional information. Chapter~3 develops it carefully, identifies
+where and why it reaches its limits, and uses that analysis to motivate
+the smooth reformulation that the rest of the thesis studies.
 
 \subsubsection{Trade-offs in one view}
 \label{ssec:tradeoffs}
 
 The progression is complete, and its lesson can now be stated as a
-single claim the rest of the subsubsection substantiates: the classical
+single claim the rest of the subsection substantiates: the classical
 methods partition the desirable properties among themselves, and none
 holds all of them at once. \Cref{tab:methods} condenses the survey into
 the four properties that matter for this thesis: whether the method is
@@ -603,11 +621,11 @@ the lognormal demand law is known exactly and the true reliability of any
 decision can be computed in closed form. Five methods produce a capacity
 decision from $N$ samples at target reliability $0.95$, and the figure
 reports the reliability actually achieved, averaged over $400$
-independent sample draws per $N$. The behaviors predicted by the survey
-appear exactly. The Gaussian reformulation converges confidently to the
-wrong answer near $0.937$, an unsafe plan certified as safe, and more
-data does not repair it because the error is in the assumption, not the
-estimate. The scenario approach climbs toward reliability one, drifting
+independent sample draws per $N$. The behaviors anticipated by the survey
+appear clearly. The Gaussian reformulation converges to a value near
+$0.937$, below the target, so that an unsafe plan is certified as safe,
+and additional data does not correct this because the error lies in the
+assumption rather than in the estimate. The scenario approach climbs toward reliability one, drifting
 further from the target as $N$ grows, the conservatism that defends
 samples it is allowed to ignore. CVaR stabilizes near $0.978$, safe but
 structurally above target, paying for tail magnitudes the constraint
@@ -633,27 +651,37 @@ that matters once the decision variable stops being a scalar.
   \label{fig:methods}
 \end{figure}
 
-The experiment fixes the gap this thesis occupies. What is missing from
-the classical landscape is a method that is simultaneously
-distribution-free, smooth, non-conservative by default but
-conservative on demand, and equipped with convergence guarantees. The
-two KDE rows of \cref{tab:methods} claim exactly this combination. The
+Two further smooth routes deserve mention for completeness, although
+they lie outside the comparison of \cref{tab:methods} because they
+exploit structure that the data-driven setting of this thesis does not
+assume. Polynomial chaos expansions \citep{xiu2002} propagate
+uncertainty through smooth dynamics with high accuracy when the law of
+$\xi$ is known and sufficiently regular, and spheric-radial
+decomposition \citep{vanackooij2014} yields analytic gradients of the
+probability function for Gaussian and Gaussian-like laws. Both are
+strong alternatives within their domains of validity; a systematic
+benchmark against them lies outside the scope of this thesis.
+ 
+The experiment makes the gap this thesis addresses concrete. What
+appears to be missing from the classical landscape is a method that is
+simultaneously distribution-free, smooth, non-conservative by default
+but conservative on demand, and equipped with convergence guarantees.
+The two KDE rows of \cref{tab:methods} claim this combination. The
 remainder of the chapter introduces the estimator behind the claim and
 the literature that has already tested it.
-
 \subsection{Kernel Density Estimation}
 \label{sec:kde}
 
 The survey ended on a specification: a method that is distribution-free,
 smooth, non-conservative by default and conservative on demand, with
-convergence guarantees. The instrument that meets it is seventy years
-old. Kernel density estimation is standard equipment in statistics and
-largely unknown equipment in optimization, so this subsection introduces it
+convergence guarantees. An estimator with many of the required
+properties has been available for decades. Kernel density estimation is standard equipment in statistics and
+largely unknown equipment in optimization, so this section introduces it
 deliberately, from the definition through the choices a user must make,
 with one organizing emphasis throughout: the property optimization cares
 about and statistics rarely examines, the behavior of the estimator as a
 function to be differentiated and embedded in a solver. Read with that
-emphasis, the classical theory of this subsection is not background; it is
+emphasis, the classical theory of this section is not background; it is
 an inventory of exactly the assets and exactly the liabilities the
 reformulation of Part~3 inherits.
 
@@ -679,7 +707,7 @@ $\hat{F}_h(y) = \tfrac{1}{N}\sum_j
 $\mathcal{K}(t) = \int_{-\infty}^{t} K(s)\,ds$, available in closed form
 whenever $\mathcal{K}$ is. These are precisely the objects assembled in
 the residual-space construction of Chapter~1.
-
+ 
 The estimator is consistent under remarkably weak conditions: if
 $h \to 0$ and $Nh \to \infty$ as $N \to \infty$, then $\hat{\rho}_h$
 converges to $\rho$ in mean integrated squared error for essentially any
@@ -689,7 +717,7 @@ heavy tails, and multimodality alike. This distribution-free consistency
 is the property that earns KDE its place in this thesis, since the
 distributions of Chapter~1 are exactly the ones that defeat parametric
 fits.
-
+ 
 For the optimization context, one more elementary observation carries
 disproportionate weight. The estimator \cref{eq:kde2} is a finite sum of
 shifted, scaled copies of a single fixed function. When the samples
@@ -746,19 +774,19 @@ indicator, so every sample's contribution errs in the same, safe
 direction. Anticipating the formal treatment, this single picture is the
 biased-KDE method: choose the kernel so that smoothing and conservatism
 are the same act.
-
+ 
 Beyond these three, classical theory offers a reassurance that simplifies
 the rest of the thesis: the choice among standard symmetric kernels
 affects estimation efficiency only marginally, with the Gaussian
 sacrificing a few percent of efficiency relative to the Epanechnikov
-optimum \citep{silverman1986}. The kernel is therefore not where the
-estimation battle is won or lost. That battle belongs entirely to the
-bandwidth.
+optimum \citep{silverman1986}. The choice of kernel is therefore of secondary importance for
+estimation quality; the bandwidth is the considerably more consequential
+choice.
 
 \subsubsection{Bandwidth and the bias-variance trade-off}
 \label{ssec:bandwidth}
 
-The bandwidth governs everything. Small $h$ produces an estimate that
+The bandwidth is the decisive choice. Small $h$ produces an estimate that
 follows the samples closely: low bias, high variance, and a ragged
 density whose spurious modes are artifacts of the particular draw. Large
 $h$ produces a stable but blurred estimate: low variance, high bias, with
@@ -776,9 +804,10 @@ kernel and a twice-differentiable density, the asymptotic expansion
   \mu_2(K) = \int s^2 K(s)\,ds,
   \label{eq:amise}
 \end{equation}
-is minimized at $h^{*} = \bigl[R(K)/(\mu_2(K)^2
-R(\rho''))\bigr]^{1/5} N^{-1/5}$, giving the optimal rate
-$\mathrm{AMISE}(h^{*}) = O(N^{-4/5})$ \citep{silverman1986}.
+is minimized at a bandwidth of order $N^{-1/5}$, whose constant
+depends on $R(K)$, $\mu_2(K)$, and the curvature term $R(\rho'')$,
+giving the optimal rate $\mathrm{AMISE}(h^{*}) = O(N^{-4/5})$
+\citep{silverman1986}.
 \Cref{fig:bandwidth} shows both faces of the trade-off computed on the
 bimodal residual law used throughout this thesis: panel (a) the visual
 pathology of under- and oversmoothing on a single sample, panel (b) the
@@ -803,7 +832,7 @@ Since $h^{*}$ depends on the unknown curvature $R(\rho'')$, practice
 relies on data-driven rules. Silverman's rule of thumb,
 $h = 0.9\,\min\bigl(\hat{\sigma},\, \mathrm{IQR}/1.34\bigr)\,N^{-1/5}$,
 calibrates the constant to a Gaussian reference and is robust enough to
-serve as the default in most software \citep{silverman1986}. Scott's
+serve as the default in most software \citep{silverman1986,wand1995}. Scott's
 rule, $h = \hat{\sigma}\,N^{-1/(d+4)}$ per dimension, generalizes the
 same idea to multivariate estimation \citep{scott1992}.
 Cross-validation and plug-in methods estimate the curvature term from
@@ -811,7 +840,7 @@ the data and adapt to non-Gaussian shapes at additional computational
 cost. For density estimation as an end in itself, any of these rules is
 adequate, and the near-optimal bandwidth of \cref{fig:bandwidth}(a) is
 the value such rules produce on this sample.
-
+ 
 A caveat must be placed on record here, because it grows into a research
 question later. Every rule above minimizes density estimation error, the
 AMISE of \cref{eq:amise}. Nothing in their derivation knows that the
@@ -821,7 +850,13 @@ the optimization context the bandwidth shapes the feasible region and
 the gradient field, and the $h$ that best reconstructs the density need
 not be the $h$ that best locates the optimizer. This distinction, AMISE
 optimality versus optimization optimality, is the substance of research
-question RQ3 and is studied experimentally in Part~4.
+question RQ3 and is studied experimentally in Part~4. A related caveat
+concerns the tails: kernel estimates are least accurate in sparsely
+sampled low-density regions, so risk levels stringent enough to push the
+binding region into the tails demand larger samples, while moderate
+levels keep it in the well-sampled bulk. This tail sensitivity is
+problem dependent, and the experimental chapters report results across a
+range of risk levels for that reason.
 
 \subsubsection{Multivariate KDE and the curse of dimensionality}
 \label{ssec:curse}
@@ -838,8 +873,11 @@ grows exponentially in $d$. \Cref{fig:curse} translates the rate into
 numbers. Holding the accuracy achievable with $N=100$ samples in one
 dimension fixed, five dimensions already demand on the order of $10^4$
 samples and ten dimensions on the order of $10^6$. This is the curse of
-dimensionality in its sharpest form, and it is the fundamental
-limitation of multivariate kernel estimation.
+dimensionality in a particularly visible form, and it is a fundamental
+limitation of multivariate kernel estimation. Even for the multivariate
+normal distribution, evaluating orthant probabilities requires dedicated
+numerical methods \citep{genz2009}, which indicates how demanding the
+general multivariate problem is.
 
 \begin{figure}[t]
   \centering
@@ -871,12 +909,12 @@ precisely the extension pursued as research question RQ4, and
 The combination of kernel density estimation and chance constraints is
 no longer a proposal awaiting validation; it is a literature with a
 decade of results across four application domains and, since 2025, a
-convergence theory. What that literature has never received is an
-organizing narrative, and supplying one is not a courtesy to the reader
-but a load-bearing step of the argument: only when the papers are read
-as a single development does it become visible that the engineering line
-and the theoretical line have never been connected, which is the gap
-this thesis fills. The narrative has three movements, displayed as a
+convergence theory. What that literature has so far lacked is an
+organizing narrative, and supplying one is a substantive step of the
+argument rather than a convenience: when the papers are read as a single
+development, it becomes visible that the engineering line and the
+theoretical line have not yet been connected systematically, which is
+the gap this thesis addresses. The narrative has three movements, displayed as a
 timeline in \cref{fig:litmap}: independent invention, the safety turn,
 and the arrival of theory.
 
@@ -944,8 +982,11 @@ extends.
 \subsubsection{Networks, breadth, and the arrival of theory}
 \label{ssec:theoryarrival}
 
-The construction's breadth test came from infrastructure.
-\citet{schuster2022} applied KDE-reformulated probabilistic constraints
+The construction's breadth test came from infrastructure. Probabilistic
+constraints on gas networks were studied by \citet{gugat2018}, who
+treated stationary networks with compressor control under random loads.
+Building on this line, \citet{schuster2022} applied KDE-reformulated
+probabilistic constraints
 to stationary gas networks and dynamic water contamination networks,
 derived the gradients of the kernel-estimated probability analytically,
 and used them in necessary optimality conditions, comparing the KDE
@@ -966,7 +1007,7 @@ constraints in robotics \citep{gopalakrishnan2018}.
   process systems \citep{calfa2015}, aerospace \citep{caillau2018}, and
   energy systems \citep{ciftci2017,ciftci2019}; the biased-KDE safety
   line \citep{keil2020,keil2021,keil2021warm} and the network
-  applications \citep{schuster2022} deepen it; and the convergence theory
+  applications \citep{gugat2018,schuster2022} deepen it; and the convergence theory
   of \citet{schuster2025} arrives a decade after the first engineering
   constructions, closing the loop the gray arrow traces.}
   \label{fig:litmap}
