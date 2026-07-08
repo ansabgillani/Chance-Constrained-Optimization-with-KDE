@@ -268,7 +268,7 @@ def fig_kernels():
     ax.set_ylabel("$K(u)$")
     ax.set_title("(a) Kernel functions")
     ax.set_ylim(0, 0.97)
-    styled_legend(ax, loc="upper left", fontsize=6.3)
+    styled_legend(ax, loc="upper left", fontsize=7.8)
 
     # panel (b): integrated kernels vs indicator
     ax = axes[1]
@@ -289,7 +289,7 @@ def fig_kernels():
     ax.set_xlabel("$u$")
     ax.set_ylabel("$\\mathcal{K}(u)$")
     ax.set_title("(b) Integrated kernels vs the indicator")
-    styled_legend(ax, loc="lower right", fontsize=6.3)
+    styled_legend(ax, loc="lower right", fontsize=7.4)
 
     fig.tight_layout()
     finish(fig, "fig_kernels")
@@ -329,7 +329,7 @@ def fig_bandwidth():
     ax.set_ylabel("density")
     ax.set_ylim(0, 1.02)
     ax.set_title(f"(a) One sample ($N={N}$), three bandwidths")
-    styled_legend(ax, loc="upper right", fontsize=6.3)
+    styled_legend(ax, loc="upper right", fontsize=7.2)
 
     # panel (b): MISE decomposition over 120 replications
     hs = np.geomspace(0.03, 1.4, 26)
@@ -358,7 +358,7 @@ def fig_bandwidth():
     ax.set_xlabel("bandwidth $h$")
     ax.set_ylabel("integrated error")
     ax.set_title(f"(b) Bias-variance trade-off ({T} replications)")
-    styled_legend(ax, loc="center right", fontsize=6.3)
+    styled_legend(ax, loc="center right", fontsize=7.8)
 
     fig.tight_layout()
     finish(fig, "fig_bandwidth")
@@ -380,9 +380,9 @@ def fig_curse():
     ax.text(1.0, 1.7e6, "$10^6$ samples", color=GRAY, fontsize=8.5)
 
     for dd, label, xy_text in [
-            (1,  "$d=1$: $N\\approx 10^{2}$", (0.7, 9e2)),
-            (5,  "$d=5$: $N\\approx 10^{4}$", (4.15,  1.1e5)),
-            (10, "$d=10$: $N\\approx 10^{6}$", (8.4,  1.5e4))]:
+            (1,  "$d=1$: $N\\approx 10^{2}$", (1.55, 9e2)),
+            (5,  "$d=5$: $N\\approx 10^{4}$", (5.6,  1.1e3)),
+            (10, "$d=10$: $N\\approx 10^{6}$", (7.4,  5.5e5))]:
         ax.annotate(label,
                     xy=(dd, N1**((dd + 4)/5)),
                     xytext=xy_text,
@@ -439,7 +439,7 @@ def fig_litmap():
                 zorder=6, bbox=WBOX)
 
     # narrative arrow (drawn before labels so labels sit on top)
-    ax.annotate("", xy=(2025.35, 0.0), xytext=(2021.30, 4.8),
+    ax.annotate("", xy=(2025.0, 0.18), xytext=(2022.75, 4.62),
                 arrowprops=dict(arrowstyle="->", lw=1.0, color=GRAY,
                                 connectionstyle="arc3,rad=-0.22"),
                 zorder=2)
@@ -466,6 +466,110 @@ def fig_litmap():
 
 
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Figures migrated from the former blackbox chapter into Section 2.3.6.
+# Code reused verbatim from the chapter-3 history script (seed 21 preserved
+# so the published numbers reproduce exactly).
+# ---------------------------------------------------------------------------
+LAW = stats.lognorm(s=0.18, scale=100)
+EPS = 0.05
+TRUE_Q = LAW.ppf(1 - EPS)
+rng_bb = np.random.default_rng(21)
+
+def fig_staircase():
+    xs = np.linspace(88, 162, 1200)
+    true_v = 1 - LAW.cdf(xs)
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
+
+    # (a) one draw: staircase vs truth
+    ax = axes[0]
+    N = 60
+    samp = LAW.rvs(N, random_state=3)
+    vhat = (samp[None, :] > xs[:, None]).mean(axis=1)
+
+    ax.plot(xs, true_v, color=GREEN, lw=1.8, label="true $v(x)$")
+    ax.step(xs, vhat, where="post", color=RED, lw=1.4,
+            label=f"$\\hat v_N(x)$, $N={N}$")
+    ax.axhline(EPS, color="k", ls="--", lw=1.0)
+    ax.text(91, EPS + 0.012, "$\\varepsilon = 0.05$",
+            fontsize=8.5, bbox=WBOX, zorder=7)
+    ax.set_xlabel("decision $x$ [MW]")
+    ax.set_ylabel("violation probability")
+    ax.set_title("(a) The estimator is a staircase")
+    styled_legend(ax, loc="upper right", fontsize=8)
+
+    # (b) three draws near the boundary
+    ax = axes[1]
+    for k, seed in enumerate([11, 12, 13]):
+        sk = LAW.rvs(N, random_state=seed)
+        vk = (sk[None, :] > xs[:, None]).mean(axis=1)
+        ax.step(xs, vk, where="post", lw=1.1,
+                color=[RED, ORANGE, PURPLE][k], alpha=0.85,
+                label=f"draw {k+1}")
+    ax.plot(xs, true_v, color=GREEN, lw=1.8, label="true $v(x)$")
+    ax.axhline(EPS, color="k", ls="--", lw=1.0)
+    ax.set_xlim(120, 155)
+    ax.set_ylim(0, 0.18)
+    ax.set_xlabel("decision $x$ [MW]")
+    ax.set_ylabel("violation probability")
+    ax.set_title("(b) Resampling noise near the boundary")
+    styled_legend(ax, loc="upper right", fontsize=7.6)
+
+    fig.tight_layout()
+    finish(fig, "fig_staircase")
+
+
+# ===========================================================================
+# Figure 2  fig_scenariogrowth  (Chapter 3)
+# Scenario conservatism grows with N; SAA empirical quantile stays on target.
+
+
+def fig_scenariogrowth():
+    Ns = np.unique(np.geomspace(20, 2000, 16).astype(int))
+    trials = 600
+    scen_mean, scen_lo, scen_hi, saa_mean = [], [], [], []
+
+    for N in Ns:
+        mx = np.array([
+            LAW.rvs(N, random_state=rng_bb.integers(int(1e9))).max()
+            for _ in range(trials)])
+        qq = np.array([
+            np.quantile(LAW.rvs(N, random_state=rng_bb.integers(int(1e9))),
+                        1 - EPS)
+            for _ in range(trials)])
+        scen_mean.append(mx.mean())
+        scen_lo.append(np.percentile(mx, 10))
+        scen_hi.append(np.percentile(mx, 90))
+        saa_mean.append(qq.mean())
+
+    fig, ax = plt.subplots(figsize=(5.8, 3.0))
+    ax.plot(Ns, scen_mean, "-o", ms=3.2, lw=1.6, color=GRAY,
+            label="scenario: $x_N = \\max_i \\xi_i$")
+    ax.fill_between(Ns, scen_lo, scen_hi, color=GRAY, alpha=0.15)
+    ax.plot(Ns, saa_mean, "-s", ms=3.2, lw=1.6, color=ORANGE,
+            label="SAA: empirical $q_{0.95}$")
+    ax.axhline(TRUE_Q, color=GREEN, lw=1.4, ls="--")
+    ax.text(24, TRUE_Q - 7.5, "exact requirement $q_{0.95}$",
+            color=GREEN, fontsize=8.5, bbox=WBOX, zorder=7)
+    ax.set_xscale("log")
+    ax.set_xlabel("sample size $N$ (= number of hard constraints)")
+    ax.set_ylabel("required capacity [MW]")
+    styled_legend(ax, loc="upper left", fontsize=8.2)
+
+    fig.tight_layout()
+    finish(fig, "fig_scenariogrowth")
+    print(f"    scenario at N=2000: {scen_mean[-1]:.1f}, "
+          f"SAA: {saa_mean[-1]:.1f}, true q: {TRUE_Q:.1f}")
+
+
+# ===========================================================================
+# Figure 3  fig_pipeline  (Chapter 4)
+# Computational loop of the KDE reformulation.
+
+
 if __name__ == "__main__":
     print("Generating Chapter 2 figures ...")
     fig_taxonomy()
@@ -475,4 +579,6 @@ if __name__ == "__main__":
     fig_bandwidth()    # ~20 s for 120 replications
     fig_curse()
     fig_litmap()
+    fig_staircase()
+    fig_scenariogrowth()   # ~30 s
     print(f"\nAll figures written to ./{OUT}/ (PDF + PNG).")

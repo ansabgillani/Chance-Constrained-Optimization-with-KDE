@@ -19,8 +19,9 @@ distributions. \Cref{sec:methods} then confronts the consequence: six
 approximation methods, surveyed in a fixed rhythm of core idea, main
 advantage, and primary limitation, each method responding to a
 limitation of the one before it. The survey includes the blackbox approach, the most
-assumption-free option of all and the deliberate starting point of the
-methodological development in Part~3. With the landscape mapped and its
+assumption-free option of all, developed there in enough depth, with
+computed evidence, to motivate the methodological development of
+Part~3. With the landscape mapped and its
 gap identified, \cref{sec:kde} introduces the instrument this thesis uses
 to fill it, kernel density estimation, built up from first principles
 because optimization readers will rarely have met it as an optimization
@@ -525,20 +526,20 @@ competitor.
 
 Every method so far has exploited some structure: a distributional form,
 convexity, an analytic constraint map. The final method exploits none,
-and it closes the survey for two reasons that should be stated openly.
-It is where the assumption-stripping logic of the progression
-terminates, the limiting case in which nothing whatsoever is presumed
-about the problem. And it is where Part~3 begins, because it is the
-approach a practitioner with a simulator and no further structure would
-try first, so its precise mode of failure is the correct motivation for
-everything this thesis builds. The core idea is to treat the violation
-probability as a blackbox. The estimator
-$\hat{v}_N(x)$ of \cref{eq:saa} can be evaluated at any $x$ by running
-the simulator $N$ times and counting failures; nothing about $g$, the
-law of $\xi$, or the shape of the feasible set needs to be known.
-Optimization then proceeds with methods that consume only function
-values: penalty formulations driven by derivative-free solvers such as
-Nelder-Mead or pattern search, surrogate-assisted search, or
+and it closes the survey as the limiting case in which nothing is
+presumed about the problem. It is also the approach a practitioner with
+a simulator and no further structure would try first, so its mode of
+failure motivates much of what this thesis builds; for that reason this
+subsection develops it in more depth than the survey rhythm of the
+preceding methods, with computed evidence in place of a summary verdict.
+The core idea is to treat the violation probability as a blackbox. The
+estimator $\hat{v}_N(x)$ of \cref{eq:saa} can be evaluated at any $x$
+by running the simulator $N$ times and counting failures; nothing about
+$g$, the law of $\xi$, or the shape of the feasible set needs to be
+known. Optimization then proceeds with methods that consume only
+function values: penalty formulations driven by derivative-free solvers
+such as Nelder-Mead or pattern search
+\citep{neldermead1965,audet2017}, surrogate-assisted search, or
 grid-and-refine heuristics over low-dimensional decision spaces.
  
 The advantage is universality. The blackbox approach applies to
@@ -547,20 +548,112 @@ analytic form, settings where every other method in this section is
 inapplicable in principle. It is also honest: $\hat{v}_N(x)$ is an
 unbiased estimate of the true violation probability, so the quantity
 being thresholded is statistically the right one, with none of the
-conservatism of scenarios or CVaR.
+conservatism of scenarios or CVaR. Statistically, \cref{eq:saa} is
+sound; the sample average approximation theory cited in
+\cref{ssec:saa} establishes that solutions of the problem constrained
+by $\hat{v}_N(x) \leq \varepsilon$ converge to solutions of the true
+problem. If statistical correctness were the only requirement, little
+more would be needed.
  
-The limitations are what Part~3 is built to overcome, and they are worth
-stating sharply because they motivate everything that follows. The
-response surface seen by the optimizer is a staircase: piecewise
-constant in $x$, with zero gradient almost everywhere and jumps of size
-$1/N$ wherever a sample crosses the constraint boundary, all of it
-corrupted by sampling noise of order $N^{-1/2}$. Derivative-free methods
-tolerate this landscape but pay in evaluations, and their cost grows
-rapidly with the dimension of $x$; in the optimal control problems of
-this thesis, where $x$ is a discretized trajectory with hundreds of
-components, the approach becomes computationally impractical. The
-blackbox approach is statistically sound but offers the solver no
-directional information.
+It is not, and \cref{fig:staircase} shows why, computed on the dispatch
+problem of Chapter~1. As a function of the decision, $\hat{v}_N$ is a
+staircase: piecewise constant, jumping by exactly $1/N$ each time the
+moving decision crosses a sample, and flat everywhere else, so its
+gradient is zero almost everywhere and undefined at the jumps. A
+sequential quadratic programming or interior-point method, whose
+central mechanism is the exploitation of first-order information,
+receives essentially no signal; the solver is not merely slowed down
+but left without usable derivative information. Panel (b) exposes the
+statistical half of the difficulty, which compounds the first exactly
+where it matters most. Near the feasibility boundary, the region the
+optimizer must resolve precisely, the staircase is built from the
+extreme order statistics of the sample, among the noisiest quantities
+the sample provides, and independent draws of the same size produce
+estimated boundaries that wander across tens of megawatts, far beyond
+the optimality tolerances of typical nonlinear programming methods.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{kap02/figures/fig_staircase.pdf}
+  \caption{The empirical indicator estimator on the dispatch problem of
+  Chapter~1 ($g(x,\xi) = \xi - x$, lognormal demand). (a) With $N = 60$
+  samples, $\hat{v}_N$ is a staircase: piecewise constant with jumps of
+  $1/N$ at the samples, flat everywhere else. Its gradient is zero
+  almost everywhere and undefined at the jumps. (b) Three independent
+  sample draws, magnified near the feasibility boundary
+  $\varepsilon = 0.05$: the staircases disagree with each other and
+  with the true curve by amounts comparable to $\varepsilon$ itself, so
+  the estimated boundary wanders across tens of megawatts. The solver's
+  problem is therefore twofold: no usable gradient anywhere, and a
+  noisy constraint where precision matters most.}
+  \label{fig:staircase}
+\end{figure}
+
+Two repair strategies exist within the paradigm, and both carry
+substantial costs. The counting in \cref{eq:saa} can be encoded with
+binary variables, at the price of the mixed-integer growth already
+noted in \cref{ssec:saa}, or derivatives can be abandoned altogether
+in favor of derivative-free optimization \citep{audet2017}.
+Derivative-free solvers tolerate the staircase but pay in evaluations,
+and their cost grows rapidly with the dimension of $x$; in the optimal
+control problems of this thesis, where $x$ is a discretized state and
+control trajectory with hundreds of components, the route becomes
+impractical.
+ 
+The scenario approach of \cref{ssec:scenario} can be read as a
+\emph{structured} member of the same family: it stops estimating the
+probability and starts enforcing the samples, thereby buying back
+smoothness, since each constraint in \cref{eq:scenario} is as smooth as
+$g$ itself. What this concession costs is quantified in
+\cref{fig:scenariogrowth} on the problem where the exact answer is
+known. The scenario decision must cover every sample, so it tracks the
+sample maximum and drifts away from the exact requirement as $N$ grows,
+exceeding it by nearly $40\%$ at $N = 2000$, while the empirical
+quantile of the indicator paradigm converges to the exact answer
+throughout; the horizontal axis is simultaneously the sample size and
+the number of hard constraints in the resulting program, so statistical
+comfort and computational burden grow together. The two members of the
+family thus exhibit complementary limitations. The indicator approach
+estimates the appropriate quantity but presents the solver with a
+function that carries no usable derivative information; the scenario
+approach presents well-behaved functions but enforces a stronger,
+worst-case requirement that the chance constraint does not impose.
+ 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.82\textwidth]{kap02/figures/fig_scenariogrowth.pdf}
+  \caption{The price of structure, computed on the dispatch problem
+  ($\varepsilon = 0.05$, $600$ trials per sample size, bands are
+  $10$th-to-$90$th percentiles). The scenario decision must cover every
+  sample, so it tracks the sample maximum and drifts away from the
+  exact requirement $q_{0.95}$ (dashed) as $N$ grows; the empirical
+  quantile of the indicator paradigm converges to the exact answer. The
+  horizontal axis is simultaneously the sample size and the number of
+  hard constraints in the resulting program.}
+  \label{fig:scenariogrowth}
+\end{figure}
+ 
+The shared limitation can now be stated precisely, and it is the
+observation that motivates the remainder of this thesis. Neither member
+of the family gives a gradient-based solver directional information
+about the violation probability itself. Between samples, $\hat{v}_N$
+reports that nothing changes, so a decision that violates the
+constraint with probability $0.50$ and one just inside the budget at
+$\varepsilon = 0.05$ produce the same local signal, although the two
+are operationally very different; the scenario constraints carry
+perfectly good gradients, but of individual scenario residuals rather
+than of $v(x)$. The specification for a repair follows naturally: a
+single deterministic constraint, not $N$ of them, whose value
+approximates the violation probability, whose dependence on $x$ is as
+smooth as the constraint map itself, and whose gradient is available
+analytically. One further distinction is worth recording for the
+analysis ahead: the indicator estimator carries sampling error only,
+while a smooth reformulation introduces a second, controllable
+smoothing error on top of it, and keeping these two error sources
+separate is important for interpreting the developments of
+Chapters~3 and~4. Constructing an estimator that meets this
+specification, from the residual-space transformation through an
+analytic gradient, is the subject of Chapter~3.
 
 \subsubsection{Trade-offs in one view}
 \label{ssec:tradeoffs}
