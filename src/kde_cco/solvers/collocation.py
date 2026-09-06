@@ -93,8 +93,13 @@ def _chance_constraints(problem, stage, terminal_samples, path_samples, epsilon_
         else:
             terminal_safe = 1.0 - float(kde_violation_upper(
                 terminal, ht, kernel, bias=True))
-            path_safe = 1.0 - np.asarray(kde_violation_upper(
-                path_samples_by_node, hp, kernel, bias=True), dtype=float)
+            # The biased surrogate currently accepts vector samples only.  Apply
+            # it independently at each node so the returned margins retain the
+            # node dimension used by the NLP.
+            path_safe = 1.0 - np.asarray([
+                kde_violation_upper(path_samples_by_node[:, node], hp, kernel, bias=True)
+                for node in range(path_samples_by_node.shape[1])
+            ], dtype=float)
         return np.r_[terminal_safe - (1.0 - epsilon_a),
                      path_safe - (1.0 - epsilon_b)]
 
@@ -194,12 +199,30 @@ def solve_lunar_stages(problem, *, time=None, terminal_samples=None, path_sample
     records, states, controls = [], None, None
     last_successful_stage = None
     for index, stage in enumerate(stages):
-        record = solve_collocation(
-            problem, time=time, initial_states=states, initial_controls=controls,
-            stage=stage, terminal_samples=ts, path_samples=ps, maxiter=maxiter,
-            tolerance=tolerance, epsilon_a=epsilon_a, epsilon_b=epsilon_b,
-            bandwidth=bandwidth,
-        )
+        try:
+            record = solve_collocation(
+                problem, time=time, initial_states=states, initial_controls=controls,
+                stage=stage, terminal_samples=ts, path_samples=ps, maxiter=maxiter,
+                tolerance=tolerance, epsilon_a=epsilon_a, epsilon_b=epsilon_b,
+                bandwidth=bandwidth,
+            )
+        except Exception as exc:  # preserve an auditable failed stage
+            normalized = str(stage).lower().replace("-", "_")
+            if normalized == "biased_kde":
+                normalized = "local_shifted_epanechnikov"
+            record = {
+                "success": False,
+                "stage": normalized,
+                "backend": "scipy_slsqp_euler",
+                "objective": None,
+                "states": None,
+                "controls": None,
+                "time": None,
+                "runtime_seconds": 0.0,
+                "nit": -1,
+                "message": f"{type(exc).__name__}: {exc}",
+                "failure_type": type(exc).__name__,
+            }
         record["stage_index"] = index
         record["warm_start_from"] = last_successful_stage
         records.append(record)

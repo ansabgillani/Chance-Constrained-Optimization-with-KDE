@@ -3,6 +3,7 @@ import pytest
 
 from kde_cco.problems.lunar_landing import make_lunar_landing
 from kde_cco.solvers.collocation import (
+    _chance_constraints,
     solve_collocation,
     solve_lunar_stages,
     transcribe_euler,
@@ -66,6 +67,18 @@ def test_staged_solver_preserves_order_and_warm_starts():
     assert result["stages"][1]["warm_start_from"] == "nominal"
     assert "local_shifted_epanechnikov" in result
     assert all("message" in record for record in result["stages"])
+
+
+def test_biased_path_surrogate_returns_one_margin_per_node():
+    problem = make_lunar_landing()
+    constraints, _ = _chance_constraints(
+        problem, "local_shifted_epanechnikov", np.array([-0.1, 0.1]),
+        np.array([-0.1, 0.1]), problem.epsilon_a, problem.epsilon_b,
+    )
+    states = np.array([[100.0, 0.0], [0.0, 0.0]])
+    margins = constraints(states, np.array([1.0, 1.0]))
+    assert margins.shape == (3,)
+    assert np.all(np.isfinite(margins))
 
 
 def test_casadi_path_is_explicit_when_unavailable():
