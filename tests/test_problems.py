@@ -78,3 +78,15 @@ def test_gaussian_baseline_accepts_scalar_affine_uncertainty():
     baseline = gaussian_parametric(affine_residual, samples, epsilon=0.05)
     assert baseline["metadata"]["uncertainty_model"] == "scalar_affine_gaussian"
     assert np.isfinite(baseline["constraint"](np.array([0.0])))
+
+
+def test_gaussian_baseline_scales_nonunit_uncertainty_coefficient():
+    samples = np.linspace(-1.0, 1.0, 21)
+
+    def affine_residual(x, xi):
+        return np.asarray(x)[0] + 2.5 * np.asarray(xi).reshape(-1)
+
+    baseline = gaussian_parametric(affine_residual, samples, epsilon=0.05)
+    expected_std = 2.5 * np.std(samples, ddof=1)
+    assert baseline["metadata"]["coefficient"] == pytest.approx(2.5)
+    assert baseline["metadata"]["residual_std"] == pytest.approx(expected_std)

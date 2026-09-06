@@ -84,6 +84,12 @@ def gaussian_parametric(residual_fn, samples, epsilon=0.05):
         raise NotImplementedError(
             "Gaussian reformulation requires a scalar affine residual in uncertainty"
         )
+    coefficient = float((values[1] - values[0]) / points[1, 0])
+    coefficient_error = values[2] - values[0] - coefficient * points[2, 0]
+    if abs(float(coefficient_error)) > 1e-8 * scale:
+        raise NotImplementedError(
+            "Gaussian reformulation requires a scalar affine residual in uncertainty"
+        )
     from scipy.stats import norm
     mu, sd = float(np.mean(data[:, 0])), float(np.std(data[:, 0], ddof=1))
     z = float(norm.ppf(1.0 - epsilon))
@@ -91,9 +97,10 @@ def gaussian_parametric(residual_fn, samples, epsilon=0.05):
     # adapter for affine residuals and avoids silently pretending nonlinearity.
     def constraint(x):
         val = np.asarray(residual_fn(x, np.array([[mu]]))).reshape(-1)
-        return float(val[0] + z * sd)
+        return float(val[0] + z * abs(coefficient) * sd)
     return _result("gaussian_parametric", constraint, epsilon=float(epsilon), mean=mu, std=sd,
-                   uncertainty_model="scalar_affine_gaussian")
+                   uncertainty_model="scalar_affine_gaussian", coefficient=coefficient,
+                   residual_std=abs(coefficient) * sd)
 
 
 def build_baseline(method, residual_fn, samples, epsilon=0.05):
