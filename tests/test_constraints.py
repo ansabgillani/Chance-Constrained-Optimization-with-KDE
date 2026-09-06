@@ -4,6 +4,7 @@ from kde_cco.constraints.scalar import (
     residuals, empirical_violation, kde_safe_probability, kde_violation_upper,
     kde_safe_probability_gradient,
 )
+from kde_cco.kde.kernels import biased_epanechnikov_cdf
 from kde_cco.constraints.joint import boole_risk_allocation, max_violation, smooth_max
 
 
@@ -26,6 +27,16 @@ def test_kde_safe_and_biased_violation_are_conservative():
     upper = kde_violation_upper(r, 0.25, kernel="epanechnikov", bias=True)
     assert 0 <= safe <= 1
     assert upper >= empirical_violation(r)
+
+
+def test_biased_surrogate_dominates_strict_violation_pointwise():
+    # The residual convention is strict for violations (r > 0); r == 0 is
+    # safe.  The translated kernel returns zero safe mass for all r > 0.
+    r = np.linspace(-2.0, 2.0, 401)
+    h = 0.31
+    violation_surrogate = 1.0 - biased_epanechnikov_cdf(-r / h)
+    strict_indicator = (r > 0.0).astype(float)
+    assert np.all(violation_surrogate + 1e-14 >= strict_indicator)
 
 
 def test_joint_constraints():

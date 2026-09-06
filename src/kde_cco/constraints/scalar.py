@@ -96,8 +96,13 @@ def kde_violation_upper(residual_values: ArrayLike, h: float,
                         bias: bool = False) -> float | np.ndarray:
     """Estimate violation probability, optionally using the conservative bias.
 
-    The biased form is defined for the Epanechnikov kernel and shifts its
-    integrated kernel so positive residuals contribute no safe mass.
+    ``bias=True`` uses the *local shifted Epanechnikov surrogate* implemented
+    in this package.  Its safe contribution is zero for every positive
+    residual, so ``1 - mean(K_B(-r_i/h))`` is pointwise no smaller than the
+    empirical strict-violation probability.  This establishes dominance for
+    this surrogate; it is not a claim that this translation reproduces Keil
+    et al.'s Split-Bernstein construction, and the bound does not apply to an
+    ordinary KDE.
     """
     r, was_vector = _validate_residuals(residual_values)
     h = _validate_bandwidth(h)
