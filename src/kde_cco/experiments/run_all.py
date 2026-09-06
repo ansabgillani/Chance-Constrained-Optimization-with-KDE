@@ -101,10 +101,23 @@ def _joint(seed, epsilon):
     return out, r
 
 
+def _sensitivity(seed, epsilon):
+    rng=np.random.default_rng(seed); train=rng.normal(-.12,.4,2000); test=rng.normal(-.12,.4,4000); rows=[]
+    h0=silverman_bandwidth(train[:250])
+    for method, n, h in ([("bandwidth_sweep",250,h0*f) for f in (.25,.5,1.,2.,4.)]
+                         + [("sample_size_sweep",n,silverman_bandwidth(train[:n])) for n in (50,100,250,500,1000,2000)]):
+        rows.append(evaluate_residuals(train[:n],test,epsilon=epsilon,
+            estimated_violation=float(1-kde_safe_probability(train[:n],h)),
+            success=True,message="fixed-residual estimator sensitivity; no optimization",
+            benchmark="residual_sensitivity",method=method,seed=seed,metadata={"bandwidth":float(h)}))
+    return rows,train,test
+
+
 def run_all(output="results", *, seed=20260906, force=False):
     root=Path(output); root.mkdir(parents=True,exist_ok=True); samples=root/"samples"; samples.mkdir(exist_ok=True)
     rows=_static(seed,250,4000,.1); dispatch,dt,de=_dispatch(seed+1,250,4000,.1); rows.extend(dispatch)
     joint,joint_samples=_joint(seed+2,.1); rows.extend(joint)
+    sensitivity,sensitivity_train,sensitivity_test=_sensitivity(seed+3,.1); rows.extend(sensitivity)
     lunar=make_lunar_landing(); terminal_rng=np.random.default_rng(seed+4); terminal=terminal_rng.normal(0,lunar.terminal_sigma,250); terminal_test=terminal_rng.normal(0,lunar.terminal_sigma,4000); path,_=sample_renewable_error(250,seed=seed+4); path_test,_=sample_renewable_error(4000,seed=seed+10004)
     staged=solve_lunar_stages(lunar,terminal_samples=terminal,path_samples=path,maxiter=80)
     for stage in staged["stages"]:
@@ -120,6 +133,7 @@ def run_all(output="results", *, seed=20260906, force=False):
                                      _distribution(name,4000,seed+d_i+10100)[0])),
                     samples/(f"static_{name}_test.npy"),force=force)
     for name,arr in (("dispatch_train",dt),("dispatch_test",de),("joint_residuals",joint_samples),
+                     ("sensitivity_train",sensitivity_train),("sensitivity_test",sensitivity_test),
                      ("lunar_terminal",terminal),("lunar_terminal_test",terminal_test),("lunar_path",path),("lunar_path_test",path_test)):
         write_array(arr,samples/(name+".npy"),force=force)
     metadata={"seed":seed,"protocol":"independent seeded train/test; local SciPy solvers","records":len(rows),

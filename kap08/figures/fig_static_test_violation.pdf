@@ -1,0 +1,44 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 650] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 372 >>
+stream
+BT /F1 10 Tf 48 560 Td
+(Chapter 8 local evidence) Tj
+0 -18 Td
+(nominal: test violation=0.518000) Tj 0 -14 Td
+(scenario: test violation=0.001500) Tj 0 -14 Td
+(unbiased_kde: test violation=0.062000) Tj 0 -14 Td
+(local_shifted_epanechnikov: test violation=0.019250) Tj 0 -14 Td
+0 4 Td
+70 180 55 260.00 re f
+175 180 55 3.90 re f
+280 180 55 161.20 re f
+385 180 55 50.05 re f
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+734
+%%EOF
