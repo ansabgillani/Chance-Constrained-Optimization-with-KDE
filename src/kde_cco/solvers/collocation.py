@@ -80,16 +80,21 @@ def _chance_constraints(problem, stage, terminal_samples, path_samples, epsilon_
         if name in {"nominal", "mean"}:
             terminal = problem.terminal_residual(states[-1], np.mean(terminal_samples))
             path = problem.path_residual_nodes(controls, np.mean(path_samples))
-        if name in {"nominal", "mean", "worst_case", "worst", "scenario"}:
+        if name in {"nominal", "mean", "worst_case", "worst"}:
             return np.asarray([-np.max(terminal), -np.max(path)], dtype=float)
+        if name == "scenario":
+            # Keep one inequality per sampled event.  This is deliberately
+            # distinct from the worst-case reduction above.
+            return np.r_[-terminal.reshape(-1), -path.reshape(-1)]
+        path_samples_by_node = path.T
         if name == "unbiased_kde":
             terminal_safe = float(kde_safe_probability(terminal, ht, kernel))
-            path_safe = np.asarray(kde_safe_probability(path, hp, kernel), dtype=float)
+            path_safe = np.asarray(kde_safe_probability(path_samples_by_node, hp, kernel), dtype=float)
         else:
             terminal_safe = 1.0 - float(kde_violation_upper(
                 terminal, ht, kernel, bias=True))
             path_safe = 1.0 - np.asarray(kde_violation_upper(
-                path, hp, kernel, bias=True), dtype=float)
+                path_samples_by_node, hp, kernel, bias=True), dtype=float)
         return np.r_[terminal_safe - (1.0 - epsilon_a),
                      path_safe - (1.0 - epsilon_b)]
 
@@ -142,8 +147,10 @@ def solve_collocation(problem, time=None, initial_states=None, initial_controls=
     def equality(z):
         X, U = unpack(z)
         tr = transcribe_euler(problem, t, X, U)
+        # Position is governed by its chance event; only terminal velocity is
+        # a deterministic boundary condition in the published benchmark.
         return np.r_[tr["defects"].reshape(-1), tr["initial_residual"],
-                     tr["terminal_residual"]]
+                     tr["terminal_residual"][1]]
 
     def inequality(z):
         X, U = unpack(z)
@@ -172,8 +179,8 @@ def solve_collocation(problem, time=None, initial_states=None, initial_controls=
         "constraint_diagnostics": {
             **metadata, "max_defect": float(np.max(np.abs(eq_res))),
             "min_chance_margin": float(np.min(ineq_res)),
-            "initial_residual": eq_res[-4:-2].tolist(),
-            "terminal_residual": eq_res[-2:].tolist(),
+            "initial_residual": eq_res[-3:-1].tolist(),
+            "terminal_velocity_residual": float(eq_res[-1]),
         },
     }
 
@@ -185,6 +192,7 @@ def solve_lunar_stages(problem, *, time=None, terminal_samples=None, path_sample
     """Run warm-start continuation and preserve failed stages."""
     ts, ps = _samples(terminal_samples), _samples(path_samples)
     records, states, controls = [], None, None
+    last_successful_stage = None
     for index, stage in enumerate(stages):
         record = solve_collocation(
             problem, time=time, initial_states=states, initial_controls=controls,
@@ -193,9 +201,11 @@ def solve_lunar_stages(problem, *, time=None, terminal_samples=None, path_sample
             bandwidth=bandwidth,
         )
         record["stage_index"] = index
-        record["warm_start_from"] = None if index == 0 else str(stages[index - 1])
+        record["warm_start_from"] = last_successful_stage
         records.append(record)
-        states, controls = record["states"], record["controls"]
+        if record["success"]:
+            states, controls = record["states"], record["controls"]
+            last_successful_stage = str(stage)
     result = {"success": bool(records and records[-1]["success"]),
               "stages": records, "final": records[-1] if records else None,
               "stage_order": [str(s) for s in stages],
