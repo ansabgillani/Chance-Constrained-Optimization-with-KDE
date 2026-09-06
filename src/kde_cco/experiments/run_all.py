@@ -128,7 +128,11 @@ def run_all(output="results", *, seed=20260906, force=False):
       "model_configuration":{"static":"two-dimensional nonlinear circular residual","dispatch":{"demand":100.0,"renewable_nominal":30.0,"capacities":[90.0,100.0]},"lunar":lunar.metadata},
       "sample_files":"samples/*.npy","local_bias_name":"local_shifted_epanechnikov","published_comparison":"Keil values are external report values, not local outputs"}
     write_run_bundle(rows,metadata,root,force=force)
-    write_result({"solver_records":[r for r in rows if r["benchmark"] in ("static_nonlinear","energy_dispatch")],"lunar_stage_diagnostics":staged["stages"]},root/"solver_diagnostics.json",force=force)
+    write_result({"solver_records":[r for r in rows if r["benchmark"] in ("static_nonlinear","energy_dispatch")],
+                  "lunar_stage_diagnostics":[{"stage":s["stage"],"success":s["success"],"objective":s["objective"],
+                    "nit":s["nit"],"message":s["message"],"runtime_seconds":s["runtime_seconds"],
+                    "constraint_diagnostics":s["constraint_diagnostics"]} for s in staged["stages"]]},
+                 root/"solver_diagnostics.json",force=force)
     return rows
 
 
