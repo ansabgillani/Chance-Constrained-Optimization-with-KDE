@@ -1,43 +1,54 @@
 \section{Implementation and Validation}
 \label{ch:implementation}
 
-The implementation follows a fixed data path:
-\begin{center}
-training samples $\rightarrow$ residuals $\rightarrow$ KDE or baseline constraint
-$\rightarrow$ NLP/collocation $\rightarrow$ independent test Monte Carlo
-$\rightarrow$ saved result artifacts.
-\end{center}
-The modules are deliberately small. `uncertainty` produces seeded distributions
-and disjoint train/test samples; `kde` implements kernels, integrated kernels, and
-bandwidth rules; `constraints` handles scalar, Boole, maximum, and log-sum-exp
-statistics; `problems` contains the canonical static, dispatch, and lunar models;
-and `evaluation` serializes metrics and provenance.
+The implementation is an evidence chain rather than a collection of independent scripts. A numerical value is admissible for interpretation only when its uncertainty law, residual convention, estimator, bandwidth, sample split, solver status, and validation scope are known. This requirement is central for the present thesis because the theory and the two anchor papers make different claims. Schuster's results concern sequences of KDE-approximated optimization problems under convergence assumptions. Keil et al. construct a biased kernel whose integrated function dominates the violation indicator, and combine it with MCMC sampling and optimal-control continuation. The local code is a small, fully local analogue. Its purpose is to expose which parts of those arguments survive a transparent implementation and which parts still require a different numerical experiment.
 
-For a computed decision $x^*$ and independent test samples $\xi_r^{\rm test}$,
-the central validation statistic is
+\subsection{Purpose and evidence contract}
+
+The pipeline is
+\begin{center}
+training samples $\rightarrow$ residual map $\rightarrow$ KDE or baseline constraint
+$\rightarrow$ NLP or collocation $\rightarrow$ independent validation $\rightarrow$ saved evidence.
+\end{center}
+Each arrow is a possible failure point. A sampling error changes the empirical residual law. A sign error changes safe probability into violation probability. A bandwidth error changes both the statistical approximation and the geometry seen by the optimizer. A solver can return a finite vector with a failure status. Finally, an independent test frequency can be calculated correctly for an invalid or failed decision. The implementation therefore reports these layers separately rather than collapsing them into one safety label.
+
+The result schema records benchmark, method, distribution, seed, training and test sizes, target risk, bandwidth, objective, training violation, held-out violation, estimated violation, gap, runtime, solver message, and success status. The paper-aligned runs additionally record the bandwidth rule, bias ratio $B(h)/h$, sample-size schedule, continuation attempts, and whether samples are IID synthetic or MCMC. These fields make it possible to distinguish a Schuster-style Gaussian scaling experiment from a Keil-style biased-kernel experiment without changing the residual code.
+
+For a decision $x^*$ and independent test observations $\xi_r^{\rm test}$, the main validation statistic is
 \begin{equation}
   \widehat v_{\rm test}(x^*)=\frac{1}{M}\sum_{r=1}^M
   \mathbf 1\{g(x^*,\xi_r^{\rm test})>0\}.
   \label{eq:test-violation}
 \end{equation}
-The conservatism gap is
+The reported gap is
 \begin{equation}
   \operatorname{gap}=\varepsilon-\widehat v_{\rm test}(x^*).
   \label{eq:gap}
 \end{equation}
-A result record also contains the training empirical violation, the KDE estimate
-used by the optimizer, objective value, runtime, solver status, bandwidth, sample
-sizes, seed, and benchmark metadata. Training samples never enter the test
-estimate, and the test seed is independent of the training seed.
+A positive gap is an observation on one independent test sample. It is not a confidence statement about the unknown probability and does not certify a failed optimization stage. For the paper-aligned runs, the test sample is fixed across the nested training sizes, so changes in $\widehat v_{\rm test}$ can be interpreted as changes in the fitted decision rather than changes in the test population.
 
-The test sources cover kernel normalization and limits, analytic gradients by
-central differences, reproducibility under fixed seeds, residual dimensions, and
-agreement between saved metrics and independently recomputed violations. The
-gradient check uses relative tolerance $10^{-5}$ and absolute tolerance $10^{-7}$;
-the direct numerical smoke checks passed. These checks do not create a
-finite-sample certificate. The local run used a virtual environment with the
-installed NumPy and SciPy packages; Python compilation, direct numerical checks,
-the seeded runner, and LaTeX compilation were executed, while pytest and the
-optional CasADi/IPOPT path were unavailable and are not claimed as passed. The
-local shifted Epanechnikov surrogate dominates the empirical violation indicator,
-but out-of-sample feasibility remains an empirical question.
+\subsection{Data flow and failure semantics}
+
+The uncertainty module creates seeded Gaussian, bimodal, skewed, heavy-tailed, and renewable-error samples. The residual is evaluated only after a candidate decision is supplied, so the KDE is an estimator of the residual distribution induced by that decision, not of the uncertainty in isolation. Scalar residuals use the integrated Gaussian or Epanechnikov kernel. Vector residuals are reduced by an explicitly named joint statistic; the current joint comparison uses Boolean maximum events and log-sum-exp, not a multivariate negative-orthant KDE.
+
+The baseline matrix uses Silverman's robust rule. The paper-aligned matrix adds a nested sequence $N\in\{250,1000,5000\}$ and the Schuster Gaussian scaling
+\begin{equation}
+ h_N=s_N\left(\frac{4}{(d+2)N}\right)^{1/(d+4)},
+ \qquad d=1,
+ \label{eq:schuster-local-bandwidth}
+\end{equation}
+which is numerically equivalent in order to the $1.06s_NN^{-1/5}$ normal-reference rule used in the related Schuster et al. computations. The implementation uses a scalar residual, so $d=1$ refers to residual dimension, not the dimension of the uncertainty vector. The local Keil analogue uses the biased Epanechnikov integrated kernel with $B(h)=h$. Its continuation attempts multipliers $(0.25,0.5,1,2)$ and retains the last successful solution. This is a bandwidth continuation, not the mesh-error trigger used in Keil's LGR/SNOPT workflow.
+
+A failed solve remains in the ledger. The test frequency is never used to relabel it as successful. This rule matters in the static skewed and heavy-tailed scenario rows and in the lunar continuation. The local lunar solver also validates terminal position only; it does not provide an independent all-time path test. The implementation therefore records the terminal frequency as terminal evidence and does not call it a path-safety result.
+
+\subsection{Validation layers}
+
+The first layer consists of algebraic and derivative checks. Gaussian and Epanechnikov kernels integrate to one, their integrated limits are correct, and the $B(h)=h$ Epanechnikov contribution is no larger than the safe indicator for positive residuals. Finite-difference checks then test the smooth constraint interface used by SLSQP. These checks catch normalization, sign, support, and gradient errors before statistical interpretation begins.
+
+The second layer uses independent probability calculations. The Gaussian static row admits a noncentral-$\chi^2$ reference, and the dispatch mixture has a closed-form CDF at the balance threshold. Agreement with held-out Monte Carlo answers a distributional check; it says nothing about the skewed or heavy-tailed rows or optimizer convergence. The third layer is independent validation: training samples enter the NLP, while a fixed-seed test set is used only after the decision is returned. Binomial intervals quantify test-sample noise conditional on that decision, not adaptive selection or a scenario guarantee.
+
+The final layer is numerical feasibility. Solver status, objective, iterations, chance margins, and equality residuals are inspected together. The lunar audit shows why this matters: Euler defects fix the interval fuel integral, while the trapezoidal objective includes a control that does not enter the dynamics. The stored nominal objective is therefore a quadrature diagnostic that a held-out terminal frequency cannot repair.
+
+\subsection{Reproducibility limits and interpretation}
+
+Fixed seeds make the local computation deterministic: the same configuration regenerates the same samples, decisions, and records. Determinism is weaker than statistical reproducibility. Schuster's convergence theory needs a sequence of bandwidths and sample sizes with uniform or $L^1$ convergence conditions; the local nonlinear static problem has an active KDE boundary and one run cannot establish that convergence. The dispatch objective is closer to the convex setting, but it still has one stochastic residual and no repeated-seed study.

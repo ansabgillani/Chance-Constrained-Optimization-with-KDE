@@ -1,0 +1,30 @@
+{
+  "bandwidth": 0.2953710276655865,
+  "benchmark": "static_nonlinear",
+  "decision": [
+    0.4484065023024311,
+    0.3414068232565307
+  ],
+  "distribution": "gaussian",
+  "epsilon": 0.1,
+  "estimated_violation": 0.1000000000000425,
+  "gap": 0.038000000000000006,
+  "message": "Optimization terminated successfully",
+  "method": "unbiased_kde",
+  "n_test": 4000,
+  "n_train": 250,
+  "objective": 0.1981428706554218,
+  "runtime_seconds": 0.0022750839998479933,
+  "schema_version": "1.0",
+  "seed": 20260906,
+  "solver_iterations": 8,
+  "success": true,
+  "test_violation": 0.062,
+  "train_violation": 0.052,
+  "uncertainty_metadata": {
+    "distribution": "gaussian",
+    "mean": 0.0,
+    "seed": 20260906,
+    "std": 1.0
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "bandwidth": 0.09343406583471349,
+  "benchmark": "energy_dispatch",
+  "decision": [
+    70.02538712250626,
+    1.48894230278529e-11
+  ],
+  "epsilon": 0.1,
+  "estimated_violation": 0.588,
+  "gap": -0.47875,
+  "message": "Optimization terminated successfully",
+  "method": "nominal",
+  "n_test": 4000,
+  "n_train": 250,
+  "objective": 928.5686326201369,
+  "runtime_seconds": 0.0011057910014642403,
+  "schema_version": "1.0",
+  "seed": 20260907,
+  "success": true,
+  "test_violation": 0.57875,
+  "train_violation": 0.588,
+  "uncertainty_metadata": {
+    "distribution": "renewable_error",
+    "means": [
+      -0.25,
+      0.35
+    ],
+    "mixture_components": [
+      {
+        "label": "underproduction",
+        "mean": -0.25,
+        "std": 0.1,
+        "weight": 0.6
+      },
+      {
+        "label": "overproduction",
+        "mean": 0.35,
+        "std": 0.15,
+        "weight": 0.4
+      }
+    ],
+    "seed": 20260907,
+    "stds": [
+      0.1,
+      0.15
+    ],
+    "units": "normalised power error",
+    "weights": [
+      0.6,
+      0.4
+    ]
+  }
+}

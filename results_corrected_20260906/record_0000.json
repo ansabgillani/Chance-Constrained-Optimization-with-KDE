@@ -1,0 +1,30 @@
+{
+  "bandwidth": 0.2953710276655865,
+  "benchmark": "static_nonlinear",
+  "decision": [
+    0.7854763160312112,
+    0.580371670384474
+  ],
+  "distribution": "gaussian",
+  "epsilon": 0.1,
+  "estimated_violation": 0.532,
+  "gap": -0.41800000000000004,
+  "message": "Optimization terminated successfully",
+  "method": "nominal",
+  "n_test": 4000,
+  "n_train": 250,
+  "objective": 0.02338961879864484,
+  "runtime_seconds": 0.20738412499486003,
+  "schema_version": "1.0",
+  "seed": 20260906,
+  "solver_iterations": 6,
+  "success": true,
+  "test_violation": 0.518,
+  "train_violation": 0.532,
+  "uncertainty_metadata": {
+    "distribution": "gaussian",
+    "mean": 0.0,
+    "seed": 20260906,
+    "std": 1.0
+  }
+}

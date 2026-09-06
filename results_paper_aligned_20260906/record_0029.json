@@ -1,0 +1,77 @@
+{
+  "bandwidth": 0.12361296522781917,
+  "bandwidth_rule": "schuster_gaussian_scaling",
+  "base_bandwidth": 0.061806482613909586,
+  "benchmark": "energy_dispatch_paper_aligned",
+  "bias": "B(h)=h",
+  "continuation_attempts": [
+    0.25,
+    0.5,
+    1.0,
+    2.0
+  ],
+  "continuation_multipliers": [
+    0.25,
+    0.5,
+    1.0,
+    2.0
+  ],
+  "continuation_success": [
+    true,
+    true,
+    true,
+    true
+  ],
+  "epsilon": 0.1,
+  "estimated_violation": 0.10000000000375253,
+  "gap": 0.0931,
+  "message": "Optimization terminated successfully",
+  "method": "keil_biased_epanechnikov",
+  "n_test": 10000,
+  "n_train": 5000,
+  "n_train_schedule": [
+    250,
+    1000,
+    5000
+  ],
+  "objective": 935.2207638336491,
+  "runtime_seconds": 0.015088540996657684,
+  "schema_version": "1.0",
+  "seed": 20260907,
+  "selected_multiplier": 2.0,
+  "success": true,
+  "test_violation": 0.0069,
+  "train_violation": 0.0058,
+  "uncertainty_metadata": {
+    "distribution": "renewable_error",
+    "means": [
+      -0.25,
+      0.35
+    ],
+    "mixture_components": [
+      {
+        "label": "underproduction",
+        "mean": -0.25,
+        "std": 0.1,
+        "weight": 0.6
+      },
+      {
+        "label": "overproduction",
+        "mean": 0.35,
+        "std": 0.15,
+        "weight": 0.4
+      }
+    ],
+    "seed": 20260907,
+    "stds": [
+      0.1,
+      0.15
+    ],
+    "units": "normalised power error",
+    "weights": [
+      0.6,
+      0.4
+    ]
+  },
+  "uncertainty_protocol": "IID synthetic stream; not Keil MCMC"
+}

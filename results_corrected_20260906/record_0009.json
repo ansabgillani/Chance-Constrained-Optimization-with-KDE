@@ -1,0 +1,29 @@
+{
+  "bandwidth": 0.24195144627290915,
+  "benchmark": "static_nonlinear",
+  "decision": [
+    8.815080954407496e-17,
+    7.644483975840237e-17
+  ],
+  "distribution": "skewed",
+  "epsilon": 0.1,
+  "estimated_violation": 0.008,
+  "gap": 0.08575,
+  "message": "Positive directional derivative for linesearch",
+  "method": "scenario",
+  "n_test": 4000,
+  "n_train": 250,
+  "objective": 0.9999999999999998,
+  "runtime_seconds": 0.006926791000296362,
+  "schema_version": "1.0",
+  "seed": 20260908,
+  "solver_iterations": 21,
+  "success": false,
+  "test_violation": 0.01425,
+  "train_violation": 0.008,
+  "uncertainty_metadata": {
+    "distribution": "skewed_exponential",
+    "scale": 1.0,
+    "seed": 20260908
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "configuration": {
+    "epsilon": 0.1,
+    "lunar_maxiter": 80,
+    "n_test": 4000,
+    "n_train": 250,
+    "solver": {
+      "maxiter": 300,
+      "method": "SLSQP"
+    },
+    "static_distributions": [
+      "gaussian",
+      "bimodal",
+      "skewed",
+      "heavy_tailed"
+    ]
+  },
+  "local_bias_name": "local_shifted_epanechnikov",
+  "lunar_stage_order": [
+    "nominal",
+    "worst_case",
+    "scenario",
+    "unbiased_kde",
+    "local_shifted_epanechnikov"
+  ],
+  "model_configuration": {
+    "dispatch": {
+      "capacities": [
+        90.0,
+        100.0
+      ],
+      "demand": 100.0,
+      "renewable_nominal": 30.0
+    },
+    "lunar": {
+      "delta": 0.25,
+      "epsilon_a": 0.1,
+      "epsilon_b": 0.01,
+      "gravity": 1.622,
+      "n_path_constraints": 1,
+      "n_terminal_constraints": 1,
+      "name": "lunar_landing",
+      "path_error_distribution": "bimodal Gaussian mixture (experiment sampler)",
+      "published_model_source": "Research_Report_2.md; Keil et al. benchmark summary",
+      "residual_convention": "residual <= 0 is safe",
+      "terminal_error_distribution": "Normal(0, 0.1^2)",
+      "terminal_sigma": 0.1,
+      "tf": 20.0,
+      "u_max": 3.0,
+      "uncertainty_dim": 1
+    },
+    "static": "two-dimensional nonlinear circular residual"
+  },
+  "protocol": "independent seeded train/test; local SciPy solvers",
+  "published_comparison": "Keil values are external report values, not local outputs",
+  "records": 39,
+  "sample_files": "samples/*.npy",
+  "seed": 20260906
+}

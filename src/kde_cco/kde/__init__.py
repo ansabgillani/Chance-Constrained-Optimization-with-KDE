@@ -1,6 +1,6 @@
 """Kernel density estimation helpers."""
 
-from .bandwidth import silverman_bandwidth
+from .bandwidth import schuster_bandwidth, silverman_bandwidth
 from .kernels import (
     biased_epanechnikov_cdf,
     epanechnikov_cdf,
@@ -11,5 +11,5 @@ from .kernels import (
 
 __all__ = [
     "gaussian_pdf", "epanechnikov_pdf", "gaussian_cdf", "epanechnikov_cdf",
-    "biased_epanechnikov_cdf", "silverman_bandwidth",
+    "biased_epanechnikov_cdf", "silverman_bandwidth", "schuster_bandwidth",
 ]

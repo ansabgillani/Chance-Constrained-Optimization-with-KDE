@@ -1,0 +1,39 @@
+{
+  "bandwidth": 0.19254262645933262,
+  "bandwidth_rule": "schuster_gaussian_scaling",
+  "base_bandwidth": 0.19254262645933262,
+  "benchmark": "static_nonlinear_paper_aligned",
+  "bias": null,
+  "continuation_attempts": [
+    1.0
+  ],
+  "continuation_multipliers": [
+    1.0
+  ],
+  "continuation_success": [
+    true
+  ],
+  "distribution": "gaussian",
+  "epsilon": 0.1,
+  "estimated_violation": 0.10000000034305989,
+  "gap": 0.016600000000000004,
+  "message": "Optimization terminated successfully",
+  "method": "schuster_gaussian",
+  "n_test": 10000,
+  "n_train": 5000,
+  "objective": 0.1599186460501936,
+  "runtime_seconds": 0.0036470830091275275,
+  "sample_schedule": [
+    250,
+    1000,
+    5000
+  ],
+  "schema_version": "1.0",
+  "seed": 20260906,
+  "selected_multiplier": 1.0,
+  "solver_iterations": 7,
+  "success": true,
+  "test_violation": 0.0834,
+  "train_violation": 0.0796,
+  "uncertainty_protocol": "IID synthetic stream; not Keil MCMC"
+}

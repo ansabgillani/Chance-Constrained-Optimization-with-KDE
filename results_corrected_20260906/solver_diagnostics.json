@@ -1,0 +1,864 @@
+{
+  "lunar_stage_diagnostics": [
+    {
+      "constraint_diagnostics": {
+        "epsilon_a": 0.1,
+        "epsilon_b": 0.01,
+        "initial_residual": [
+          0.0,
+          0.0
+        ],
+        "kernel": null,
+        "local_biased_surrogate": false,
+        "max_defect": 7.105427357601002e-15,
+        "min_chance_margin": 1.942890293094024e-16,
+        "path_bandwidth": 0.09577155842983517,
+        "path_sample_count": 250,
+        "stage": "nominal",
+        "terminal_bandwidth": 0.03140451630623167,
+        "terminal_sample_count": 250,
+        "terminal_velocity_residual": 0.0
+      },
+      "message": "Optimization terminated successfully",
+      "nit": 6,
+      "objective": 29.805235153070598,
+      "runtime_seconds": 0.029769250002573244,
+      "stage": "nominal",
+      "success": true
+    },
+    {
+      "constraint_diagnostics": {
+        "epsilon_a": 0.1,
+        "epsilon_b": 0.01,
+        "initial_residual": [
+          0.0,
+          0.0
+        ],
+        "kernel": null,
+        "local_biased_surrogate": false,
+        "max_defect": 9.769962616701378e-15,
+        "min_chance_margin": -0.7382552245839209,
+        "path_bandwidth": 0.09577155842983517,
+        "path_sample_count": 250,
+        "stage": "worst_case",
+        "terminal_bandwidth": 0.03140451630623167,
+        "terminal_sample_count": 250,
+        "terminal_velocity_residual": 0.0
+      },
+      "message": "Positive directional derivative for linesearch",
+      "nit": 13,
+      "objective": 29.805235153070598,
+      "runtime_seconds": 0.05068304100132082,
+      "stage": "worst_case",
+      "success": false
+    },
+    {
+      "constraint_diagnostics": {
+        "epsilon_a": 0.1,
+        "epsilon_b": 0.01,
+        "initial_residual": [
+          0.0,
+          0.0
+        ],
+        "kernel": null,
+        "local_biased_surrogate": false,
+        "max_defect": 2.62456723021387e-13,
+        "min_chance_margin": -0.27969414330990805,
+        "path_bandwidth": 0.09577155842983517,
+        "path_sample_count": 250,
+        "stage": "scenario",
+        "terminal_bandwidth": 0.03140451630623167,
+        "terminal_sample_count": 250,
+        "terminal_velocity_residual": 0.0
+      },
+      "message": "Positive directional derivative for linesearch",
+      "nit": 6,
+      "objective": 31.36847623928402,
+      "runtime_seconds": 0.039059916001860984,
+      "stage": "scenario",
+      "success": false
+    },
+    {
+      "constraint_diagnostics": {
+        "epsilon_a": 0.1,
+        "epsilon_b": 0.01,
+        "initial_residual": [
+          0.0,
+          0.0
+        ],
+        "kernel": "gaussian",
+        "local_biased_surrogate": false,
+        "max_defect": 1.2840528640367666e-10,
+        "min_chance_margin": -0.02091903326743294,
+        "path_bandwidth": 0.09577155842983517,
+        "path_sample_count": 250,
+        "stage": "unbiased_kde",
+        "terminal_bandwidth": 0.03140451630623167,
+        "terminal_sample_count": 250,
+        "terminal_velocity_residual": 0.0
+      },
+      "message": "Positive directional derivative for linesearch",
+      "nit": 18,
+      "objective": 32.43999999993264,
+      "runtime_seconds": 0.10295099999348167,
+      "stage": "unbiased_kde",
+      "success": false
+    },
+    {
+      "constraint_diagnostics": {
+        "epsilon_a": 0.1,
+        "epsilon_b": 0.01,
+        "initial_residual": [
+          0.0,
+          0.0
+        ],
+        "kernel": "epanechnikov",
+        "local_biased_surrogate": true,
+        "max_defect": 2.8976820942716586e-12,
+        "min_chance_margin": -0.08673879993997335,
+        "path_bandwidth": 0.09577155842983517,
+        "path_sample_count": 250,
+        "stage": "local_shifted_epanechnikov",
+        "terminal_bandwidth": 0.03140451630623167,
+        "terminal_sample_count": 250,
+        "terminal_velocity_residual": 0.0
+      },
+      "message": "Positive directional derivative for linesearch",
+      "nit": 15,
+      "objective": 32.44000000000322,
+      "runtime_seconds": 0.13104774999374058,
+      "stage": "local_shifted_epanechnikov",
+      "success": false
+    }
+  ],
+  "solver_records": [
+    {
+      "bandwidth": 0.2953710276655865,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.7854763160312112,
+        0.580371670384474
+      ],
+      "distribution": "gaussian",
+      "epsilon": 0.1,
+      "estimated_violation": 0.532,
+      "gap": -0.41800000000000004,
+      "message": "Optimization terminated successfully",
+      "method": "nominal",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.02338961879864484,
+      "runtime_seconds": 0.20738412499486003,
+      "schema_version": "1.0",
+      "seed": 20260906,
+      "solver_iterations": 6,
+      "success": true,
+      "test_violation": 0.518,
+      "train_violation": 0.532,
+      "uncertainty_metadata": {
+        "distribution": "gaussian",
+        "mean": 0.0,
+        "seed": 20260906,
+        "std": 1.0
+      }
+    },
+    {
+      "bandwidth": 0.2953710276655865,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.2411346351769402,
+        0.05184024664636318
+      ],
+      "distribution": "gaussian",
+      "epsilon": 0.1,
+      "estimated_violation": 0.004,
+      "gap": 0.0985,
+      "message": "Optimization terminated successfully",
+      "method": "scenario",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.6134346351436594,
+      "runtime_seconds": 0.0016274579975288361,
+      "schema_version": "1.0",
+      "seed": 20260906,
+      "solver_iterations": 8,
+      "success": true,
+      "test_violation": 0.0015,
+      "train_violation": 0.004,
+      "uncertainty_metadata": {
+        "distribution": "gaussian",
+        "mean": 0.0,
+        "seed": 20260906,
+        "std": 1.0
+      }
+    },
+    {
+      "bandwidth": 0.2953710276655865,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.4484065023024311,
+        0.3414068232565307
+      ],
+      "distribution": "gaussian",
+      "epsilon": 0.1,
+      "estimated_violation": 0.1000000000000425,
+      "gap": 0.038000000000000006,
+      "message": "Optimization terminated successfully",
+      "method": "unbiased_kde",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.1981428706554218,
+      "runtime_seconds": 0.0022750839998479933,
+      "schema_version": "1.0",
+      "seed": 20260906,
+      "solver_iterations": 8,
+      "success": true,
+      "test_violation": 0.062,
+      "train_violation": 0.052,
+      "uncertainty_metadata": {
+        "distribution": "gaussian",
+        "mean": 0.0,
+        "seed": 20260906,
+        "std": 1.0
+      }
+    },
+    {
+      "bandwidth": 0.2953710276655865,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.3539997025797538,
+        0.27859649027811906
+      ],
+      "distribution": "gaussian",
+      "epsilon": 0.1,
+      "estimated_violation": 0.10000000000000198,
+      "gap": 0.08075,
+      "message": "Optimization terminated successfully",
+      "method": "local_shifted_epanechnikov",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.30714763509540216,
+      "runtime_seconds": 0.0023280829918803647,
+      "schema_version": "1.0",
+      "seed": 20260906,
+      "solver_iterations": 9,
+      "success": true,
+      "test_violation": 0.01925,
+      "train_violation": 0.032,
+      "uncertainty_metadata": {
+        "distribution": "gaussian",
+        "mean": 0.0,
+        "seed": 20260906,
+        "std": 1.0
+      }
+    },
+    {
+      "bandwidth": 0.3764276383193261,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.7855441321814829,
+        0.5803446442860899
+      ],
+      "distribution": "bimodal",
+      "epsilon": 0.1,
+      "estimated_violation": 0.608,
+      "gap": -0.52225,
+      "message": "Optimization terminated successfully",
+      "method": "nominal",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.02338962162072117,
+      "runtime_seconds": 0.0009608749969629571,
+      "schema_version": "1.0",
+      "seed": 20260907,
+      "solver_iterations": 5,
+      "success": true,
+      "test_violation": 0.62225,
+      "train_violation": 0.608,
+      "uncertainty_metadata": {
+        "distribution": "bimodal",
+        "means": [
+          -1.2,
+          1.2
+        ],
+        "seed": 20260907,
+        "stds": [
+          0.35,
+          0.35
+        ],
+        "weights": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "bandwidth": 0.3764276383193261,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.2774379001912225,
+        0.23184264554285638
+      ],
+      "distribution": "bimodal",
+      "epsilon": 0.1,
+      "estimated_violation": 0.004,
+      "gap": 0.099,
+      "message": "Optimization terminated successfully",
+      "method": "scenario",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.4118270826351511,
+      "runtime_seconds": 0.0013576670025940984,
+      "schema_version": "1.0",
+      "seed": 20260907,
+      "solver_iterations": 7,
+      "success": true,
+      "test_violation": 0.001,
+      "train_violation": 0.004,
+      "uncertainty_metadata": {
+        "distribution": "bimodal",
+        "means": [
+          -1.2,
+          1.2
+        ],
+        "seed": 20260907,
+        "stds": [
+          0.35,
+          0.35
+        ],
+        "weights": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "bandwidth": 0.3764276383193261,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.3555369189038706,
+        0.2567362532788376
+      ],
+      "distribution": "bimodal",
+      "epsilon": 0.1,
+      "estimated_violation": 0.10000000003891651,
+      "gap": 0.085,
+      "message": "Optimization terminated successfully",
+      "method": "unbiased_kde",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.3199413910935989,
+      "runtime_seconds": 0.0020203339954605326,
+      "schema_version": "1.0",
+      "seed": 20260907,
+      "solver_iterations": 8,
+      "success": true,
+      "test_violation": 0.015,
+      "train_violation": 0.012,
+      "uncertainty_metadata": {
+        "distribution": "bimodal",
+        "means": [
+          -1.2,
+          1.2
+        ],
+        "seed": 20260907,
+        "stds": [
+          0.35,
+          0.35
+        ],
+        "weights": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "bandwidth": 0.3764276383193261,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.23641164234355436,
+        0.1684365964878606
+      ],
+      "distribution": "bimodal",
+      "epsilon": 0.1,
+      "estimated_violation": 0.10000000015148724,
+      "gap": 0.09975,
+      "message": "Optimization terminated successfully",
+      "method": "local_shifted_epanechnikov",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.505869826757194,
+      "runtime_seconds": 0.002561459012213163,
+      "schema_version": "1.0",
+      "seed": 20260907,
+      "solver_iterations": 9,
+      "success": true,
+      "test_violation": 0.00025,
+      "train_violation": 0.0,
+      "uncertainty_metadata": {
+        "distribution": "bimodal",
+        "means": [
+          -1.2,
+          1.2
+        ],
+        "seed": 20260907,
+        "stds": [
+          0.35,
+          0.35
+        ],
+        "weights": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    {
+      "bandwidth": 0.24195144627290915,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.7854908583437997,
+        0.580362739801179
+      ],
+      "distribution": "skewed",
+      "epsilon": 0.1,
+      "estimated_violation": 0.356,
+      "gap": -0.2965,
+      "message": "Optimization terminated successfully",
+      "method": "nominal",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.023389618511575255,
+      "runtime_seconds": 0.0010470420093042776,
+      "schema_version": "1.0",
+      "seed": 20260908,
+      "solver_iterations": 5,
+      "success": true,
+      "test_violation": 0.3965,
+      "train_violation": 0.356,
+      "uncertainty_metadata": {
+        "distribution": "skewed_exponential",
+        "scale": 1.0,
+        "seed": 20260908
+      }
+    },
+    {
+      "bandwidth": 0.24195144627290915,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        8.815080954407496e-17,
+        7.644483975840237e-17
+      ],
+      "distribution": "skewed",
+      "epsilon": 0.1,
+      "estimated_violation": 0.008,
+      "gap": 0.08575,
+      "message": "Positive directional derivative for linesearch",
+      "method": "scenario",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.9999999999999998,
+      "runtime_seconds": 0.006926791000296362,
+      "schema_version": "1.0",
+      "seed": 20260908,
+      "solver_iterations": 21,
+      "success": false,
+      "test_violation": 0.01425,
+      "train_violation": 0.008,
+      "uncertainty_metadata": {
+        "distribution": "skewed_exponential",
+        "scale": 1.0,
+        "seed": 20260908
+      }
+    },
+    {
+      "bandwidth": 0.24195144627290915,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.49426791682301713,
+        0.3665920206643538
+      ],
+      "distribution": "skewed",
+      "epsilon": 0.1,
+      "estimated_violation": 0.10000000009964527,
+      "gap": -0.005249999999999991,
+      "message": "Optimization terminated successfully",
+      "method": "unbiased_kde",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.15701112522017255,
+      "runtime_seconds": 0.0017931249894900247,
+      "schema_version": "1.0",
+      "seed": 20260908,
+      "solver_iterations": 7,
+      "success": true,
+      "test_violation": 0.10525,
+      "train_violation": 0.084,
+      "uncertainty_metadata": {
+        "distribution": "skewed_exponential",
+        "scale": 1.0,
+        "seed": 20260908
+      }
+    },
+    {
+      "bandwidth": 0.24195144627290915,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.41883220438487573,
+        0.28479081799152184
+      ],
+      "distribution": "skewed",
+      "epsilon": 0.1,
+      "estimated_violation": 0.10000000000621934,
+      "gap": 0.03,
+      "message": "Optimization terminated successfully",
+      "method": "local_shifted_epanechnikov",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.2506096951409451,
+      "runtime_seconds": 0.002077124998322688,
+      "schema_version": "1.0",
+      "seed": 20260908,
+      "solver_iterations": 8,
+      "success": true,
+      "test_violation": 0.07,
+      "train_violation": 0.052,
+      "uncertainty_metadata": {
+        "distribution": "skewed_exponential",
+        "scale": 1.0,
+        "seed": 20260908
+      }
+    },
+    {
+      "bandwidth": 0.27662547247955893,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.7854693820724681,
+        0.5803763026682706
+      ],
+      "distribution": "heavy_tailed",
+      "epsilon": 0.1,
+      "estimated_violation": 0.508,
+      "gap": -0.4085,
+      "message": "Optimization terminated successfully",
+      "method": "nominal",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.02338961914564075,
+      "runtime_seconds": 0.0011194590042578056,
+      "schema_version": "1.0",
+      "seed": 20260909,
+      "solver_iterations": 6,
+      "success": true,
+      "test_violation": 0.5085,
+      "train_violation": 0.508,
+      "uncertainty_metadata": {
+        "df": 3.5,
+        "distribution": "student_t",
+        "scale": 0.8,
+        "seed": 20260909
+      }
+    },
+    {
+      "bandwidth": 0.27662547247955893,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.16300728060482692,
+        7.398481096515862e-13
+      ],
+      "distribution": "heavy_tailed",
+      "epsilon": 0.1,
+      "estimated_violation": 0.044,
+      "gap": 0.07425000000000001,
+      "message": "Iteration limit reached",
+      "method": "scenario",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.7657597245615759,
+      "runtime_seconds": 0.10926974999892991,
+      "schema_version": "1.0",
+      "seed": 20260909,
+      "solver_iterations": 300,
+      "success": false,
+      "test_violation": 0.02575,
+      "train_violation": 0.044,
+      "uncertainty_metadata": {
+        "df": 3.5,
+        "distribution": "student_t",
+        "scale": 0.8,
+        "seed": 20260909
+      }
+    },
+    {
+      "bandwidth": 0.27662547247955893,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.3966301865406733,
+        0.282911766367644
+      ],
+      "distribution": "heavy_tailed",
+      "epsilon": 0.1,
+      "estimated_violation": 0.10000000000785092,
+      "gap": 0.03875000000000001,
+      "message": "Optimization terminated successfully",
+      "method": "unbiased_kde",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.2688627216517472,
+      "runtime_seconds": 0.002030292002018541,
+      "schema_version": "1.0",
+      "seed": 20260909,
+      "solver_iterations": 8,
+      "success": true,
+      "test_violation": 0.06125,
+      "train_violation": 0.068,
+      "uncertainty_metadata": {
+        "df": 3.5,
+        "distribution": "student_t",
+        "scale": 0.8,
+        "seed": 20260909
+      }
+    },
+    {
+      "bandwidth": 0.27662547247955893,
+      "benchmark": "static_nonlinear",
+      "decision": [
+        0.30677573286419935,
+        0.2159922514028773
+      ],
+      "distribution": "heavy_tailed",
+      "epsilon": 0.1,
+      "estimated_violation": 0.10000000025928635,
+      "gap": 0.059500000000000004,
+      "message": "Optimization terminated successfully",
+      "method": "local_shifted_epanechnikov",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 0.394045187735134,
+      "runtime_seconds": 0.0022416249994421378,
+      "schema_version": "1.0",
+      "seed": 20260909,
+      "solver_iterations": 9,
+      "success": true,
+      "test_violation": 0.0405,
+      "train_violation": 0.056,
+      "uncertainty_metadata": {
+        "df": 3.5,
+        "distribution": "student_t",
+        "scale": 0.8,
+        "seed": 20260909
+      }
+    },
+    {
+      "bandwidth": 0.09343406583471349,
+      "benchmark": "energy_dispatch",
+      "decision": [
+        70.02538712250626,
+        1.48894230278529e-11
+      ],
+      "epsilon": 0.1,
+      "estimated_violation": 0.588,
+      "gap": -0.47875,
+      "message": "Optimization terminated successfully",
+      "method": "nominal",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 928.5686326201369,
+      "runtime_seconds": 0.0011057910014642403,
+      "schema_version": "1.0",
+      "seed": 20260907,
+      "success": true,
+      "test_violation": 0.57875,
+      "train_violation": 0.588,
+      "uncertainty_metadata": {
+        "distribution": "renewable_error",
+        "means": [
+          -0.25,
+          0.35
+        ],
+        "mixture_components": [
+          {
+            "label": "underproduction",
+            "mean": -0.25,
+            "std": 0.1,
+            "weight": 0.6
+          },
+          {
+            "label": "overproduction",
+            "mean": 0.35,
+            "std": 0.15,
+            "weight": 0.4
+          }
+        ],
+        "seed": 20260907,
+        "stds": [
+          0.1,
+          0.15
+        ],
+        "units": "normalised power error",
+        "weights": [
+          0.6,
+          0.4
+        ]
+      }
+    },
+    {
+      "bandwidth": 0.09343406583471349,
+      "benchmark": "energy_dispatch",
+      "decision": [
+        70.49467310123178,
+        0.0
+      ],
+      "epsilon": 0.1,
+      "estimated_violation": 0.004,
+      "gap": 0.094,
+      "message": "Optimization terminated successfully",
+      "method": "scenario",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 935.3870580564729,
+      "runtime_seconds": 0.0010122499952558428,
+      "schema_version": "1.0",
+      "seed": 20260907,
+      "success": true,
+      "test_violation": 0.006,
+      "train_violation": 0.004,
+      "uncertainty_metadata": {
+        "distribution": "renewable_error",
+        "means": [
+          -0.25,
+          0.35
+        ],
+        "mixture_components": [
+          {
+            "label": "underproduction",
+            "mean": -0.25,
+            "std": 0.1,
+            "weight": 0.6
+          },
+          {
+            "label": "overproduction",
+            "mean": 0.35,
+            "std": 0.15,
+            "weight": 0.4
+          }
+        ],
+        "seed": 20260907,
+        "stds": [
+          0.1,
+          0.15
+        ],
+        "units": "normalised power error",
+        "weights": [
+          0.6,
+          0.4
+        ]
+      }
+    },
+    {
+      "bandwidth": 0.09343406583471349,
+      "benchmark": "energy_dispatch",
+      "decision": [
+        70.39397424877592,
+        6.23129220428615e-14
+      ],
+      "epsilon": 0.1,
+      "estimated_violation": 0.10000000000012532,
+      "gap": 0.060250000000000005,
+      "message": "Optimization terminated successfully",
+      "method": "unbiased_kde",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 933.9232999749839,
+      "runtime_seconds": 0.0027651669952319935,
+      "schema_version": "1.0",
+      "seed": 20260907,
+      "success": true,
+      "test_violation": 0.03975,
+      "train_violation": 0.052,
+      "uncertainty_metadata": {
+        "distribution": "renewable_error",
+        "means": [
+          -0.25,
+          0.35
+        ],
+        "mixture_components": [
+          {
+            "label": "underproduction",
+            "mean": -0.25,
+            "std": 0.1,
+            "weight": 0.6
+          },
+          {
+            "label": "overproduction",
+            "mean": 0.35,
+            "std": 0.15,
+            "weight": 0.4
+          }
+        ],
+        "seed": 20260907,
+        "stds": [
+          0.1,
+          0.15
+        ],
+        "units": "normalised power error",
+        "weights": [
+          0.6,
+          0.4
+        ]
+      }
+    },
+    {
+      "bandwidth": 0.09343406583471349,
+      "benchmark": "energy_dispatch",
+      "decision": [
+        70.4602404781637,
+        4.1796542282906284e-14
+      ],
+      "epsilon": 0.1,
+      "estimated_violation": 0.10000000001094211,
+      "gap": 0.08900000000000001,
+      "message": "Optimization terminated successfully",
+      "method": "local_shifted_epanechnikov",
+      "n_test": 4000,
+      "n_train": 250,
+      "objective": 934.8865045262968,
+      "runtime_seconds": 0.0028206660063005984,
+      "schema_version": "1.0",
+      "seed": 20260907,
+      "success": true,
+      "test_violation": 0.011,
+      "train_violation": 0.012,
+      "uncertainty_metadata": {
+        "distribution": "renewable_error",
+        "means": [
+          -0.25,
+          0.35
+        ],
+        "mixture_components": [
+          {
+            "label": "underproduction",
+            "mean": -0.25,
+            "std": 0.1,
+            "weight": 0.6
+          },
+          {
+            "label": "overproduction",
+            "mean": 0.35,
+            "std": 0.15,
+            "weight": 0.4
+          }
+        ],
+        "seed": 20260907,
+        "stds": [
+          0.1,
+          0.15
+        ],
+        "units": "normalised power error",
+        "weights": [
+          0.6,
+          0.4
+        ]
+      }
+    }
+  ]
+}

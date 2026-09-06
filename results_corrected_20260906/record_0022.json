@@ -1,0 +1,27 @@
+{
+  "benchmark": "joint_static",
+  "epsilon": 0.1,
+  "estimated_violation": 0.5685,
+  "gap": -0.47450000000000003,
+  "individual_violation": [
+    0.33275,
+    0.3255
+  ],
+  "joint_test_violation": 0.5715,
+  "message": "joint statistic evaluation",
+  "method": "logsumexp",
+  "n_test": 2000,
+  "n_train": 2000,
+  "objective": null,
+  "risk_allocation": [
+    0.05,
+    0.05
+  ],
+  "runtime_seconds": null,
+  "schema_version": "1.0",
+  "seed": 20260908,
+  "success": true,
+  "tau": 0.1,
+  "test_violation": 0.5745,
+  "train_violation": 0.5685
+}

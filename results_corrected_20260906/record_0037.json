@@ -1,0 +1,35 @@
+{
+  "benchmark": "lunar_landing",
+  "epsilon": 0.1,
+  "estimated_violation": 0.108,
+  "gap": -0.012749999999999997,
+  "message": "Positive directional derivative for linesearch",
+  "method": "unbiased_kde",
+  "n_test": 4000,
+  "n_train": 250,
+  "objective": 32.43999999993264,
+  "runtime_seconds": 0.10295099999348167,
+  "schema_version": "1.0",
+  "seed": 20260910,
+  "solver_diagnostics": {
+    "epsilon_a": 0.1,
+    "epsilon_b": 0.01,
+    "initial_residual": [
+      0.0,
+      0.0
+    ],
+    "kernel": "gaussian",
+    "local_biased_surrogate": false,
+    "max_defect": 1.2840528640367666e-10,
+    "min_chance_margin": -0.02091903326743294,
+    "path_bandwidth": 0.09577155842983517,
+    "path_sample_count": 250,
+    "stage": "unbiased_kde",
+    "terminal_bandwidth": 0.03140451630623167,
+    "terminal_sample_count": 250,
+    "terminal_velocity_residual": 0.0
+  },
+  "success": false,
+  "test_violation": 0.11275,
+  "train_violation": 0.108
+}

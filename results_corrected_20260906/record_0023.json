@@ -1,0 +1,18 @@
+{
+  "bandwidth": 0.03024411883779601,
+  "benchmark": "residual_sensitivity",
+  "epsilon": 0.1,
+  "estimated_violation": 0.3765003672777102,
+  "gap": -0.29500000000000004,
+  "message": "fixed-residual estimator sensitivity; no optimization",
+  "method": "bandwidth_sweep",
+  "n_test": 4000,
+  "n_train": 250,
+  "objective": null,
+  "runtime_seconds": null,
+  "schema_version": "1.0",
+  "seed": 20260909,
+  "success": true,
+  "test_violation": 0.395,
+  "train_violation": 0.372
+}

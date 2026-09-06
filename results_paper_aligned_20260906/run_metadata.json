@@ -1,0 +1,29 @@
+{
+  "epsilon": 0.1,
+  "keil": {
+    "bias": "B(h)=h",
+    "collocation": "not reproduced; local SLSQP static/dispatch only",
+    "continuation": [
+      0.25,
+      0.5,
+      1.0,
+      2.0
+    ],
+    "kernel": "biased Epanechnikov",
+    "sampling": "IID synthetic analogue, not 50,000-sample MCMC"
+  },
+  "n_test": 10000,
+  "profile": "paper_aligned",
+  "records": 30,
+  "sample_schedule": [
+    250,
+    1000,
+    5000
+  ],
+  "schuster": {
+    "bandwidth": "s * (4/((d+2)N))**(1/(d+4))",
+    "kernel": "Gaussian product; scalar residual d=1",
+    "status": "scaling rule only; no finite-sample guarantee"
+  },
+  "seed": 20260906
+}

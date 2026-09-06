@@ -57,8 +57,16 @@ def _static(seed, n_train, n_test, epsilon):
             solved = solve_static(problem, initial_guess=np.array([.5, .5]), chance_constraint=fn, maxiter=300)
             x = solved["decision"]
             tr, te = residual(x, train), residual(x, test)
-            est = (empirical_violation(tr) if method in ("nominal", "scenario")
-                   else 1-kde_safe_probability(tr, h, "gaussian"))
+            if method in ("nominal", "scenario"):
+                est = empirical_violation(tr)
+            elif method == "unbiased_kde":
+                est = 1 - kde_safe_probability(tr, h, "gaussian")
+            else:
+                # Report the same shifted Epanechnikov estimator that was
+                # imposed in the NLP.  The old runner reported a Gaussian
+                # diagnostic here, which made the local method appear to use
+                # a different probability functional than it optimized.
+                est = kde_violation_upper(tr, h, "epanechnikov", True)
             rows.append(evaluate_residuals(tr, te, epsilon=epsilon, estimated_violation=est,
                 objective=solved["objective"], runtime_seconds=time.perf_counter()-started,
                 success=solved["success"], message=solved["message"], benchmark="static_nonlinear",
@@ -79,7 +87,12 @@ def _dispatch(seed, n_train, n_test, epsilon):
         else: fn=lambda x: float(kde_violation_upper(residual(x, train),h,"epanechnikov",True)-epsilon)
         solved=solve_dispatch(p, initial_guess=np.array([40.,40.]), chance_constraint=fn, maxiter=300)
         tr,te=residual(solved["decision"],train),residual(solved["decision"],test)
-        est=1-kde_safe_probability(tr,h,"gaussian")
+        if method in ("nominal", "scenario"):
+            est = empirical_violation(tr)
+        elif method == "unbiased_kde":
+            est = 1 - kde_safe_probability(tr, h, "gaussian")
+        else:
+            est = kde_violation_upper(tr, h, "epanechnikov", True)
         rows.append(evaluate_residuals(tr,te,epsilon=epsilon,estimated_violation=est,objective=solved["objective"],
             runtime_seconds=solved["runtime_seconds"],success=solved["success"],message=solved["message"],
             benchmark="energy_dispatch",method=method,seed=seed,metadata={"decision":solved["decision"].tolist(),"bandwidth":h,"uncertainty_metadata":meta}))
