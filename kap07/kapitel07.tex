@@ -1,0 +1,40 @@
+\section{Implementation and Validation}
+\label{ch:implementation}
+
+The implementation follows a fixed data path:
+\begin{center}
+training samples $\rightarrow$ residuals $\rightarrow$ KDE or baseline constraint
+$\rightarrow$ NLP/collocation $\rightarrow$ independent test Monte Carlo
+$\rightarrow$ saved result artifacts.
+\end{center}
+The modules are deliberately small. `uncertainty` produces seeded distributions
+and disjoint train/test samples; `kde` implements kernels, integrated kernels, and
+bandwidth rules; `constraints` handles scalar, Boole, maximum, and log-sum-exp
+statistics; `problems` contains the canonical static, dispatch, and lunar models;
+and `evaluation` serializes metrics and provenance.
+
+For a computed decision $x^*$ and independent test samples $\xi_r^{\rm test}$,
+the central validation statistic is
+\begin{equation}
+  \widehat v_{\rm test}(x^*)=\frac{1}{M}\sum_{r=1}^M
+  \mathbf 1\{g(x^*,\xi_r^{\rm test})>0\}.
+  \label{eq:test-violation}
+\end{equation}
+The conservatism gap is
+\begin{equation}
+  \operatorname{gap}=\varepsilon-\widehat v_{\rm test}(x^*).
+  \label{eq:gap}
+\end{equation}
+A result record also contains the training empirical violation, the KDE estimate
+used by the optimizer, objective value, runtime, solver status, bandwidth, sample
+sizes, seed, and benchmark metadata. Training samples never enter the test
+estimate, and the test seed is independent of the training seed.
+
+The test sources cover kernel normalization and limits, analytic gradients by finite
+differences, reproducibility under fixed seeds, residual dimensions, and the
+agreement between saved metrics and independently recomputed violations. These
+checks do not create a finite-sample certificate. The local run used a venv with
+the locally installed NumPy and SciPy packages; compilation and direct numerical
+checks passed, while pytest was unavailable. The local shifted Epanechnikov
+surrogate dominates the empirical violation indicator, but out-of-sample
+feasibility remains an empirical question.

@@ -1,0 +1,34 @@
+\section{Discussion and Practical Guidance}
+\label{ch:discussion}
+
+\subsection{Method selection}
+KDE is appropriate when uncertainty is available through data, is non-Gaussian or
+multimodal, and the optimizer requires a smooth scalar constraint. The evidence is
+strongest for low-dimensional residuals. A Gaussian reformulation is preferable
+when its distributional and convexity assumptions hold; scenario methods remain
+preferable when an a priori finite-sample feasibility statement is required.
+
+\subsection{Bandwidth and sample size}
+Silverman's rule is a starting value, not an optimization guarantee. In the local
+fixed-residual sweep, multiplying the baseline bandwidth by $0.25$ to $4$ changed
+the KDE violation estimate from $0.3765$ to $0.4234$, while the independent test
+frequency was $0.3950$. The sample-size sweep ($N=50$ through $2000$) produced
+estimates between $0.3754$ and $0.4284$. These are estimator diagnostics at a fixed
+residual distribution, not reoptimized decisions. They
+support a stability check around the baseline rather than a claim that increasing
+$N$ alone forces a monotone approach to $\varepsilon$. A logarithmic sweep should
+be followed by continuation from larger to smaller bandwidths when the NLP is
+sensitive. Rare-event levels and high residual dimensions require methods designed
+for tail estimation or distributional robustness.
+
+\subsection{Limits and open problems}
+Schuster's convergence results apply under their stated assumptions and to the
+estimator covered by the theorem. They do not supply a universal finite-sample
+out-of-sample certificate, and the convergence gap for the biased construction
+remains open. Distribution shift, optimization-aware bandwidth selection,
+finite-sample biased-KDE bounds, and sample compression for real-time control are
+natural next problems. The dispatch benchmark supports portability of the pipeline.
+The lunar proxy uses a different horizon and Euler mesh from the LGR
+implementation of \citet{keil2020,keil2021}; its cost near $30$ and failed robust stages do not reproduce the
+published costs near $9.09$. This difference is reported rather than interpreted
+as a contradiction of the published experiment.

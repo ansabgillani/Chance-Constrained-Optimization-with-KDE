@@ -1,0 +1,88 @@
+\section{Optimal Control Formulation}
+\label{ch:optimalcontrol}
+
+The static chance-constrained problem considered in the preceding chapters extends
+to an optimal-control problem by taking the decision to be a state--control
+trajectory. Let $y(t)\in\R^{n_y}$, $u(t)\in\R^{n_u}$, and let $\xi$ denote the
+uncertain parameter. A representative formulation is
+\begin{equation}
+  \begin{aligned}
+    \min_{y,u}\quad &J(y,u)=\int_0^{t_f} L(y(t),u(t))\,dt+\Phi(y(t_f)),\\
+    \text{s.t.}\quad &\dot y(t)=F(y(t),u(t),\xi),\\
+    &y(0)\in\mathcal Y_0,\quad u(t)\in\mathcal U,\\
+    &\Prob\{g_k(y,u,\xi)\leq 0\}\geq 1-\varepsilon_k,
+  \end{aligned}
+  \label{eq:ocp-general}
+\end{equation}
+where path and terminal events may have different risk levels. The KDE reformulation
+is applied to the scalar residuals at the points where the transcription evaluates
+the constraints. For training samples $\xi_i$, the residuals are
+$r_i(x)=g(x,\xi_i)$, and the deterministic approximation is the integrated-kernel
+average introduced in Chapters~3--5. The resulting finite-dimensional problem is
+an ordinary nonlinear program (NLP).
+
+\subsection{Direct transcription and collocation}
+
+Choose a mesh $0=t_0<\dots<t_N=t_f$ and represent the state and control by nodal
+variables. With a step length $h_j=t_{j+1}-t_j$, a forward-Euler transcription has
+the defect constraints
+\begin{equation}
+  y_{j+1}-y_j-h_jF(y_j,u_j,\xi)=0,\qquad j=0,\dots,N-1.
+  \label{eq:euler-defect}
+\end{equation}
+Higher-order Radau or Hermite--Simpson defects can replace \cref{eq:euler-defect}
+without changing the chance-constraint layer. The implementation keeps the
+transcription separate from kernels and baselines: the solver receives residual
+callables, while `kde`, `constraints`, `problems`, `solvers`, and `evaluation`
+provide their numerical meanings. This separation makes a numerical OCP
+limitation distinguishable from a failure of the static evidence.
+
+\subsection{Soft lunar landing benchmark}
+\label{sec:lunar-ocp}
+
+The benchmark uses altitude $y_1$, vertical velocity $y_2$, and nonnegative thrust
+$u$. In the nondimensional model,
+\begin{equation}
+  \dot y_1=y_2,\qquad \dot y_2=-1.622+u,
+  \qquad u(t)\geq 0.
+  \label{eq:lunar-dynamics}
+\end{equation}
+The objective is fuel, $J=\int_0^{t_f}u(t)\,dt$, with prescribed initial state
+and terminal velocity $y_2(t_f)=0$. Terminal altitude is governed by the chance
+event, not fixed by a second equality. The terminal position event
+uses a Gaussian disturbance $\xi_1\sim\mathcal N(0,0.1^2)$ and tolerance
+$\delta=0.25$:
+\begin{equation}
+  \Prob\left(\left|y_1(t_f)-\xi_1\right|-\delta>0\right)\leq\varepsilon_a,
+  \qquad \varepsilon_a=0.1.
+  \label{eq:lunar-terminal-risk}
+\end{equation}
+The path thrust event is
+\begin{equation}
+  \Prob\left(u(t_j)+\xi_2-u_{\max}>0\right)\leq\varepsilon_b,
+  \qquad \varepsilon_b=0.01,
+  \label{eq:lunar-path-risk}
+\end{equation}
+where $\xi_2$ is a documented bimodal Gaussian mixture and $u_{\max}=3$. The local
+proxy uses $t_f=20$ and initial state $(100,0)$. These equations follow the benchmark structure of
+\citet{keil2020,keil2021}; the mesh, mixture weights, and numerical bounds used in
+the local experiment are recorded with the result artifact rather than attributed
+to the published study.
+
+At each relevant collocation node, the implementation evaluates the terminal or
+path residual on the training samples and applies an unbiased or biased integrated
+KDE constraint. The continuation sequence is nominal, worst-case, scenario,
+unbiased KDE, and the local shifted Epanechnikov surrogate. Each stage receives
+the last successful solution as a warm start and records objective, iterations,
+runtime, and solver status; failures and exceptions remain records. The local
+implementation uses a SciPy direct-collocation fallback, so all stages are run
+locally; CasADi/IPOPT is an optional cross-check and is never required for the
+reported evidence.
+
+\subsection{Implementation strategy}
+
+The static nonlinear and energy-dispatch benchmarks are solved first because their
+SciPy-based NLPs isolate statistical and bandwidth effects. The lunar transcription
+then reuses the same residual, KDE, and validation interfaces. This order permits
+the numerical limitations of collocation to be reported separately from the
+statistical conclusions supported by the lower-dimensional experiments.

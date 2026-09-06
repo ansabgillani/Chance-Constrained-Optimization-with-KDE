@@ -1,0 +1,57 @@
+\section{Experimental Study}
+\label{ch:experiments}
+
+The experiments use seeded synthetic uncertainty so that every local measurement
+can be regenerated. The static nonlinear benchmark compares nominal, scenario,
+unbiased KDE, and local shifted Epanechnikov constraints. Gaussian, bimodal, skewed, and
+heavy-tailed samples are used to separate parametric assumptions from the residual
+space approximation. A logarithmic bandwidth sweep and a sample-size sweep assess
+stability. Joint constraints compare equal Boole allocation with maximum-violation
+and log-sum-exp constructions.
+
+The second application is a canonical two-generator energy-dispatch model with a
+documented two-mode renewable forecast-error mixture. It is a transparent synthetic
+proxy, not a claim to reproduce a particular utility dataset. The same train/test
+split, objective, violation, runtime, and gap fields are used as in the static
+experiment.
+
+The lunar stages in rendered Chapter~6 are run with the local SciPy Euler
+collocation proxy. The nominal 21-node transcription returned objective
+$29.8052$; subsequent robust stages were retained even when SLSQP reported
+failure. Published
+values from Keil et al. are cited as published comparisons and are not merged with
+local measurements. All numerical claims below are taken from
+`results/summary.csv` and the corresponding JSON records (seed $20260906$).
+
+\begin{center}
+  \textbf{Table:} Local static benchmark results for the Gaussian uncertainty case.
+  The independent test set contains 4,000 samples and $\varepsilon=0.1$.
+  \label{tab:local-static-results}
+  \begin{tabular}{lrrr}
+    \toprule
+    Method & Objective & $\widehat v_{\rm test}$ & Gap \\
+    \midrule
+    Nominal & 0.0234 & 0.5180 & -0.4180 \\
+    Scenario & 0.6134 & 0.0015 & 0.0985 \\
+    Unbiased KDE & 0.1981 & 0.0620 & 0.0380 \\
+    Local shifted Epanechnikov & 0.3071 & 0.0193 & 0.0808 \\
+    \bottomrule
+  \end{tabular}
+\end{center}
+
+The nominal solution violates the target substantially. Scenario constraints are
+safe but expensive. The unbiased KDE and the local shifted Epanechnikov surrogate
+are feasible on this Gaussian split. The local surrogate is not Keil's
+Split--Bernstein estimator and no theorem is transferred to it. Across the
+bimodal, skewed, and heavy-tailed samples, unbiased/local test violations were
+$(0.0150,0.0003)$, $(0.1053,0.0700)$, and $(0.0613,0.0405)$, respectively. The
+skewed unbiased run exceeds $\varepsilon$, so this experiment supplies no
+unconditional safety certificate.
+
+For the joint experiment, equal Boole allocation and the exact maximum statistic
+gave a joint test violation of $0.5530$, while the $\tau=0.1$ log-sum-exp statistic
+gave $0.5745$. Smoothing increased the observed joint violation in this statistic
+comparison. The dispatch adapter optimized each method: objectives were $928.57$,
+$935.39$, $933.92$, and $934.89$ for nominal, scenario, unbiased KDE, and local
+shifted Epanechnikov, with test violations $0.5788$, $0.0060$, $0.0398$, and
+$0.0110$.
