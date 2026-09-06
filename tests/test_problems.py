@@ -90,3 +90,17 @@ def test_gaussian_baseline_scales_nonunit_uncertainty_coefficient():
     expected_std = 2.5 * np.std(samples, ddof=1)
     assert baseline["metadata"]["coefficient"] == pytest.approx(2.5)
     assert baseline["metadata"]["residual_std"] == pytest.approx(expected_std)
+
+
+def test_gaussian_baseline_evaluates_decision_dependent_coefficient():
+    from scipy.stats import norm
+
+    samples = np.linspace(-1.0, 1.0, 21)
+
+    def affine_residual(x, xi):
+        x = np.asarray(x)
+        return (1.0 + x[0]) * np.asarray(xi).reshape(-1) + x[1]
+
+    baseline = gaussian_parametric(affine_residual, samples, epsilon=0.05)
+    expected_delta = norm.ppf(0.95) * np.std(samples, ddof=1)
+    assert baseline["constraint"](np.array([1.0, 0.0])) - baseline["constraint"](np.array([0.0, 0.0])) == pytest.approx(expected_delta)

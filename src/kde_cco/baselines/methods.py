@@ -66,30 +66,36 @@ def gaussian_parametric(residual_fn, samples, epsilon=0.05):
     dim = data.shape[1]
     x_probe = np.zeros(2 if dim > 1 else 1, dtype=float)
     points = np.array([[0.0], [0.37], [-0.61], [0.37 - 0.61]], dtype=float)
-    try:
-        values = np.asarray(residual_fn(x_probe, points), dtype=float).reshape(-1)
-    except Exception as exc:
-        raise NotImplementedError(
-            "Gaussian reformulation requires a scalar affine residual in uncertainty"
-        ) from exc
-    if values.size != points.shape[0] or not np.all(np.isfinite(values)):
-        raise NotImplementedError(
-            "Gaussian reformulation requires a scalar affine residual in uncertainty"
-        )
-    # f(a+b)-f(a)-f(b)+f(0) must vanish for an affine map.  Scale the check so
-    # it remains stable for residuals with large offsets.
-    affine_error = values[3] - values[1] - values[2] + values[0]
-    scale = max(1.0, float(np.max(np.abs(values))))
-    if abs(float(affine_error)) > 1e-8 * scale:
-        raise NotImplementedError(
-            "Gaussian reformulation requires a scalar affine residual in uncertainty"
-        )
-    coefficient = float((values[1] - values[0]) / points[1, 0])
-    coefficient_error = values[2] - values[0] - coefficient * points[2, 0]
-    if abs(float(coefficient_error)) > 1e-8 * scale:
-        raise NotImplementedError(
-            "Gaussian reformulation requires a scalar affine residual in uncertainty"
-        )
+    def affine_coefficient(x):
+        try:
+            values = np.asarray(residual_fn(x, points), dtype=float).reshape(-1)
+        except Exception as exc:
+            raise NotImplementedError(
+                "Gaussian reformulation requires a scalar affine residual in uncertainty"
+            ) from exc
+        if values.size != points.shape[0] or not np.all(np.isfinite(values)):
+            raise NotImplementedError(
+                "Gaussian reformulation requires a scalar affine residual in uncertainty"
+            )
+        # f(a+b)-f(a)-f(b)+f(0) must vanish for an affine map. Scale the check
+        # so it remains stable for residuals with large offsets.
+        affine_error = values[3] - values[1] - values[2] + values[0]
+        scale = max(1.0, float(np.max(np.abs(values))))
+        if abs(float(affine_error)) > 1e-8 * scale:
+            raise NotImplementedError(
+                "Gaussian reformulation requires a scalar affine residual in uncertainty"
+            )
+        coefficient = float((values[1] - values[0]) / points[1, 0])
+        coefficient_error = values[2] - values[0] - coefficient * points[2, 0]
+        if abs(float(coefficient_error)) > 1e-8 * scale:
+            raise NotImplementedError(
+                "Gaussian reformulation requires a scalar affine residual in uncertainty"
+            )
+        return coefficient
+
+    # Validate the residual at a representative decision, but evaluate the
+    # slope again for every candidate x: valid models may have b=b(x).
+    coefficient = affine_coefficient(x_probe)
     from scipy.stats import norm
     mu, sd = float(np.mean(data[:, 0])), float(np.std(data[:, 0], ddof=1))
     z = float(norm.ppf(1.0 - epsilon))
@@ -97,7 +103,8 @@ def gaussian_parametric(residual_fn, samples, epsilon=0.05):
     # adapter for affine residuals and avoids silently pretending nonlinearity.
     def constraint(x):
         val = np.asarray(residual_fn(x, np.array([[mu]]))).reshape(-1)
-        return float(val[0] + z * abs(coefficient) * sd)
+        coefficient_at_x = affine_coefficient(np.asarray(x, dtype=float))
+        return float(val[0] + z * abs(coefficient_at_x) * sd)
     return _result("gaussian_parametric", constraint, epsilon=float(epsilon), mean=mu, std=sd,
                    uncertainty_model="scalar_affine_gaussian", coefficient=coefficient,
                    residual_std=abs(coefficient) * sd)
