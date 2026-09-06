@@ -60,3 +60,11 @@ _minted-*/
 # Windows
 Thumbs.db
 desktop.ini
+
+# Generated experiment artifacts and Python caches
+results/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.venv-*/
