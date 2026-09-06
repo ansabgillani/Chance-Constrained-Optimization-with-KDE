@@ -64,7 +64,9 @@ def gaussian_parametric(residual_fn, samples, epsilon=0.05):
     # constructing the baseline; nonlinear residuals (including the canonical
     # static benchmark) must use KDE or scenarios instead.
     dim = data.shape[1]
-    x_probe = np.zeros(2 if dim > 1 else 1, dtype=float)
+    # Baseline builders operate on vector decisions; use a two-component probe
+    # compatible with the canonical benchmarks and scalar-affine callables.
+    x_probe = np.zeros(2, dtype=float)
     points = np.array([[0.0], [0.37], [-0.61], [0.37 - 0.61]], dtype=float)
     def affine_coefficient(x):
         try:
