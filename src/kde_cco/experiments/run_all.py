@@ -88,24 +88,42 @@ def _dispatch(seed, n_train, n_test, epsilon):
 
 def _joint(seed, epsilon):
     rng=np.random.default_rng(seed); r=rng.normal(-.15,.35,size=(4000,2)); alloc=boole_risk_allocation(epsilon,2)
-    return [{"benchmark":"joint_static","method":"boole_equal","seed":seed,"epsilon":epsilon,"joint_test_violation":float(np.mean(np.any(r>0,axis=1))),"individual_violation":np.mean(r>0,axis=0).tolist(),"risk_allocation":alloc.tolist(),"success":True},
-            {"benchmark":"joint_static","method":"max_exact","seed":seed,"epsilon":epsilon,"joint_test_violation":float(np.mean(max_violation(r,axis=1)>0)),"success":True},
-            {"benchmark":"joint_static","method":"logsumexp","seed":seed,"epsilon":epsilon,"tau":.1,"joint_test_violation":float(np.mean(smooth_max(r,.1,axis=1)>0)),"success":True}]
+    out=[]
+    for method, v in (("boole_equal", np.any(r>0,axis=1)), ("max_exact", max_violation(r,axis=1)>0),
+                      ("logsumexp", smooth_max(r,.1,axis=1)>0)):
+        out.append({"schema_version":"1.0","benchmark":"joint_static","method":method,"seed":seed,
+          "n_train":0,"n_test":len(r),"epsilon":epsilon,"objective":None,"train_violation":None,
+          "test_violation":float(np.mean(v)),"estimated_violation":float(np.mean(v)),"gap":float(epsilon-np.mean(v)),
+          "runtime_seconds":None,"success":True,"message":"joint statistic evaluation",
+          "joint_test_violation":float(np.mean(v)),"individual_violation":np.mean(r>0,axis=0).tolist(),
+          "risk_allocation":alloc.tolist(),"tau":.1 if method=="logsumexp" else None})
+    return out, r
 
 
 def run_all(output="results", *, seed=20260906, force=False):
     root=Path(output); root.mkdir(parents=True,exist_ok=True); samples=root/"samples"; samples.mkdir(exist_ok=True)
     rows=_static(seed,250,4000,.1); dispatch,dt,de=_dispatch(seed+1,250,4000,.1); rows.extend(dispatch)
-    rows.extend(_joint(seed+2,.1))
+    joint,joint_samples=_joint(seed+2,.1); rows.extend(joint)
     lunar=make_lunar_landing(); terminal_rng=np.random.default_rng(seed+4); terminal=terminal_rng.normal(0,lunar.terminal_sigma,250); path,_=sample_renewable_error(250,seed=seed+4)
     staged=solve_lunar_stages(lunar,terminal_samples=terminal,path_samples=path,maxiter=80)
     for stage in staged["stages"]:
-        rows.append({"benchmark":"lunar_landing","method":stage["stage"],"seed":seed+4,"n_train":250,"n_test":None,"epsilon":lunar.epsilon_a,
+        rows.append({"schema_version":"1.0","benchmark":"lunar_landing","method":stage["stage"],"seed":seed+4,"n_train":250,"n_test":0,"epsilon":lunar.epsilon_a,
                      "objective":stage["objective"],"train_violation":None,"test_violation":None,"estimated_violation":None,"gap":None,
                      "runtime_seconds":stage["runtime_seconds"],"success":stage["success"],"message":stage["message"],"solver_diagnostics":stage["constraint_diagnostics"]})
-    for name,arr in (("dispatch_train",dt),("dispatch_test",de),("lunar_terminal",terminal),("lunar_path",path)):
+    for d_i, name in enumerate(("gaussian","bimodal","skewed","heavy_tailed")):
+        write_array(np.column_stack((_distribution(name,250,seed+d_i)[0],
+                                     _distribution(name,250,seed+d_i+100)[0])),
+                    samples/(f"static_{name}_train.npy"),force=force)
+        write_array(np.column_stack((_distribution(name,4000,seed+d_i+10000)[0],
+                                     _distribution(name,4000,seed+d_i+10100)[0])),
+                    samples/(f"static_{name}_test.npy"),force=force)
+    for name,arr in (("dispatch_train",dt),("dispatch_test",de),("joint_residuals",joint_samples),
+                     ("lunar_terminal",terminal),("lunar_path",path)):
         write_array(arr,samples/(name+".npy"),force=force)
-    metadata={"seed":seed,"protocol":"independent seeded train/test; local SciPy solvers","records":len(rows),"lunar_stage_order":staged["stage_order"],"local_bias_name":"local_shifted_epanechnikov","published_comparison":"Keil values are external report values, not local outputs"}
+    metadata={"seed":seed,"protocol":"independent seeded train/test; local SciPy solvers","records":len(rows),
+      "configuration":{"n_train":250,"n_test":4000,"epsilon":.1,"static_distributions":["gaussian","bimodal","skewed","heavy_tailed"],
+      "solver":{"method":"SLSQP","maxiter":300},"lunar_maxiter":80},"lunar_stage_order":staged["stage_order"],
+      "sample_files":"samples/*.npy","local_bias_name":"local_shifted_epanechnikov","published_comparison":"Keil values are external report values, not local outputs"}
     write_run_bundle(rows,metadata,root,force=force); return rows
 
 
