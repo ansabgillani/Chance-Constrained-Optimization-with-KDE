@@ -1,0 +1,59 @@
+\section{Conclusion}
+\label{ch:conclusion}
+
+This thesis studied chance-constrained optimization when the distribution of the constraint residual is learned from data. The central question was not whether KDE can produce a smooth curve, but whether that curve can be used inside an optimizer without confusing smoothness, safety, and convergence. The work followed the construction from indicator and scenario constraints, through unbiased integrated KDE, to the one-sided biased kernels associated with Keil et al., and then connected the numerical method to the convergence results of Schuster.
+
+\subsection{Contributions and answers to the research questions}
+
+The main contributions are summarized in Table~\ref{tab:conclusion-contributions}. The first is a residual-space formulation that turns a probability constraint into a deterministic scalar average of integrated kernels. This formulation makes the statistical object visible to the optimizer and supplies gradients or smooth numerical evaluations. The second is an implementation architecture in which uncertainty generation, residual evaluation, estimator selection, nonlinear optimization, and independent validation are separate records. The separation exposed errors that would have been hidden by a single feasibility number. The third is an empirical comparison of nominal, scenario, unbiased KDE, and biased Epanechnikov surrogates on synthetic nonlinear and dispatch models, together with bandwidth, sample-size, joint-statistic, and optimal-control diagnostics.
+
+\begin{table}[tb]
+\centering\small
+\caption{Summary of thesis contributions and evidential status.}
+\label{tab:conclusion-contributions}
+\begin{tabular}{p{0.31\textwidth}p{0.39\textwidth}p{0.20\textwidth}}
+\toprule
+Contribution & What was established & Evidence level\\
+\midrule
+Residual-space KDE reformulation & Smooth deterministic surrogate for scalar residual chance constraints & analytical derivation\\
+Biased scalar surrogate & $B(h)=h$ Epanechnikov construction dominates positive-residual indicators pointwise & kernel check\\
+Paper-aligned profile & Nested $N$, Schuster bandwidth scaling, Keil bias and continuation metadata & 30 local records\\
+Empirical comparison & KDE trade-offs measured against nominal and scenario baselines & seeded synthetic runs\\
+Validation architecture & Independent test sets, exact Gaussian/mixture checks, solver diagnostics & reproducible artifacts\\
+Optimal-control audit & Fixed-horizon fuel invariant and quadrature mismatch identified & model-level proof\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The answer to the first research question is therefore conditional. KDE is useful when uncertainty is non-Gaussian, residual dimension is low, and a smooth constraint is valuable to the solver. It does not remove the need to choose a bandwidth or validate the returned decision. The answer to the second question is that the biased Epanechnikov surrogate is more conservative in the local experiments, as expected from its one-sided construction, but its finite-sample safety must be separated from the stronger Keil workflow and sampling assumptions. The answer to the third question is that bandwidth and sample size affect both the estimated probability and the optimizer's feasible geometry. The paper-aligned sequence made that dependence measurable but did not turn three finite sample sizes into a convergence proof.
+
+\subsection{Main findings}
+
+Table~\ref{tab:conclusion-findings} states the findings in the form used throughout the experimental chapters. Nominal constraints were materially unsafe in the static and dispatch problems. Scenario solutions were conservative and, where the nonlinear solver succeeded, delivered the lowest observed violation. Unbiased Gaussian KDE retained objective value while remaining sensitive to residual shape and bandwidth. The biased Epanechnikov arm reduced held-out violations further, at a higher objective, because the shift $B(h)=h$ removes optimistic mass near the boundary. The dispatch sequence was the closest local analogue to Schuster's assumptions: its affine stochastic residual and convex increasing objective gave a smoother sample-size trend than the nonlinear static model.
+
+\begin{table}[tb]
+\centering\small
+\caption{Findings, interpretation, and boundary of the claim.}
+\label{tab:conclusion-findings}
+\begin{tabular}{p{0.25\textwidth}p{0.39\textwidth}p{0.25\textwidth}}
+\toprule
+Observation & Interpretation & Claim boundary\\
+\midrule
+Nominal test violations near $0.52$--$0.58$ & Mean or deterministic surrogates miss tail geometry & synthetic models only\\
+Schuster Gaussian sequence approaches $\varepsilon$ as smoothing shrinks & finite-sample smoothing trade-off is visible & no uniform convergence proof\\
+Keil-biased sequence has lower violation and higher objective & one-sided bias adds conservatism & not an MCMC/LGR replication\\
+Joint maximum and Boole rows coincide & current runner evaluates the same event & no risk-allocation result\\
+Lunar robust stages fail SLSQP & solver feasibility precedes test-frequency interpretation & no landing-safety claim\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The comparison with the literature is consequently complementary. Schuster supplies the optimization-level convergence question: an approximate solution sequence is meaningful only when the KDE converges in the required sense and the limiting optimization problem has the necessary regularity. Keil supplies a constructive safety-oriented kernel and a continuation strategy for a different optimal-control transcription. The local results do not contradict either paper. They show where the hypotheses become operational: an active constraint, a finite sample, a failed solver, an absent mesh-error trigger, or a mismatched quadrature rule changes the claim that can be made.
+
+\subsection{Limitations and future work}
+
+The evidence is synthetic, low-dimensional, and primarily single-seed. The test frequencies are conditional Monte Carlo measurements rather than finite-sample certificates. The local joint experiment does not optimize separate component risk allocations, and the lunar experiment validates terminal position but not the continuous-time path event. The fixed-horizon lunar objective also cannot be used for physical method ranking until the control quadrature is made consistent with the forward-Euler defects. These are limitations of the present evidence, not details that can be repaired by longer prose.
+
+The next experimental step should be a repeated-seed factorial study with independent test sets, confidence intervals, and a decision-convergence diagnostic over a larger $N$ sequence. For joint constraints, the study should use a true multivariate KDE with a diagonal or full bandwidth matrix and compare the negative-orthant probability with the scalar maximum surrogate. For optimal control, the local model should use a consistent control parameterization, mesh refinement, denser path validation, and a formulation matched to Keil before numerical values are compared. Distributionally robust KDE, optimization-aware bandwidth selection, shape constraints, and sample compression for real-time control are natural extensions.
+
+Taken together, the results place residual-space KDE in a specific methodological gap: empirical or non-Gaussian uncertainty with a low-dimensional residual and a solver that benefits from smooth constraints. Its use is credible only when estimator, bandwidth, sampling, solver status, and validation scope are reported together; stronger safety or convergence claims require the repairs listed above.

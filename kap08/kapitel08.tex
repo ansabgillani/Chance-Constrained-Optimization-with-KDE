@@ -17,6 +17,25 @@ The standard error of this frequency is sampling error in the test set, not unce
 
 The result ledger contains objective, training violation, held-out violation, estimated violation, solver status, and gap fields. The original runner had a reporting defect: it stored a Gaussian diagnostic under \texttt{estimated\_violation} for the shifted Epanechnikov method. The corrected runner now reports the same biased Epanechnikov estimator that appears in the NLP; its successful rows are active at approximately $0.1$. The older records remain preserved as an audit artifact, while the corrected and paper-aligned records are used for the comparisons below. This correction changes the interpretation of the estimator field but does not change the stored decisions or held-out frequencies.
 
+The experiment contract is summarized in Table~\ref{tab:experiment-contract}. Each row has one estimand and one validation gate; a result is not promoted to a method claim when the gate fails.
+
+\begin{table}[tb]
+\centering\small
+\caption{Experiment contract used for the local evidence.}
+\label{tab:experiment-contract}
+\begin{tabular}{p{0.22\textwidth}p{0.24\textwidth}p{0.25\textwidth}p{0.19\textwidth}}
+\toprule
+Question & Controlled change & Primary estimand & Validation gate\\
+\midrule
+Static method comparison & estimator and residual law & objective and held-out violation & solver status plus Gaussian check\\
+Paper-aligned sequence & $N$ and $h_N$ & decision path over nested prefixes & fixed independent test set\\
+Dispatch transfer & model adapter and estimator & objective and balance violation & exact mixture CDF\\
+Joint statistic & scalar event map & test union frequency & component/event definition\\
+Lunar continuation & continuation stage & feasibility and audit invariant & KKT/status and path scope\\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Paper-aligned hyperparameter experiment}
 \label{sec:paper-aligned-experiment}
 
@@ -178,16 +197,23 @@ The table should be read with the formulation audit in Chapter~6. The nominal re
 
 The difference from Keil et al. is expected. Their published costs around $9.09$ arise from a free-time LGR formulation with different initial conditions and a different numerical stack \citep{keil2020,keil2021}. The local rows cannot confirm or refute that result. They show instead that a locally assembled pipeline must expose transcription invariants and solver status before numerical comparisons are meaningful.
 
-\subsection{Evidence hierarchy}
+\subsection{Evidence and reproducibility contract}
 
-The strongest local evidence is the agreement of independent checks: static Gaussian analytical probabilities, the exact dispatch mixture CDF, and held-out test frequencies. The next level is the descriptive sensitivity experiment, which identifies bandwidth and sample-size dependence without pretending to optimize. The weakest evidence is a failed lunar stage with a low terminal frequency, because it lacks feasibility and pathwise validation. This hierarchy determines the claims made in Chapter~9. It also explains why a figure with four bars is useful only when its estimator, split, and solver status are stated beside it.
+The evidence hierarchy is operational rather than rhetorical (Table~\ref{tab:evidence-contract}). Independent analytic checks are strongest; descriptive sensitivity is diagnostic; failed optimal-control stages cannot support feasibility claims. Every ledger row retains its seed, split, bandwidth, estimator, objective convention, solver status, and validation scope, including failures. This preserves the distinction between a deterministic implementation check and a confirmatory study over repeated datasets.
 
-\subsection{Reproducibility and reporting protocol}
+\begin{table}[tb]
+\centering\small
+\caption{Evidence classes and permitted claims.}
+\label{tab:evidence-contract}
+\begin{tabular}{p{0.27\textwidth}p{0.31\textwidth}p{0.29\textwidth}}
+\toprule
+Evidence class & Example in this chapter & Permitted claim\\
+\midrule
+Independent check & Gaussian probability and exact dispatch mixture CDF & implementation agreement on the declared model\\
+Empirical comparison & held-out frequency and objective across estimators & conditional finite-sample trade-off\\
+Diagnostic & bandwidth/sensitivity or failed lunar stage & numerical behaviour and failure mode only\\
+\bottomrule
+\end{tabular}
+\end{table}
 
-The experiment is reproducible only if the numerical context travels with the scalar result. Each record therefore needs the model name, residual law, method, seed, training size, test size, bandwidth, target risk, objective convention, solver status, and validation scope. A held-out violation of $0.0193$ without those fields is not a portable observation: it could be a training frequency, a Gaussian diagnostic, a failed solve, or a value obtained after changing the test set. The source ledger and the machine-readable summary keep these meanings separate.
-
-A second requirement is to preserve failed runs. Removing the skewed scenario row because SLSQP returned failure would make the table look cleaner while erasing information about the interaction between nonconvex residuals and scenario constraints. The same applies to the lunar robust stages. Their negative chance margins explain why a low terminal frequency cannot be interpreted as a successful controller. In an experimental paper, a failure record is part of the denominator for claims about robustness and computational reliability.
-
-The third requirement is to distinguish diagnostic replication from confirmatory evaluation. The current run fixes one sample split per row and uses the test set after fitting. It is appropriate for checking that the implementation is deterministic and for exposing numerical inconsistencies. It is not a study of the distribution of objective or violation over repeated datasets. A confirmatory study would pre-register the seed set, fit on each training sample, reserve an untouched test sample, and report the median, dispersion, and failure rate over repetitions. If the target is a rare event, the test size must be selected from the desired interval width rather than inherited from a convenient default.
-
-The local findings consequently support a transparent hybrid reproducibility claim: the code, seeds, result schema, figures, and interpretation can be rerun locally, while the statistical statements remain conditional on the synthetic design. This is a stronger and more useful claim than calling a single successful SLSQP result a guarantee. It also creates a direct path for future extensions: corrected path validation, repeated seeds, consistent control quadrature, and an explicit finite-sample confidence construction can be added without changing the evidence vocabulary used here.
+The present design is a hybrid reproducibility study: code, seeds, ledgers, and figures are locally rerunnable, while the statistical conclusions remain conditional on the synthetic laws and one primary split per row. A confirmatory extension requires repeated independent fits, untouched test sets, interval estimates, and a consistent control quadrature; those requirements are carried into the repair plan in Chapter~9.
