@@ -63,8 +63,10 @@ The path thrust event is
   \qquad \varepsilon_b=0.01,
   \label{eq:lunar-path-risk}
 \end{equation}
-where $\xi_2$ is a documented bimodal Gaussian mixture and $u_{\max}=3$. The local
-proxy uses $t_f=20$ and initial state $(100,0)$. These equations follow the benchmark structure of
+where $\xi_2$ is a documented bimodal Gaussian mixture and $u_{\max}=3$. In the
+local experiment, $\xi_2$ has weights $(0.6,0.4)$, means $(-0.25,0.35)$, and
+standard deviations $(0.10,0.15)$ in normalized power units. The local proxy
+uses $t_f=20$ and initial state $(100,0)$. These equations follow the benchmark structure of
 \citet{keil2020,keil2021}; the mesh, mixture weights, and numerical bounds used in
 the local experiment are recorded with the result artifact rather than attributed
 to the published study.
@@ -76,13 +78,14 @@ unbiased KDE, and the local shifted Epanechnikov surrogate. Each stage receives
 the last successful solution as a warm start and records objective, iterations,
 runtime, and solver status; failures and exceptions remain records. The local
 implementation uses a SciPy direct-collocation fallback, so all stages are run
-locally; CasADi/IPOPT is an optional cross-check and is never required for the
-reported evidence.
+locally. A CasADi/IPOPT cross-check is not implemented in this adapter and no
+result from that stack is reported.
 
 \subsection{Implementation strategy}
 
 The static nonlinear and energy-dispatch benchmarks are solved first because their
 SciPy-based NLPs isolate statistical and bandwidth effects. The lunar transcription
-then reuses the same residual, KDE, and validation interfaces. This order permits
+then reuses the same residual, KDE, and validation interfaces. The local default
+mesh has 11 state nodes and uses forward Euler defects. This order permits
 the numerical limitations of collocation to be reported separately from the
 statistical conclusions supported by the lower-dimensional experiments.

@@ -10,18 +10,21 @@ stability. Joint constraints compare equal Boole allocation with maximum-violati
 and log-sum-exp constructions.
 
 The second application is a canonical two-generator energy-dispatch model with a
-documented two-mode renewable forecast-error mixture. It is a transparent synthetic
-proxy, not a claim to reproduce a particular utility dataset. The same train/test
-split, objective, violation, runtime, and gap fields are used as in the static
-experiment.
+documented two-mode renewable forecast-error mixture with mode weights $0.6$ and
+$0.4$, means $-0.25$ and $0.35$, and standard deviations $0.10$ and $0.15$. It is a transparent
+synthetic proxy, not a claim to reproduce a particular utility dataset. The
+uncertain constraint in this adapter is the balance residual; generator-capacity
+constraints are deterministic. The same train/test split, objective, violation,
+runtime, and gap fields are used as in the static experiment.
 
 The lunar stages in rendered Chapter~6 are run with the local SciPy Euler
-collocation proxy. The nominal 21-node transcription returned objective
+collocation proxy on an 11-node mesh. The nominal transcription returned objective
 $29.8052$; subsequent robust stages were retained even when SLSQP reported
-failure. Published
-values from Keil et al. are cited as published comparisons and are not merged with
-local measurements. All numerical claims below are taken from
-`results/summary.csv` and the corresponding JSON records (seed $20260906$).
+failure. Published values reported by \citet{keil2020,keil2021} are used
+only as external comparisons and are not merged with local measurements. All
+numerical claims below are taken from `results/summary.csv` and the corresponding
+JSON records. The benchmark seeds are $20260906$ through $20260910$ for the
+static, dispatch, joint, sensitivity, and lunar records, respectively.
 
 \begin{center}
   \textbf{Table:} Local static benchmark results for the Gaussian uncertainty case.
@@ -73,22 +76,39 @@ finite-sample guarantee.
 \end{figure}
 
 The residual-estimator diagnostics are shown in Figure~\ref{fig:sensitivity}.
-They vary the bandwidth and training size while holding the saved test
-residuals fixed. The curves therefore measure estimator sensitivity rather than
-end-to-end optimizer variability.
+They vary the bandwidth and training size on a separate fixed synthetic scalar
+residual split while holding its test samples fixed. The curves therefore measure
+estimator sensitivity rather than end-to-end optimizer variability; the numerical
+ranges are reported in Chapter~9.
 
 \begin{figure}[tb]
   \centering
   \includegraphics[width=0.90\textwidth]{kap08/figures/fig_sensitivity}
   \caption{Sensitivity of the residual violation estimate to bandwidth and
-  training sample size for the saved Gaussian residual split.}
+  training sample size for a fixed synthetic scalar residual split.}
   \label{fig:sensitivity}
 \end{figure}
 
-For the joint experiment, equal Boole allocation and the exact maximum statistic
-gave a joint test violation of $0.5530$, while the $\tau=0.1$ log-sum-exp statistic
-gave $0.5745$. Smoothing increased the observed joint violation in this statistic
-comparison. The dispatch adapter optimized each method: objectives were $928.57$,
+\pagebreak
+\begin{samepage}
+For the joint experiment, the recorded equal-allocation and exact-maximum
+statistics coincide on this sample, giving a joint test violation of $0.5530$;
+the $\tau=0.1$ log-sum-exp statistic gives $0.5745$. The equal Boole allocation
+is recorded as a comparison and was not enforced as a separate optimized set of
+component constraints. Smoothing increased the observed joint violation in this
+statistic comparison. The dispatch adapter optimized each method: objectives were $928.57$,
 $935.39$, $933.92$, and $934.89$ for nominal, scenario, unbiased KDE, and local
 shifted Epanechnikov, with test violations $0.5788$, $0.0060$, $0.0398$, and
 $0.0110$.
+\end{samepage}
+
+The lunar stage records were, in stage order, $(J,\widehat v_{\rm test})
+=(29.8052,0.5143)$ for nominal, $(29.8052,0.5143)$ for worst-case,
+$(31.3685,0.0255)$ for scenario, $(32.4400,0.1128)$ for unbiased KDE, and
+$(32.4400,0.0548)$ for the local shifted Epanechnikov surrogate. Only the
+nominal stage reported solver success in this local transcription; the failed
+stages remain in the artifact and are not treated as feasible solutions. The
+terminal-position risk level is $\varepsilon_a=0.1$. These results are not a
+reproduction of the LGR/IPOPT experiment of Keil et al.; the local Euler mesh,
+horizon, and solver are different, so the cost comparison is diagnostic rather
+than a performance claim.

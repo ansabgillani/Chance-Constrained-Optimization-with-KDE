@@ -6,7 +6,8 @@ KDE is appropriate when uncertainty is available through data, is non-Gaussian o
 multimodal, and the optimizer requires a smooth scalar constraint. The evidence is
 strongest for low-dimensional residuals. A Gaussian reformulation is preferable
 when its distributional and convexity assumptions hold; scenario methods remain
-preferable when an a priori finite-sample feasibility statement is required.
+preferable when an a priori finite-sample feasibility statement is required
+\citep{calafiore2006,campi2008}.
 
 \subsection{Bandwidth and sample size}
 Silverman's rule is a starting value, not an optimization guarantee. In the local
@@ -22,12 +23,14 @@ sensitive. Rare-event levels and high residual dimensions require methods design
 for tail estimation or distributional robustness.
 
 \subsection{Limits and open problems}
-Schuster's convergence results apply under their stated assumptions and to the
+Schuster's convergence results \citep{schuster2025} apply under their stated assumptions and to the
 estimator covered by the theorem. They do not supply a universal finite-sample
 out-of-sample certificate, and the convergence gap for the biased construction
 remains open. Distribution shift, optimization-aware bandwidth selection,
 finite-sample biased-KDE bounds, and sample compression for real-time control are
-natural next problems. The dispatch benchmark supports portability of the pipeline.
+natural next problems. The dispatch benchmark supports portability of the pipeline,
+but its uncertain constraint covers only the balance residual; generator-capacity
+constraints are deterministic in this adapter.
 The lunar proxy uses a different horizon and Euler mesh from the LGR
 implementation of \citet{keil2020,keil2021}; its cost near $30$ and failed robust stages do not reproduce the
 published costs near $9.09$. This difference is reported rather than interpreted

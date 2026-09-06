@@ -30,11 +30,14 @@ used by the optimizer, objective value, runtime, solver status, bandwidth, sampl
 sizes, seed, and benchmark metadata. Training samples never enter the test
 estimate, and the test seed is independent of the training seed.
 
-The test sources cover kernel normalization and limits, analytic gradients by finite
-differences, reproducibility under fixed seeds, residual dimensions, and the
-agreement between saved metrics and independently recomputed violations. These
-checks do not create a finite-sample certificate. The local run used a venv with
-the locally installed NumPy and SciPy packages; compilation and direct numerical
-checks passed, while pytest was unavailable. The local shifted Epanechnikov
-surrogate dominates the empirical violation indicator, but out-of-sample
-feasibility remains an empirical question.
+The test sources cover kernel normalization and limits, analytic gradients by
+central differences, reproducibility under fixed seeds, residual dimensions, and
+agreement between saved metrics and independently recomputed violations. The
+gradient check uses relative tolerance $10^{-5}$ and absolute tolerance $10^{-7}$;
+the direct numerical smoke checks passed. These checks do not create a
+finite-sample certificate. The local run used a virtual environment with the
+installed NumPy and SciPy packages; Python compilation, direct numerical checks,
+the seeded runner, and LaTeX compilation were executed, while pytest and the
+optional CasADi/IPOPT path were unavailable and are not claimed as passed. The
+local shifted Epanechnikov surrogate dominates the empirical violation indicator,
+but out-of-sample feasibility remains an empirical question.
