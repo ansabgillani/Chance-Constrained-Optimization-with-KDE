@@ -1,1 +1,2 @@
-Source: results/summary.csv; no values recomputed.
+All plotted values are read from results/summary.csv; no values are recomputed.
+Dashed lines mark epsilon=0.1 in the static comparison plots.

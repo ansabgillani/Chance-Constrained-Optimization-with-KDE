@@ -9,8 +9,11 @@ def test_saved_experiment_contract():
     metadata = root / "run_metadata.json"
     assert summary.exists() and summary.stat().st_size > 0
     assert metadata.exists()
-    figure = root / "kap08" / "figures" / "fig_static_test_violation.pdf"
-    assert figure.exists() and figure.read_bytes().startswith(b"%PDF")
+    figure_root = root.parent / "kap08" / "figures"
+    for name in ("fig_static_test_violation.pdf", "fig_static_tradeoff.pdf", "fig_sensitivity.pdf"):
+        figure = figure_root / name
+        assert figure.exists() and figure.stat().st_size > 1000
+        assert figure.read_bytes().startswith(b"%PDF")
     rows = list(csv.DictReader(summary.open()))
     assert rows
     assert {"benchmark", "method", "seed", "test_violation", "objective"}.issubset(rows[0])

@@ -48,6 +48,43 @@ $(0.0150,0.0003)$, $(0.1053,0.0700)$, and $(0.0613,0.0405)$, respectively. The
 skewed unbiased run exceeds $\varepsilon$, so this experiment supplies no
 unconditional safety certificate.
 
+Figure~\ref{fig:static-violations} reports the independent test violations for
+all four residual laws. The dashed line is the design target, not a confidence
+bound. Figure~\ref{fig:static-tradeoff} places the same solutions in objective--
+violation space; points to the left of the line satisfy the empirical target on
+this split. These plots are descriptive diagnostics and do not establish a
+finite-sample guarantee.
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=0.94\textwidth]{kap08/figures/fig_static_test_violation}
+  \caption{Independent test violation for the static nonlinear benchmark
+  ($N_{\mathrm{train}}=250$, $N_{\mathrm{test}}=4000$, $\varepsilon=0.1$).
+  Each panel uses one seeded residual law; the dashed line marks the target.}
+  \label{fig:static-violations}
+\end{figure}
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=0.88\textwidth]{kap08/figures/fig_static_tradeoff}
+  \caption{Objective versus independent test violation for the four static
+  residual laws. The vertical dashed line marks $\varepsilon=0.1$.}
+  \label{fig:static-tradeoff}
+\end{figure}
+
+The residual-estimator diagnostics are shown in Figure~\ref{fig:sensitivity}.
+They vary the bandwidth and training size while holding the saved test
+residuals fixed. The curves therefore measure estimator sensitivity rather than
+end-to-end optimizer variability.
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=0.90\textwidth]{kap08/figures/fig_sensitivity}
+  \caption{Sensitivity of the residual violation estimate to bandwidth and
+  training sample size for the saved Gaussian residual split.}
+  \label{fig:sensitivity}
+\end{figure}
+
 For the joint experiment, equal Boole allocation and the exact maximum statistic
 gave a joint test violation of $0.5530$, while the $\tau=0.1$ log-sum-exp statistic
 gave $0.5745$. Smoothing increased the observed joint violation in this statistic
