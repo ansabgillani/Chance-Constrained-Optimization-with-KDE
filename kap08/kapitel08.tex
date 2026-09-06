@@ -1,114 +1,147 @@
 \section{Experimental Study}
 \label{ch:experiments}
 
-The experiments use seeded synthetic uncertainty so that every local measurement
-can be regenerated. The static nonlinear benchmark compares nominal, scenario,
-unbiased KDE, and local shifted Epanechnikov constraints. Gaussian, bimodal, skewed, and
-heavy-tailed samples are used to separate parametric assumptions from the residual
-space approximation. A logarithmic bandwidth sweep and a sample-size sweep assess
-stability. Joint constraints compare equal Boole allocation with maximum-violation
-and log-sum-exp constructions.
+This chapter reports the local evidence rather than treating every output field as a theorem. The experiments were designed to answer four questions. First, how do nominal, scenario, unbiased KDE, and locally shifted Epanechnikov constraints behave when the residual law is changed while the deterministic model is fixed? Second, does the same interface remain usable for a balance-constrained dispatch problem? Third, how sensitive are the estimated probabilities to bandwidth, sample size, and a joint statistic? Fourth, what can the lunar continuation experiment actually establish after its numerical audit? All experiments are synthetic, seeded, and run locally. The resulting measurements are empirical frequencies or estimator diagnostics; they are not out-of-sample certificates.
 
-The second application is a canonical two-generator energy-dispatch model with a
-documented two-mode renewable forecast-error mixture with mode weights $0.6$ and
-$0.4$, means $-0.25$ and $0.35$, and standard deviations $0.10$ and $0.15$. It is a transparent
-synthetic proxy, not a claim to reproduce a particular utility dataset. The
-uncertain constraint in this adapter is the balance residual; generator-capacity
-constraints are deterministic. The same train/test split, objective, violation,
-runtime, and gap fields are used as in the static experiment.
+\subsection{Design, estimands, and provenance}
 
-The lunar stages in rendered Chapter~6 are run with the local SciPy Euler
-collocation proxy on an 11-node mesh. The nominal transcription returned objective
-$29.8052$; subsequent robust stages were retained even when SLSQP reported
-failure. Published values reported by \citet{keil2020,keil2021} are used
-only as external comparisons and are not merged with local measurements. All
-numerical claims below are taken from `results/summary.csv` and the corresponding
-JSON records. The benchmark seeds are $20260906$ through $20260910$ for the
-static, dispatch, joint, sensitivity, and lunar records, respectively.
+The static model has two decision variables and a nonlinear residual whose uncertainty enters through a scalar residual map. Four residual laws are used: Gaussian, bimodal, skewed, and heavy-tailed. For each law, 250 training observations define the optimization constraint and 4,000 independent test observations define the held-out frequency. The target is $\varepsilon=0.1$. The method order is nominal, scenario, unbiased KDE, and local shifted Epanechnikov. The exact seed mapping is $20260906$ for the Gaussian static run, $20260907$ for dispatch and the bimodal row, $20260908$ for the joint comparison and the skewed row, $20260909$ for sensitivity and the heavy-tailed row, and $20260910$ for the lunar continuation. The mapping is recorded explicitly because a statement such as “the five benchmark seeds” is otherwise not reproducible.
 
-\begin{center}
-  \textbf{Table:} Local static benchmark results for the Gaussian uncertainty case.
-  The independent test set contains 4,000 samples and $\varepsilon=0.1$.
-  \label{tab:local-static-results}
-  \begin{tabular}{lrrr}
-    \toprule
-    Method & Objective & $\widehat v_{\rm test}$ & Gap \\
-    \midrule
-    Nominal & 0.0234 & 0.5180 & -0.4180 \\
-    Scenario & 0.6134 & 0.0015 & 0.0985 \\
-    Unbiased KDE & 0.1981 & 0.0620 & 0.0380 \\
-    Local shifted Epanechnikov & 0.3071 & 0.0193 & 0.0808 \\
-    \bottomrule
-  \end{tabular}
-\end{center}
+For a decision $x$, the principal held-out quantity is
+\begin{equation}
+ \widehat v_{\mathrm{test}}(x)=\frac{1}{n_{\mathrm{test}}}
+ \sum_{i=1}^{n_{\mathrm{test}}}{\bf1}\{r(x,\xi_i)>0\}.
+ \label{eq:test-frequency}
+\end{equation}
+The standard error of this frequency is sampling error in the test set, not uncertainty in the optimized decision. For example, the Gaussian unbiased KDE row has 248 violations out of 4,000, giving $\widehat v=0.0620$ and an approximate 95\% binomial interval $[0.0547,0.0699]$; the local row has 77 violations and interval $[0.0152,0.0240]$. These intervals describe repeated test sampling conditional on the fitted decision. They do not account for selecting the decision after inspecting training data, and they do not become scenario confidence bounds by relabelling them.
 
-The nominal solution violates the target substantially. Scenario constraints are
-safe but expensive. The unbiased KDE and the local shifted Epanechnikov surrogate
-are feasible on this Gaussian split. The local surrogate is not Keil's
-Split--Bernstein estimator and no theorem is transferred to it. Across the
-bimodal, skewed, and heavy-tailed samples, unbiased/local test violations were
-$(0.0150,0.0003)$, $(0.1053,0.0700)$, and $(0.0613,0.0405)$, respectively. The
-skewed unbiased run exceeds $\varepsilon$, so this experiment supplies no
-unconditional safety certificate.
+The result ledger contains objective, training violation, held-out violation, estimated violation, solver status, and gap fields. A source audit found that the field named \texttt{estimated\_violation} is computed with a Gaussian KDE for both KDE methods. For the local shifted Epanechnikov rows it is therefore a Gaussian diagnostic, not the value of the biased estimator used in the constraint. The optimized local estimator is active at approximately $0.1$ on successful rows. This distinction is retained throughout the chapter.
 
-Figure~\ref{fig:static-violations} reports the independent test violations for
-all four residual laws. The dashed line is the design target, not a confidence
-bound. Figure~\ref{fig:static-tradeoff} places the same solutions in objective--
-violation space; points to the left of the line satisfy the empirical target on
-this split. These plots are descriptive diagnostics and do not establish a
-finite-sample guarantee.
+\subsection{Static nonlinear benchmark}
+
+The Gaussian case provides the clearest baseline because its true radial probability can be evaluated independently. The local results are:
+\begin{table}[tb]
+\centering\small
+\caption{Static Gaussian benchmark. The test frequency uses 4,000 independent observations and $\varepsilon=0.1$.}
+\label{tab:local-static-results}
+\begin{tabular}{lrrrrr}
+\toprule
+Method & Objective & Train & Test & Est. diagnostic & Gap\\
+\midrule
+Nominal & 0.0234 & 0.5320 & 0.5180 & 0.5320 & -0.4180\\
+Scenario & 0.6134 & 0.0040 & 0.0015 & 0.0040 & 0.0985\\
+Unbiased KDE & 0.1981 & 0.0520 & 0.0620 & 0.1000 & 0.0380\\
+Local shifted Epanechnikov & 0.3071 & 0.0320 & 0.0193 & 0.0531 & 0.0808\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The nominal decision is not a marginally unsafe solution: its held-out frequency is $0.5180$, five times the target. The scenario solution is strongly conservative on this split, while the two KDE solutions retain more objective value. The unbiased KDE is closer to the Gaussian reference than the local method in objective value, but the local method has the lower test frequency. This ordering is evidence about one fitted sample, not a universal ranking. The analytical Gaussian calculation gives an exact test probability near $0.5137$ for the nominal decision and near $0.0572$ for the unbiased KDE decision. It also gives a Gaussian chance-constrained reference objective near $0.1392$, below the KDE objective $0.1981$. The gap is consistent with smoothing and finite training data imposing extra slack.
+
+Across the non-Gaussian laws, the pairs $(\widehat v_{\mathrm{test}}^{\mathrm{unbiased}},\widehat v_{\mathrm{test}}^{\mathrm{local}})$ are $(0.0150,0.0003)$ for the bimodal law, $(0.1053,0.0700)$ for the skewed law, and $(0.0613,0.0405)$ for the heavy-tailed law. The skewed unbiased row exceeds the target. Its 95\% test interval is approximately $[0.0959,0.1152]$, so the data do not establish a clear separation from $0.1$, but they also do not support calling the method safe. The scenario method fails its nonlinear program on the skewed and heavy-tailed rows despite low recorded test frequencies in the finite sample. This is a useful warning: a low test count from a failed run is not evidence of a feasible optimizer.
+
+The four panels in Figure~\ref{fig:static-violations} display these frequencies. The dashed line is only the design target. Figure~\ref{fig:static-tradeoff} shows the objective--violation trade-off. In both figures, successful and failed solver rows must be read together with the status field. The figures do not encode statistical confidence, repeated seeds, or a correction for trying four methods across four distributions.
 
 \begin{figure}[tb]
   \centering
   \includegraphics[width=0.94\textwidth]{kap08/figures/fig_static_test_violation}
-  \caption{Independent test violation for the static nonlinear benchmark
-  ($N_{\mathrm{train}}=250$, $N_{\mathrm{test}}=4000$, $\varepsilon=0.1$).
-  Each panel uses one seeded residual law; the dashed line marks the target.}
+  \caption{Independent test violation for the static nonlinear benchmark ($N_{\mathrm{train}}=250$, $N_{\mathrm{test}}=4000$, $\varepsilon=0.1$). The dashed line is the design target.}
   \label{fig:static-violations}
 \end{figure}
 
 \begin{figure}[tb]
   \centering
   \includegraphics[width=0.88\textwidth]{kap08/figures/fig_static_tradeoff}
-  \caption{Objective versus independent test violation for the four static
-  residual laws. The vertical dashed line marks $\varepsilon=0.1$.}
+  \caption{Objective versus independent test violation for the four static residual laws. Solver status and estimator identity are reported in the accompanying ledger.}
   \label{fig:static-tradeoff}
 \end{figure}
 
-The residual-estimator diagnostics are shown in Figure~\ref{fig:sensitivity}.
-They vary the bandwidth and training size on a separate fixed synthetic scalar
-residual split while holding its test samples fixed. The curves therefore measure
-estimator sensitivity rather than end-to-end optimizer variability; the numerical
-ranges are reported in Chapter~9.
+The qualitative pattern is compatible with the motivation for KDE in process systems and data-driven chance constraints \citep{calfa2015}: a residual-space estimator can represent multimodality without committing to a single Gaussian family. It does not follow that KDE dominates scenario optimization in every regime. Scenario optimization has a different guarantee architecture, with explicit sample-complexity conditions for convex programs \citep{calafiore2006,campi2008}. The local nonlinear problem is outside the setting in which those results can simply be quoted.
+
+\subsection{Energy dispatch and exact distributional check}
+
+The dispatch proxy has two generators and a balance residual. Capacity residuals are deterministic in this adapter, so the stochastic problem tests only renewable forecast error in the balance equation. The error is the mixture $0.6\mathcal N(-0.25,0.10^2)+0.4\mathcal N(0.35,0.15^2)$. The objective values and held-out frequencies are:
+\begin{table}[tb]
+\centering\small
+\caption{Two-generator dispatch benchmark. The uncertain balance residual is tested on an independent sample.}
+\label{tab:dispatch-results}
+\begin{tabular}{lrrrr}
+\toprule
+Method & Objective & Train & Test & Solver\\
+\midrule
+Nominal & 928.5686 & 0.5788 & 0.5788 & success\\
+Scenario & 935.3871 & 0.0060 & 0.0060 & success\\
+Unbiased KDE & 933.9233 & 0.0398 & 0.0398 & success\\
+Local shifted Epanechnikov & 934.8865 & 0.0110 & 0.0110 & success\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Because the mixture is known, its CDF supplies an independent reference. The exact mixture probability at the nominal decision is approximately $0.5951$, while the Monte Carlo test frequency is $0.5788$. The corresponding probabilities for scenario, unbiased KDE, and local shifted decisions are approximately $0.0043$, $0.0450$, and $0.0107$. The sample frequencies are therefore plausible finite-sample measurements, and the objective ranking is not an artefact of an unknown test distribution. The scenario solution is most conservative; the local estimator is closer to it than the unbiased KDE in violation while retaining slightly lower objective than scenario. This is a single synthetic balance experiment and says nothing about network congestion, unit commitment, temporal correlation, or capacity uncertainty.
+
+\subsection{Bandwidth, sample size, and joint statistics}
+
+The sensitivity experiment holds a scalar residual split fixed and changes only the estimator input. It is deliberately not an end-to-end reoptimization. The baseline bandwidth is $h_0=0.120976$ and the fixed test frequency is $0.3950$.
+\begin{table}[tb]
+\centering\small
+\caption{Fixed-residual sensitivity values. Each row changes one input while the other is held fixed.}
+\label{tab:sensitivity-values}
+\begin{tabular}{lrrrrrr}
+\toprule
+Bandwidth factor & 0.25 & 0.5 & 1 & 2 & 4 & Test\\
+\midrule
+Estimated violation & 0.3765 & 0.3808 & 0.3894 & 0.4018 & 0.4234 & 0.3950\\
+\midrule
+Training size & 50 & 100 & 250 & 500 & 1000 & 2000\\
+Estimated violation & 0.3972 & 0.4284 & 0.3894 & 0.3754 & 0.3829 & 0.3809\\
+\bottomrule
+\end{tabular}
+\end{table}
+The curves in Figure~\ref{fig:sensitivity} show a smooth bandwidth response but no monotone sample-size law. That is expected for a plug-in estimator evaluated at a fixed decision and a finite random sample; it is not evidence against consistency.
 
 \begin{figure}[tb]
   \centering
   \includegraphics[width=0.90\textwidth]{kap08/figures/fig_sensitivity}
-  \caption{Sensitivity of the residual violation estimate to bandwidth and
-  training sample size for a fixed synthetic scalar residual split.}
+  \caption{Sensitivity of a fixed-residual violation estimate to bandwidth and training sample size. The experiment does not reoptimize the decision.}
   \label{fig:sensitivity}
 \end{figure}
 
-\pagebreak
-\begin{samepage}
-For the joint experiment, the recorded equal-allocation and exact-maximum
-statistics coincide on this sample, giving a joint test violation of $0.5530$;
-the $\tau=0.1$ log-sum-exp statistic gives $0.5745$. The equal Boole allocation
-is recorded as a comparison and was not enforced as a separate optimized set of
-component constraints. Smoothing increased the observed joint violation in this
-statistic comparison. The dispatch adapter optimized each method: objectives were $928.57$,
-$935.39$, $933.92$, and $934.89$ for nominal, scenario, unbiased KDE, and local
-shifted Epanechnikov, with test violations $0.5788$, $0.0060$, $0.0398$, and
-$0.0110$.
-\end{samepage}
+The joint experiment compares statistics rather than optimized risk allocations. Equal Boole allocation and the exact maximum statistic use the same Boolean event in the current runner, so their held-out rates coincide at $0.5530$. The log-sum-exp statistic with $\tau=0.1$ gives $0.5745$. These values are computed on the held-out half of a 4,000-sample pool; a separate ledger field averages over the full pool and must not be confused with the test rate. Component rates are approximately $0.3328$ and $0.3255$. The joint experiment therefore demonstrates how a smooth upper-envelope statistic changes the measured event, but it does not demonstrate a Boole allocation theorem or a joint chance-constrained optimizer. An actual allocation study would impose separate component constraints and report the union event on an independent test set.
 
-The lunar stage records were, in stage order, $(J,\widehat v_{\rm test})
-=(29.8052,0.5143)$ for nominal, $(29.8052,0.5143)$ for worst-case,
-$(31.3685,0.0255)$ for scenario, $(32.4400,0.1128)$ for unbiased KDE, and
-$(32.4400,0.0548)$ for the local shifted Epanechnikov surrogate. Only the
-nominal stage reported solver success in this local transcription; the failed
-stages remain in the artifact and are not treated as feasible solutions. The
-terminal-position risk level is $\varepsilon_a=0.1$. These results are not a
-reproduction of the LGR/IPOPT experiment of Keil et al.; the local Euler mesh,
-horizon, and solver are different, so the cost comparison is diagnostic rather
-than a performance claim.
+\subsection{Lunar continuation record}
+
+The lunar records are included to make the experimental chain auditable. The stage table is:
+\begin{table}[tb]
+\centering\small
+\caption{Local lunar continuation. The objective is the stored trapezoidal transcription value; robust stages have failed SLSQP status. Validation is terminal-position frequency only.}
+\label{tab:lunar-results}
+\begin{tabular}{lrrrr}
+\toprule
+Stage & Stored $J$ & Train terminal & Test terminal & Status\\
+\midrule
+Nominal & 29.8052 & 0.5080 & 0.5143 & success\\
+Worst-case & 29.8052 & 0.5080 & 0.5143 & failure\\
+Scenario & 31.3685 & 0.0400 & 0.0255 & failure\\
+Unbiased KDE & 32.4400 & 0.1080 & 0.1128 & failure\\
+Local shifted Epanechnikov & 32.4400 & 0.0520 & 0.0548 & failure\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The table should be read with the formulation audit in Chapter~6. The nominal result is unsafe. The robust rows are failed NLP outputs, and their terminal frequencies do not validate the path event. The terminal-position test uses the Gaussian disturbance only; no saved control trajectory was passed through an independent all-time path test. The stored nominal value below $32.44$ is explained by the mismatch in equation~\eqref{eq:quadrature-mismatch}. These observations rule out a cost claim and a continuous-time safety claim, while preserving the value of the run as a reproducibility and failure-analysis record.
+
+The difference from Keil et al. is expected. Their published costs around $9.09$ arise from a free-time LGR formulation with different initial conditions and a different numerical stack \citep{keil2020,keil2021}. The local rows cannot confirm or refute that result. They show instead that a locally assembled pipeline must expose transcription invariants and solver status before numerical comparisons are meaningful.
+
+\subsection{Evidence hierarchy}
+
+The strongest local evidence is the agreement of independent checks: static Gaussian analytical probabilities, the exact dispatch mixture CDF, and held-out test frequencies. The next level is the descriptive sensitivity experiment, which identifies bandwidth and sample-size dependence without pretending to optimize. The weakest evidence is a failed lunar stage with a low terminal frequency, because it lacks feasibility and pathwise validation. This hierarchy determines the claims made in Chapter~9. It also explains why a figure with four bars is useful only when its estimator, split, and solver status are stated beside it.
+
+\subsection{Reproducibility and reporting protocol}
+
+The experiment is reproducible only if the numerical context travels with the scalar result. Each record therefore needs the model name, residual law, method, seed, training size, test size, bandwidth, target risk, objective convention, solver status, and validation scope. A held-out violation of $0.0193$ without those fields is not a portable observation: it could be a training frequency, a Gaussian diagnostic, a failed solve, or a value obtained after changing the test set. The source ledger and the machine-readable summary keep these meanings separate.
+
+A second requirement is to preserve failed runs. Removing the skewed scenario row because SLSQP returned failure would make the table look cleaner while erasing information about the interaction between nonconvex residuals and scenario constraints. The same applies to the lunar robust stages. Their negative chance margins explain why a low terminal frequency cannot be interpreted as a successful controller. In an experimental paper, a failure record is part of the denominator for claims about robustness and computational reliability.
+
+The third requirement is to distinguish diagnostic replication from confirmatory evaluation. The current run fixes one sample split per row and uses the test set after fitting. It is appropriate for checking that the implementation is deterministic and for exposing numerical inconsistencies. It is not a study of the distribution of objective or violation over repeated datasets. A confirmatory study would pre-register the seed set, fit on each training sample, reserve an untouched test sample, and report the median, dispersion, and failure rate over repetitions. If the target is a rare event, the test size must be selected from the desired interval width rather than inherited from a convenient default.
+
+The local findings consequently support a transparent hybrid reproducibility claim: the code, seeds, result schema, figures, and interpretation can be rerun locally, while the statistical statements remain conditional on the synthetic design. This is a stronger and more useful claim than calling a single successful SLSQP result a guarantee. It also creates a direct path for future extensions: corrected path validation, repeated seeds, consistent control quadrature, and an explicit finite-sample confidence construction can be added without changing the evidence vocabulary used here.

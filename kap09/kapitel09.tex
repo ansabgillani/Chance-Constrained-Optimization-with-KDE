@@ -1,37 +1,52 @@
 \section{Discussion and Practical Guidance}
 \label{ch:discussion}
 
-\subsection{Method selection}
-KDE is appropriate when uncertainty is available through data, is non-Gaussian or
-multimodal, and the optimizer requires a smooth scalar constraint. The evidence is
-strongest for low-dimensional residuals. A Gaussian reformulation is preferable
-when its distributional and convexity assumptions hold; scenario methods remain
-preferable when an a priori finite-sample feasibility statement is required
-\citep{calafiore2006,campi2008}.
+The experiments support a qualified conclusion. Residual-space KDE constraints can preserve useful objective value on low-dimensional synthetic problems with non-Gaussian uncertainty, but the local implementation does not establish a finite-sample safety guarantee and does not yet provide a valid cost comparison for the lunar transcription. The most informative result is therefore methodological: statistical approximation, solver feasibility, and physical discretization must be audited separately. A single test frequency cannot stand in for all three.
 
-\subsection{Bandwidth and sample size}
-Silverman's rule is a starting value, not an optimization guarantee. In the local
-fixed-residual sweep, multiplying the baseline bandwidth by $0.25$ to $4$ changed
-the KDE violation estimate from $0.3765$ to $0.4234$, while the independent test
-frequency was $0.3950$. The sample-size sweep ($N=50$ through $2000$) produced
-estimates between $0.3754$ and $0.4284$. These are estimator diagnostics at a fixed
-residual distribution, not reoptimized decisions. They
-support a stability check around the baseline rather than a claim that increasing
-$N$ alone forces a monotone approach to $\varepsilon$. A logarithmic sweep should
-be followed by continuation from larger to smaller bandwidths when the NLP is
-sensitive. Rare-event levels and high residual dimensions require methods designed
-for tail estimation or distributional robustness.
+\subsection{What the static evidence says}
 
-\subsection{Limits and open problems}
-Schuster's convergence results \citep{schuster2025} apply under their stated assumptions and to the
-estimator covered by the theorem. They do not supply a universal finite-sample
-out-of-sample certificate, and the convergence gap for the biased construction
-remains open. Distribution shift, optimization-aware bandwidth selection,
-finite-sample biased-KDE bounds, and sample compression for real-time control are
-natural next problems. The dispatch benchmark supports portability of the pipeline,
-but its uncertain constraint covers only the balance residual; generator-capacity
-constraints are deterministic in this adapter.
-The lunar proxy uses a different horizon and Euler mesh from the LGR
-implementation of \citet{keil2020,keil2021}; its cost near $30$ and failed robust stages do not reproduce the
-published costs near $9.09$. This difference is reported rather than interpreted
-as a contradiction of the published experiment.
+The static Gaussian experiment gives a clean ordering of failure modes. The nominal decision has test violation $0.5180$, so replacing a chance constraint by a mean constraint is materially unsafe in this nonlinear residual. The scenario decision has violation $0.0015$ and objective $0.6134$, which is conservative on the observed split. The unbiased KDE and local shifted Epanechnikov decisions have violations $0.0620$ and $0.0193$, respectively. Their objectives, $0.1981$ and $0.3071$, lie between the nominal and scenario solutions. This is the expected qualitative role of a smooth empirical probability constraint: it can use slack in the residual distribution instead of enforcing every training observation.
+
+The analytical Gaussian check strengthens but does not generalize that observation. The exact Gaussian probability of the nominal decision is about $0.5137$, close to the test frequency. The unbiased KDE decision has exact probability about $0.0572$, also close to its test frequency. The analytical reference objective, approximately $0.1392$, is below the KDE objective because smoothing and finite training samples alter the feasible boundary. This does not show that KDE is inefficient; it shows that the estimator defines a different finite-sample optimization problem. For the bimodal and heavy-tailed laws, KDE remains below the target on the recorded split. For the skewed law, the unbiased row is $0.1053$, and the scenario run fails. The evidence therefore favours distributional flexibility while rejecting a blanket claim of safety across residual shapes.
+
+The local shifted method has lower test frequency than the unbiased method in all four static rows, but that ordering should not be attributed to a theorem. The runner stores a Gaussian KDE diagnostic under \texttt{estimated\_violation} for the local row, whereas the actual shifted Epanechnikov constraint is active at approximately $0.1$. The local method is not the biased integrated-kernel estimator in Keil et al. Their construction uses a bandwidth-dependent shift that dominates the indicator under a stated condition and relies on a law-of-large-numbers premise for the sample sequence \citep{keil2020,keil2021}. A local 250-sample Silverman bandwidth and an empirical shift are not enough to transfer that guarantee. The correct interpretation is that the local method is a useful conservative surrogate in these runs, with its conservatism measured by test data rather than certified by the cited theorem.
+
+\subsection{Scenario optimization and KDE answer different questions}
+
+The scenario rows should not be treated as a baseline that KDE must beat. Scenario optimization is designed around a confidence statement for sampled constraints under structural assumptions such as convexity and an appropriate support or dimension measure \citep{calafiore2006,campi2008}. The local static residual is nonlinear, and the solver can fail while still returning a low finite-sample violation. KDE instead approximates a probability functional and supplies a differentiable constraint. It trades a direct finite-sample scenario argument for assumptions about sampling, bandwidth, residual regularity, and optimization convergence. These are different contracts.
+
+The observed dispatch ordering illustrates the distinction. The exact mixture CDF gives probabilities approximately $0.5951$, $0.0043$, $0.0450$, and $0.0107$ for nominal, scenario, unbiased KDE, and local decisions. Scenario is most conservative, the unbiased KDE retains objective value, and the local shifted method is close to scenario in violation. The stochastic constraint concerns only balance; capacities are deterministic, and there is no temporal coupling. The result supports portability of the software interface, not a claim about realistic unit commitment or renewable operation.
+
+\subsection{Bandwidth and data requirements}
+
+Bandwidth is a modelling parameter, not a cosmetic plotting choice. On the fixed residual split, multiplying the baseline by $0.25$ to $4$ moves the estimate from $0.3765$ to $0.4234$. At a fixed decision, the independent test frequency is $0.3950$. The sample-size sweep ranges from $0.3754$ to $0.4284$ without monotone improvement. This behaviour is consistent with finite-sample bias and variance: a small bandwidth follows individual residuals, while a large bandwidth spreads mass across the threshold. Neither sweep reoptimizes the decision, so it cannot quantify the full optimizer--estimator interaction.
+
+A defensible workflow should therefore select bandwidth on a training or validation split, retain an untouched test set, and repeat the complete optimization over multiple seeds. Reporting one seed is acceptable for a reproducibility smoke test; it is inadequate for estimating a method ranking. For rare events, $n=4,000$ is also too small to resolve probabilities much below $10^{-3}$ without a correspondingly wide confidence interval. Tail-focused sampling, importance sampling, or distributionally robust bounds would be needed for that regime. The convergence results of \citet{schuster2025} concern sequences of approximate optimization problems under their assumptions. They do not turn a single bandwidth and a single sample into a finite-sample certificate.
+
+\subsection{Joint constraints require a real allocation experiment}
+
+The joint comparison is deliberately modest. Equal Boole allocation and the exact maximum statistic coincide in the current runner because both evaluate the same Boolean event. The log-sum-exp statistic produces a higher observed rate, $0.5745$ versus $0.5530$, with $\tau=0.1$. This is evidence that smoothing changes the residual statistic; it is not evidence that log-sum-exp enforces a union chance constraint. The recorded risk allocation is metadata rather than an optimized set of component constraints, and one ledger field averages over the full sample pool rather than the held-out half.
+
+A stronger experiment would define component residuals, allocate $\varepsilon_1+\varepsilon_2=\varepsilon$, optimize both component constraints, and report the union event on a third sample. It should also compare the smooth statistic with a nonsmooth maximum under the same decision and use repeated seeds. That design would connect the practical construction to the Boole and maximum-statistic theory reviewed earlier. The current result is still useful because it identifies precisely what the implementation does and what remains to be implemented.
+
+\subsection{The lunar result is a numerical audit}
+
+The local lunar experiment cannot support the statement that a KDE controller uses $29.8052$ units of fuel. The forward Euler defects and terminal velocity equality imply $\sum h u_j=32.44$ for every feasible fixed-horizon trajectory. The stored trapezoidal objective includes the final nodal control, which does not enter the defects, and satisfies
+\begin{equation}
+ J_{\mathrm{trap}}=32.44+\frac{h}{2}(u_{N-1}-u_0).
+\end{equation}
+The nominal value $29.8052$ is an endpoint quadrature effect. The robust values at $32.44$ expose the same mismatch under a different continuation stage. A physically interpretable comparison would use the interval controls consistently in both dynamics and objective, or would adopt a higher-order collocation scheme with a matching quadrature rule.
+
+The local robust stages also fail SLSQP. Their terminal test frequencies ($0.0255$, $0.1128$, and $0.0548$ for scenario, unbiased KDE, and local shifted stages) cannot override negative solver margins, and the validation does not test the path event over time. The nominal stage has terminal test violation $0.5143$. The defensible conclusion is that this coarse fixed-horizon proxy is a useful stress test for infeasibility and implementation diagnostics. It is not a successful replication of Keil et al., whose free-time LGR formulation and different initial conditions yield costs near $9.09$ \citep{keil2020,keil2021}. The discrepancy is explained by non-equivalent problem definitions and a local quadrature defect, not by a contradiction in the published result.
+
+\subsection{Threats to validity}
+
+Five limitations bound the claims. First, every distribution is synthetic; there is no external dataset against which the residual laws or dispatch mixture can be calibrated. Second, the static and dispatch studies use one primary seed per benchmark row, so the figures show conditional outcomes rather than a sampling distribution over fitted decisions. Third, the test frequencies are Monte Carlo estimates and are not corrected for method selection, repeated comparisons, or solver failures. Fourth, the joint and lunar adapters do not yet implement independent component or continuous-time path validation. Fifth, the local objective audit shows that a correct statistical constraint can still be attached to an inconsistent discretization.
+
+These limitations are actionable. A publishable follow-up should repeat each static and dispatch method over at least 30 seeds, report binomial or concentration intervals for held-out rates, record KKT and chance margins, and separate successful from failed solves before ranking objectives. The lunar model should use a consistent piecewise-constant or collocation quadrature, refine the mesh, validate path maxima on a denser grid, and compare against the published formulation only after matching initial conditions, free-time treatment, disturbance laws, and solver tolerances. A finite-sample KDE claim would additionally require an explicit confidence construction or a distributionally robust envelope.
+
+\subsection{Practical decision rule}
+
+For a low-dimensional nonlinear problem with data-driven, multimodal uncertainty, the local evidence supports using KDE as a smooth exploratory constraint. The method should be accompanied by an untouched test set, a bandwidth sensitivity plot, solver-margin checks, and an explicit statement that the result is empirical. If a convex scenario formulation and an a priori confidence level are available, the scenario method has the stronger certification story even when its objective is more conservative. If the residual is known parametrically and the resulting chance constraint is tractable, the parametric reformulation remains the most economical choice.
+
+The appropriate reporting unit is therefore a tuple: formulation, estimator, bandwidth, training sample, solver status, held-out frequency, and validation scope. Omitting any member makes the numerical claim ambiguous. The experiments show why. A four-bar plot can suggest that a shifted KDE is best, yet its estimator field can be mislabelled, its optimizer can fail, or its objective can be a quadrature artefact. Once those distinctions are made explicit, the local contribution is credible: a reproducible implementation, an evidence hierarchy for KDE-based chance constraints, and a concrete set of numerical conditions that must be repaired before stronger claims are justified.
