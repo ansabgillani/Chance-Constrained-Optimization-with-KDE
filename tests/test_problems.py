@@ -47,6 +47,21 @@ def test_lunar_residuals_match_published_terminal_and_path_events():
     assert np.allclose(path, 2.5 + xi[:, 0] - problem.u_max)
 
 
+def test_lunar_dynamics_and_nonnegative_thrust_bounds():
+    problem = make_lunar_landing()
+    assert np.allclose(problem.dynamics(0.0, np.array([10.0, 2.0]), 0.0), [2.0, -1.622])
+    assert np.allclose(problem.dynamics(0.0, np.array([10.0, 2.0]), 0.5), [2.0, -1.122])
+    assert problem.control_bounds == (0.0, problem.u_max)
+    feasible = problem.deterministic_constraints(
+        np.array([[100.0, 0.0], [0.0, 0.0]]), np.array([1.0, 1.0])
+    )
+    assert np.all(feasible >= 0)
+    with pytest.raises(ValueError, match="finite"):
+        make_lunar_landing(terminal_sigma=float("nan"))
+    with pytest.raises(ValueError, match="finite"):
+        problem.dynamics(0.0, np.array([10.0, np.inf]), 0.0)
+
+
 def test_gaussian_baseline_refuses_nonlinear_residuals():
     problem = make_static_problem()
     samples = np.zeros((16, 2))

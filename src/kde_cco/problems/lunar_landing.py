@@ -29,15 +29,30 @@ class LunarLandingProblem:
     n_controls: int = 1
 
     def __post_init__(self):
+        numeric = {
+            "tf": self.tf, "u_max": self.u_max, "delta": self.delta,
+            "epsilon_a": self.epsilon_a, "epsilon_b": self.epsilon_b,
+            "gravity": self.gravity, "terminal_sigma": self.terminal_sigma,
+        }
+        if any(not np.isfinite(float(value)) for value in numeric.values()):
+            raise ValueError("lunar parameters must be finite")
         if self.tf <= 0 or self.u_max <= 0 or self.delta <= 0 or self.terminal_sigma < 0:
-            raise ValueError("tf, u_max, delta, and terminal_sigma must be positive/nonnegative")
+            raise ValueError("tf, u_max, and delta must be positive; terminal_sigma must be nonnegative")
         if not (0 < self.epsilon_a < 1 and 0 < self.epsilon_b < 1):
             raise ValueError("epsilon_a and epsilon_b must lie in (0,1)")
+        if (len(self.initial_state) != 2 or len(self.terminal_state) != 2
+                or not np.all(np.isfinite(self.initial_state))
+                or not np.all(np.isfinite(self.terminal_state))):
+            raise ValueError("initial_state and terminal_state must be finite length-2 vectors")
         self.metadata = {
             "name": "lunar_landing", "gravity": self.gravity, "tf": self.tf,
             "u_max": self.u_max, "delta": self.delta,
             "epsilon_a": self.epsilon_a, "epsilon_b": self.epsilon_b,
-            "terminal_sigma": self.terminal_sigma, "uncertainty_dim": 1,
+            # xi is the physical terminal altitude error, sampled as
+            # N(0, terminal_sigma**2); terminal_residual never rescales xi.
+            "terminal_sigma": self.terminal_sigma,
+            "terminal_error_distribution": "Normal(0, terminal_sigma**2)",
+            "uncertainty_dim": 1,
             "n_terminal_constraints": 1, "n_path_constraints": 1,
             "residual_convention": "residual <= 0 is safe",
             "terminal_disturbance": "Gaussian",
@@ -51,6 +66,10 @@ class LunarLandingProblem:
     def dynamics(self, t, state, control, disturbance=0.0):
         y = np.asarray(state, dtype=float)
         u = np.asarray(control, dtype=float)
+        if y.shape[-1:] != (2,) or not np.all(np.isfinite(y)):
+            raise ValueError("state must have a finite trailing dimension of size 2")
+        if not np.all(np.isfinite(u)) or not np.all(np.isfinite(disturbance)):
+            raise ValueError("control and disturbance must be finite")
         out = np.empty(np.broadcast(y[..., 0], y[..., 1], u).shape + (2,))
         out[..., 0] = y[..., 1]
         out[..., 1] = -self.gravity + u + disturbance
