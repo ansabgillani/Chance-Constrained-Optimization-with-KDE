@@ -25,6 +25,8 @@ import os
 F5 = "figures/"
 os.makedirs(F5, exist_ok=True)
 rng = np.random.default_rng(31)
+# Diagnostic figures below use a standalone scalar lognormal law; they are
+# not generated from the dispatch experiment ledger.
 
 def C_epan(u):
     """Integrated Epanechnikov kernel."""

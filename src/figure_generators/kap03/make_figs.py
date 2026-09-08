@@ -14,8 +14,8 @@ Outputs five PDFs and matching PNG previews in ./figures/.
 Figures produced
 ----------------
 fig_pipeline       -- KDE reformulation computational loop
-fig_smoothing      -- KDE smoothed constraint and its derivative
-fig_optimism       -- unbiased KDE certificate failure rate
+fig_smoothing      -- KDE smoothed constraint and its derivative (standalone lognormal scalar law)
+fig_optimism       -- unbiased KDE certificate failure rate (standalone lognormal scalar law)
 (fig_staircase and fig_scenariogrowth moved to the Chapter 2 script)
 
 House style
@@ -62,7 +62,8 @@ os.makedirs(OUT, exist_ok=True)
 # Fixed seed for reproducibility
 rng = np.random.default_rng(21)
 
-# Shared demand law used across all five figures
+# Standalone scalar lognormal law used by diagnostic figures; this is not
+# the dispatch experiment ledger.
 LAW  = stats.lognorm(s=0.18, scale=100)
 EPS  = 0.05
 TRUE_Q = LAW.ppf(1 - EPS)
