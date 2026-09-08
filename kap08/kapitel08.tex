@@ -78,7 +78,7 @@ The local profile implements only the portable parts. It uses nested IID prefixe
  \label{eq:schuster-local-bandwidth}
 \end{equation} The Keil analogue tries bandwidth multipliers $(0.25,0.5,1,2)$ and warm-starts each attempt. It does not use HMC, the 50,000-sample Keil chain, LGR nodes, SNOPT, or mesh-error triggers. The output is consequently a scale-normalized local comparison, not a reproduction of either paper.
 
-The question is whether increasing $N$ makes the two estimators approach the same fitted decision. In the Gaussian static row, the Schuster Gaussian objective changes from $0.2270$ at $N=250$ to $0.2016$ and $0.1599$ at $N=1000$ and $N=5000$, with test violations $0.0464$, $0.0586$, and $0.0834$. The Keil biased Epanechnikov objective is $0.3623$, $0.3077$, and $0.4100$, with test violations $0.0138$, $0.0228$, and $0.0091$. The observation is not monotone convergence: the Gaussian decisions move toward the empirical target as smoothing decreases, whereas the biased decisions remain more conservative and change bandwidth branch at $N=5000$. The mechanism is the one-sided support shift: $B(h)=h$ eliminates optimistic contributions from positive residuals, while the Gaussian estimator allows smooth mass on both sides of the threshold.
+The question is whether increasing $N$ makes the two estimators approach the same fitted decision. In the Gaussian static row, the Schuster Gaussian objective changes from $0.2270$ at $N=250$ to $0.2016$ and $0.1599$ at $N=1000$ and $N=5000$, with test violations $0.0464$, $0.0586$, and $0.0834$. The Keil biased Epanechnikov objective is $0.3623$, $0.3077$, and $0.4100$, with test violations $0.0138$, $0.0228$, and $0.0091$. The observation is not monotone convergence: the Gaussian decisions move toward the empirical target as smoothing decreases, whereas the biased decisions remain more conservative and change bandwidth branch at $N=5000$. The mechanism is compatible with the one-sided support shift: $B(h)=h$ eliminates optimistic contributions from positive residuals, while the Gaussian estimator allows smooth mass on both sides of the threshold. Because the biased arm also changes the selected bandwidth and continuation branch, this comparison does not identify the causal effect of kernel bias alone.
 
 The distribution-shape comparison gives the same analytical distinction. At $N=5000$, Schuster Gaussian test violations are $0.0548$ for bimodal, $0.0910$ for skewed, and $0.0794$ for heavy-tailed residuals. The corresponding biased Epanechnikov values are $0$, $0.0383$, and $0.0275$, with objectives $0.8223$, $0.4677$, and $0.7202$. The biased method is safer on this test split but more conservative. This is consistent with Keil's pointwise upper-bound construction, but it does not validate Schuster's optimizer convergence theorem: no uniform residual-grid error was computed, the feasible decision was not shown to converge, and the static objective does not satisfy all of Schuster's assumptions.
 
@@ -118,15 +118,15 @@ The dispatch proxy has two generators and a balance residual. Capacity residuals
 \toprule
 Method & Objective & Train & Test & Solver\\
 \midrule
-Nominal & 928.5686 & 0.5788 & 0.5788 & success\\
-Scenario & 935.3871 & 0.0060 & 0.0060 & success\\
-Unbiased KDE & 933.9233 & 0.0398 & 0.0398 & success\\
-Local shifted Epanechnikov & 934.8865 & 0.0110 & 0.0110 & success\\
+Nominal & 928.5686 & 0.5880 & 0.5788 & success\\
+Scenario & 935.3871 & 0.0040 & 0.0060 & success\\
+Unbiased KDE & 933.9233 & 0.0520 & 0.0398 & success\\
+Local shifted Epanechnikov & 934.8865 & 0.0120 & 0.0110 & success\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Because the mixture is known, its CDF supplies an independent reference. The exact mixture probability at the nominal decision is approximately $0.5951$, while the Monte Carlo test frequency is $0.5788$. The corresponding probabilities for scenario, unbiased KDE, and local shifted decisions are approximately $0.0043$, $0.0450$, and $0.0107$. The sample frequencies are therefore plausible finite-sample measurements, and the objective ranking is not an artefact of an unknown test distribution. The scenario solution is most conservative; the local estimator is closer to it than the unbiased KDE in violation while retaining slightly lower objective than scenario. This is a single synthetic balance experiment and says nothing about network congestion, unit commitment, temporal correlation, or capacity uncertainty.
+Because the mixture is known, its CDF supplies an independent reference. The exact mixture probability at the nominal decision is approximately $0.5951$, while the Monte Carlo test frequency is $0.5788$. The corresponding probabilities for scenario, unbiased KDE, and local shifted decisions are approximately $0.0043$, $0.0450$, and $0.0107$. The training values in the table are computed on the optimization sample and the test values on an independent sample; they must not be conflated. The sample frequencies are therefore plausible finite-sample measurements, and the objective ranking is not an artefact of an unknown test distribution. The scenario solution is most conservative; the local estimator is closer to it than the unbiased KDE in violation while retaining slightly lower objective than scenario. This is a single synthetic balance experiment and says nothing about network congestion, unit commitment, temporal correlation, or capacity uncertainty.
 
 \subsection{Bandwidth, sample size, and joint statistics}
 \subsubsection{Bandwidth sensitivity}

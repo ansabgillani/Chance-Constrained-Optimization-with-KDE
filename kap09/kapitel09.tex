@@ -1,81 +1,141 @@
 \section{Discussion: Evidence and Method Selection}
 \label{ch:discussion}
 
-The experimental evidence supports a conditional method choice. KDE is useful when uncertainty is empirical, residual dimension is low, and a smooth constraint is needed by the optimizer. The results do not support treating every low test frequency as a safety certificate. Solver status, estimator identity, bandwidth, sample protocol, and validation scope determine the claim that can be made.
+This chapter separates what the experiments establish from what remains a
+methodological hypothesis. The appropriate choice depends on the residual
+dimension, estimator, bandwidth and bias, solver status, and independent
+validation scope. A low held-out frequency is not a safety certificate when
+the optimization gate has failed or when the fitted decision was selected from
+the same data without a selection-aware bound.
 
-\subsection{Findings by research question}
-\subsubsection{Evidence by experiment}
+\subsection{Answers to the research questions}
+\label{sec:discussion-rq}
 
-The numerical values are reported in Chapter~8; this chapter interprets what each
-experiment supports. The static Gaussian benchmark is the clearest comparison:
-the nominal decision is unsafe, the scenario solution is conservative, and the
-two KDE solutions retain more objective value. The analytic Gaussian reference
-and independent test set make this a direct check of the implementation.
+\subsubsection{RQ1: residual-space formulation}
+\label{sec:discussion-rq1}
 
-The residual-shape stress test shows that the feasible boundary changes with the
-law. The skewed unbiased row is near or above the target, while the biased
-Epanechnikov rows have lower held-out violation at a higher objective cost. Since
-each law has one primary seed, this is evidence of a distribution-sensitive
-trade-off rather than a universal estimator ranking.
+Chapters~3--5 establish the scalar residual reformulation and its analytic
+gradient. For an individual event, estimating the pushforward residual CDF
+avoids direct KDE in the uncertainty dimension. The claim is conditional on
+the regularity and convergence assumptions stated in Chapter~5; it is not a
+finite-sample population guarantee for the optimizer returned by the NLP.
 
-The dispatch adapter transfers the residual interface to an affine balance
-constraint, and its known mixture CDF agrees with the independent test
-frequencies. This is the strongest numerical transfer check. The nested
-sample-size sequence exposes a finite-sample smoothing trade-off: the Gaussian
-path moves toward the target as smoothing changes, while the biased path remains
-more conservative. Three sample sizes and one sample path do not verify
-optimizer convergence.
+\subsubsection{RQ2: numerical comparison}
+\label{sec:discussion-rq2}
 
-The joint experiment compares event representations. The maximum and equal-Boole
-rows evaluate the same event in the current runner, whereas the log-sum-exp
-statistic changes the scalar event. It therefore does not establish a
-componentwise risk-allocation result. Finally, the lunar audit shows that failed
-solver stages and an inconsistent quadrature rule must be resolved before a test
-frequency can support a physical safety or cost claim.
+The static and dispatch experiments show a local objective--violation trade-off
+among nominal, scenario, unbiased KDE, and shifted Epanechnikov formulations.
+The dispatch adapter is the strongest transfer check because its mixture CDF is
+known independently. The corrected training/test split in
+Table~\ref{tab:dispatch-results} must be read together with solver status.
+These are seeded synthetic comparisons, not universal rankings. Scenario
+guarantees require convexity, IID sampling, support-rank and confidence-level
+conditions that are not calculated by the local runner.
 
-\subsection{Relation to the convergence and biased-KDE literature}
-\subsubsection{Comparison with the anchor papers}
+\subsubsection{RQ3: bandwidth, sample size, and bias}
+\label{sec:discussion-rq3}
 
-The two anchor papers answer different questions. Schuster studies convergence of
-optimization problems as the KDE approximation improves, whereas Keil constructs
-a biased integrated kernel and embeds it in a sampling and optimal-control
-procedure. The local nested Gaussian sequence tests the direction of the
-Schuster hypothesis, but it does not measure uniform residual-grid error or a
-limiting optimizer. The local biased Epanechnikov arm tests the one-sided kernel
-property, but uses IID samples, SLSQP, and an Euler mesh rather than Keil's MCMC,
-LGR, and continuation workflow. It is therefore an empirical analogue, not a
-replication. These differences explain why the local observations are compatible
-with both papers without verifying their strongest claims.
+The paper-aligned records show how finite choices of $N$ and $h$ move the
+returned decision. The biased rows have lower held-out violation and higher
+objective in these runs, but the implementation also changes the selected
+bandwidth and continuation branch. The observation therefore supports a local
+safety--cost pattern, not a causal estimate of the bias alone and not a
+convergence result.
 
-\subsection{Method-selection contract}
+\subsubsection{RQ4: joint-event representation}
+\label{sec:discussion-rq4}
 
-The practical rule is a guarantee contract rather than a ranking. A scenario
-formulation is appropriate when the model is convex and a finite-sample
-confidence statement is required; its support, convexity, and sample-complexity
-assumptions must be checked. A parametric reformulation is appropriate when
-diagnostics support the assumed law and a tractable deterministic equivalent is
-available. Unbiased KDE is appropriate for a low-dimensional empirical residual
-when smooth derivatives are valuable, provided that bandwidth, solver margins,
-and independent test performance are reported. The biased Epanechnikov variant
-is appropriate when one-sided protection is worth its objective premium and its
-sampling condition is checked. High-dimensional or rare-event joint constraints
-call for distributionally robust, importance-sampling, or tail-specific methods
+The maximum statistic represents the joint event exactly. Equal Boole and
+maximum rows coincide in the current runner because they evaluate the same
+Boolean event; this does not test componentwise risk allocation. The
+log-sum-exp statistic satisfies $s_\tau\geq s$ and therefore changes the event
+being measured. Its observed rate is a diagnostic of that changed statistic,
+not evidence for a joint optimizer or a probability margin.
+
+\subsection{Relation to the anchor literature}
+\label{sec:discussion-literature}
+
+\subsubsection{What the Gaussian sequence tests}
+\label{sec:discussion-schuster}
+
+The local nested Gaussian sequence probes the direction of the Schuster
+convergence hypothesis. It does not compute uniform residual-grid error,
+verify the theorem's geometric assumptions, or establish a limiting optimizer.
+The dispatch adapter is the closest local analogue to the convex setting; the
+lunar transcription is not.
+
+\subsubsection{What the biased arm does not replicate}
+\label{sec:discussion-keil}
+
+The local shifted Epanechnikov arm tests the one-sided kernel property with IID
+samples and finite-dimensional SLSQP. The lunar adapter additionally uses an
+Euler mesh, whereas the cited Keil workflow uses MCMC, LGR, and continuation.
+The local arm is therefore an empirical analogue, not a replication of that
+workflow.
+
+\subsection{Mechanistic synthesis}
+\label{sec:discussion-mechanisms}
+
+\subsubsection{Statistical mechanism}
+\label{sec:mechanism-statistical}
+
+Symmetric smoothing can credit positive residuals near the boundary. The
+$B(h)=h$ Epanechnikov shift removes this per-sample optimism for its compact
+support, but the resulting inequality is an expectation statement for a fixed,
+sample-independent decision. Calibration or a selection-aware concentration
+bound is still needed after optimization.
+
+\subsubsection{Optimization mechanism}
+\label{sec:mechanism-optimization}
+
+The active estimated constraint and the objective determine the returned
+decision together. The observed biased premium is therefore a property of the
+full estimator--bandwidth--continuation pipeline. A controlled ablation must
+hold $h$ and the continuation schedule fixed before attributing an objective or
+violation change to the kernel bias.
+
+\subsubsection{Transfer and solver mechanism}
+\label{sec:mechanism-transfer}
+
+The exact dispatch CDF provides a distributional oracle for the affine balance
+residual. In contrast, the robust lunar stages have failed solver status and
+terminal-only validation; the Euler/trapezoidal mismatch also changes the
+stored objective. Those rows are valuable audit records but cannot support a
+physical cost or continuous-time safety claim.
+
+\subsubsection{Joint-event mechanism}
+\label{sec:mechanism-joint}
+
+The maximum and equal-Boole representations coincide only because the current
+runner evaluates the same event. The LSE upper bound smooths the max while
+introducing a different scalar event. A genuine allocation study must retain
+component residuals, optimize separate component constraints, and validate the
+union event independently.
+
+\subsection{Method-selection boundaries}
+\label{sec:discussion-selection}
+
+\subsubsection{Scenario and parametric alternatives}
+\label{sec:selection-alternatives}
+
+Scenario optimization is appropriate when its convexity, IID, support-rank, and
+confidence assumptions are checked. A parametric reformulation is appropriate
+when diagnostics support the assumed law and a deterministic equivalent is
+available.
+
+\subsubsection{When KDE is defensible}
+\label{sec:selection-kde}
+
+Unbiased KDE is defensible for low-dimensional empirical residuals when smooth
+derivatives are valuable and bandwidth, solver margins, and independent test
+performance are reported. One-sided compact kernels are defensible when the
+fixed-decision envelope and its objective premium are worth the additional
+conservatism. High-dimensional, rare-event, dependent, or shifted settings
+require distributionally robust, importance-sampling, or tail-specific methods
 before direct KDE is used.
 
-\subsection{Threats to validity and repair plan}
-
-The limitations are operational. Statistically, one primary seed per row does not
-measure the variability of a data-selected decision; independent repetitions and
-interval estimates are required. Structurally, the scalar joint experiment does
-not test componentwise risk allocation; the component residuals should be
-preserved for a genuine multivariate orthant experiment. Numerically, failed
-lunar stages and the Euler/trapezoidal mismatch prevent physical interpretation
-until the transcription, KKT margins, quadrature, and dense path validation are
-repaired. Finally, historical residuals may not describe deployment, so
-distribution shift should be tested with an explicit ambiguity set or robust
-envelope.
-
 \subsection{Future Work}\label{sec:discussion-future-work}
+
 
 The results identify a focused doctoral research programme. Each item below is a
 research target rather than a result established by this thesis.
@@ -119,7 +179,10 @@ a prespecified tuning set $\mathcal H\times\mathcal T$:
   \label{eq:future-postselection-bound}
 \end{equation}
 Here the required margin is a research object, not a quantity established in
-this thesis. Its intended decomposition is
+this thesis. A possible decomposition is only a conjectural template: the
+$\tau\log m$ term is a residual-statistic margin and becomes a probability
+margin only under an anti-concentration condition. The constants, exponent,
+and complexity term must be derived rather than assumed:
 \begin{equation}
   \Delta_{N,h,\tau}(\delta)
   = \underbrace{C_{\rm stat}

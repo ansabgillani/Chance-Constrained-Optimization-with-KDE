@@ -184,7 +184,7 @@ contributes a graded value that responds continuously as the decision
 moves. The staircase has been replaced by a ramp, and the entire
 discontinuous probabilistic feasibility requirement of Chapter~2 by a
 smooth, differentiable, deterministic nonlinear constraint. \Cref{fig:smoothing}(a) shows the
-replacement on the dispatch problem: the staircase, the true
+replacement in the standalone scalar diagnostic: the staircase, the true
 probability, and the KDE constraint at three bandwidths, with the
 bandwidth visibly controlling how tightly the ramp hugs the step.
 
@@ -342,8 +342,8 @@ approximation is not conservative. A symmetric kernel smooths the
 indicator from both sides, so in finite samples the estimate
 $\hat{p}_h(x)$ can exceed the true probability, and the constraint
 $\hat{p}_h(x) \geq 1-\varepsilon$ can certify a decision the true chance
-constraint rejects. \Cref{fig:optimism} measures the consequence on the
-dispatch problem: across three thousand independent trials at
+constraint rejects. \Cref{fig:optimism} measures the consequence in the
+standalone lognormal scalar diagnostic: across three thousand independent trials at
 $N = 100$, the decision certified by the unbiased KDE violates the true
 reliability target in $39\%$ of trials. The failures are individually
 small, the estimator is consistent and the misses concentrate near the
@@ -366,9 +366,8 @@ the business of the next chapter.
   $1-\varepsilon = 0.95$ is evaluated against the true demand law. The
   achieved reliability concentrates near the target, the signature of a
   consistent estimator, but falls below it in $39\%$ of trials: the
-  certificate $\hat{p}_h(x) \geq 1-\varepsilon$ is optimistic almost as
-  often as not. This finite-sample optimism is the defect the biased
+certificate $\hat{p}_h(x) \geq 1-\varepsilon$ is optimistic in this
+diagnostic. This finite-sample optimism is the defect the biased
   construction of Chapter~4 removes.}
   \label{fig:optimism}
 \end{figure}
-

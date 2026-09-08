@@ -47,16 +47,49 @@ boundaries in detail.
 
 The comparison with the literature is consequently complementary. Schuster supplies the optimization-level convergence question: an approximate solution sequence is meaningful only when the KDE converges in the required sense and the limiting optimization problem has the necessary regularity. Keil supplies a constructive safety-oriented kernel and a continuation strategy for a different optimal-control transcription. The local results do not contradict either paper. They show where the hypotheses become operational: an active constraint, a finite sample, a failed solver, an absent mesh-error trigger, or a mismatched quadrature rule changes the claim that can be made.
 
-\subsection{Limitations and future work}
-\subsubsection{Limitations}
+\subsection{Limitations}
+\label{sec:conclusion-limitations}
 
-The evidence is synthetic, low-dimensional, and primarily single-seed. The test frequencies are conditional Monte Carlo measurements rather than finite-sample certificates. The local joint experiment does not optimize separate component risk allocations, and the lunar experiment validates terminal position but not the continuous-time path event. The fixed-horizon lunar objective also cannot be used for physical method ranking until the control quadrature is made consistent with the forward-Euler defects. These are limitations of the present evidence, not details that can be repaired by longer prose.
+\subsubsection{Statistical certification and convergence}
+\label{sec:conclusion-statistical-limitations}
 
-\subsubsection{Future work}
+The local evidence is synthetic, low-dimensional, and based on one primary
+training seed per reported optimization row (\cref{ch:experiments}). A held-out
+frequency is a conditional Monte Carlo measurement for the returned decision;
+its point estimate alone is not a finite-sample certificate. The biased
+domination property gives the training-sample envelope
+\begin{equation}
+  \widehat p_h^{\,b}(\widehat x)
+  \leq \frac{1}{N}\sum_{j=1}^{N}
+  \ind\{g(\widehat x,\xi_j)\leq 0\},
+  \label{eq:conclusion-training-envelope}
+\end{equation}
+but it does not give a population guarantee for the data-dependent optimizer.
+Chapter~5 also leaves convergence rates, biased-KDE optimizer convergence,
+non-convex guarantees, and finite-sample feasibility outside its theorems
+(\cref{sec:coverageboundaries,sec:unifiedopenproblem}). The reported rows
+therefore support empirical comparisons under the declared protocol, not
+universal estimator rankings.
 
-The concrete research agenda is set out in Chapter~9, with four linked priorities:
-selection-aware finite-sample reliability, a bound on conservatism and objective
-cost, continuous-time path validation, and independent transfer experiments.
-Keeping the technical roadmap in Chapter~9 avoids repeating it here.
+\subsubsection{Model, joint-event, and numerical transfer}
+\label{sec:conclusion-transfer-limitations}
+
+The joint experiment evaluates scalar event statistics; its equal-Boole and
+maximum rows coincide and do not establish componentwise risk allocation
+(\cref{sec:jointthree,sec:experiment-evidence}). The dispatch adapter has one
+stochastic balance residual and no temporal or network dependence. The lunar
+rows are failed robust NLP stages and validate terminal position only
+(\cref{tab:lunar-results}); nodewise frequencies do not imply an all-time path
+guarantee. Finally, the Euler defects imply a fixed-horizon fuel invariant,
+whereas the stored trapezoidal objective contains an endpoint term
+(\cref{eq:fuel-invariant,eq:quadrature-mismatch}). Correcting the quadrature
+removes that transcription artifact, but the fixed-horizon model still cannot
+rank physical fuel use; the stored costs remain diagnostics until the objective
+or horizon is reformulated.
+
+\subsection{Future work}
+\label{sec:conclusion-future-work}
+
+The technical roadmap is specified in Chapter~9 (\cref{sec:discussion-future-work}).
 
 Taken together, the results place residual-space KDE in a specific methodological gap: empirical or non-Gaussian uncertainty with a low-dimensional residual and a solver that benefits from smooth constraints. Its use is credible only when estimator, bandwidth, sampling, solver status, and validation scope are reported together; stronger safety or convergence claims require the repairs listed above.
