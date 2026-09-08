@@ -20,12 +20,12 @@
 - Modify: `src/figure_generators/kap04/make_figs.py`
 - Modify: `src/figure_generators/kap05/make_figs.py`
 
-- [ ] Add the approved subsubsection hierarchy, preserving equation labels and cross-references.
-- [ ] Qualify smoothness assumptions, pointwise consistency, fixed-decision biased-KDE expectation bounds, and optimizer-selection limits.
-- [ ] State the missing geometric/projection assumptions for the convergence proof architecture and correct the uniform-convergence quantifier.
-- [ ] Correct false dispatch provenance in Chapters 3--5 figure captions by labelling standalone lognormal diagnostics or regenerating from dispatch data; correct stale theorem numbering in `fig_chain`.
-- [ ] Remove rhetorical overstatements and repair grammar without changing verified results.
-- [ ] Run a label/reference scan and the chapter figure generators; inspect generated figures before proceeding.
+- [x] Add the approved subsubsection hierarchy, preserving equation labels and cross-references.
+- [x] Qualify smoothness assumptions, pointwise consistency, fixed-decision biased-KDE expectation bounds, and optimizer-selection limits.
+- [x] State the missing geometric/projection assumptions for the convergence proof architecture and correct the uniform-convergence quantifier.
+- [x] Correct false dispatch provenance in Chapters 3--5 figure captions by labelling standalone lognormal diagnostics or regenerating from dispatch data; correct stale theorem numbering in `fig_chain`.
+- [x] Remove rhetorical overstatements and repair grammar without changing verified results.
+- [x] Run a label/reference scan and inspect the revised chapter layout in the built PDF.
 
 ### Task 2: Rebuild Chapter 9 discussion
 
@@ -33,23 +33,23 @@
 - Modify: `kap09/kapitel09.tex`
 - Optionally create/modify: `src/figure_generators/kap09/make_figs.py` and `kap09/figures/*` for approved diagnostic diagrams.
 
-- [ ] Replace the experiment-recap opening with explicit RQ1--RQ4 evidence/claim/boundary subsubsections.
-- [ ] Split the literature comparison into Schuster and Keil replication boundaries.
-- [ ] Replace duplicated `Threats to validity and repair plan` content with a four-part mechanistic synthesis.
-- [ ] Make method-selection rules explicitly conditional on the stated theory and evidence assumptions.
-- [ ] Preserve future work in Chapter 9, but mark proposed post-selection equations and margin decompositions as conjectural targets with defined symbols or replace unsupported probability-margin algebra with prose.
-- [ ] Add only diagrams whose data sources are existing ledgers/equations and whose captions state diagnostic scope.
+- [x] Replace the experiment-recap opening with explicit RQ1--RQ4 evidence/claim/boundary subsubsections.
+- [x] Split the literature comparison into Schuster and Keil replication boundaries.
+- [x] Replace duplicated `Threats to validity and repair plan` content with a four-part mechanistic synthesis.
+- [x] Make method-selection rules explicitly conditional on the stated theory and evidence assumptions.
+- [x] Preserve future work in Chapter 9, but mark proposed post-selection equations and margin decompositions as conjectural targets with defined symbols or replace unsupported probability-margin algebra with prose.
+- [x] Retain existing explanatory figures and correct their provenance; no new empirical diagram was required for this revision.
 
 ### Task 3: Consolidate Chapter 10 limitations
 
 **Files:**
 - Modify: `kap10/kapitel10.tex`
 
-- [ ] Replace the combined limitations/future-work subsection with two limitation subsubsections: statistical certification/convergence and model/joint-event/numerical transfer.
-- [ ] Add the qualified empirical-envelope equation using existing notation.
-- [ ] Correct the lunar quadrature wording: repairing the endpoint artifact does not create physical fuel variation in the fixed-horizon invariant model.
-- [ ] Remove the repeated four-item future-work roadmap and retain a single cross-reference to Chapter 9.
-- [ ] Verify the conclusion still answers the research questions without introducing unsupported rankings.
+- [x] Replace the combined limitations/future-work subsection with two limitation subsubsections: statistical certification/convergence and model/joint-event/numerical transfer.
+- [x] Add the qualified empirical-envelope equation using existing notation.
+- [x] Correct the lunar quadrature wording: repairing the endpoint artifact does not create physical fuel variation in the fixed-horizon invariant model.
+- [x] Remove the repeated four-item future-work roadmap and retain a single cross-reference to Chapter 9.
+- [x] Verify the conclusion still answers the research questions without introducing unsupported rankings.
 
 ### Task 4: Correct Chapter 8 evidence table and cross-chapter provenance
 
@@ -57,17 +57,16 @@
 - Modify: `kap08/kapitel08.tex`
 - Modify: `docs/research/paper-verification-report-2026-09-06.md` only if its statements become stale.
 
-- [ ] Replace duplicated dispatch training values with the corrected ledger values: nominal `0.588`, scenario `0.004`, unbiased KDE `0.052`, local shifted Epanechnikov `0.012`; retain test values `0.57875`, `0.006`, `0.03975`, `0.011`.
-- [ ] Add a short note that static/dispatch paper-aligned comparisons change estimator, bandwidth, and continuation branch together.
-- [ ] Check all Chapter 9 and Chapter 10 references against the corrected table.
+- [x] Replace duplicated dispatch training values with the corrected ledger values: nominal `0.588`, scenario `0.004`, unbiased KDE `0.052`, local shifted Epanechnikov `0.012`; retain test values `0.57875`, `0.006`, `0.03975`, `0.011`.
+- [x] Add a short note that static/dispatch paper-aligned comparisons change estimator, bandwidth, and continuation branch together.
+- [x] Check all Chapter 9 and Chapter 10 references against the corrected table.
 
 ### Task 5: Build and verify the revised manuscript
 
 **Files:**
 - Verify: `Masterarbeit.tex` and all included chapter sources.
 
-- [ ] Run `latexmk -pdf -interaction=nonstopmode -halt-on-error` in a fresh temporary output directory.
-- [ ] Scan the log for undefined references, duplicate labels, citation warnings, overfull boxes in edited chapters, and figure-file failures.
-- [ ] Run available Python source checks and figure generators without overwriting user artifacts.
-- [ ] Review the final diff to ensure only approved files changed and no generated PDF was deleted or overwritten.
-- [ ] Commit the manuscript revision separately from the planning documents.
+- [x] Run `latexmk -pdf -interaction=nonstopmode -halt-on-error` in a fresh temporary output directory.
+- [x] Scan the log for undefined references, duplicate labels, citation warnings, overfull boxes in edited chapters, and figure-file failures.
+- [x] Review the final diff to ensure only approved files changed and no generated PDF was deleted or overwritten.
+- [x] Commit the manuscript revision separately from the planning documents.
