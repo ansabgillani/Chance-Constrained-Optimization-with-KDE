@@ -116,7 +116,7 @@ def fig_meanvalue():
                 zorder=8, bbox=WBOX,
                 )
     # shortfall label inside the shaded region, clear of both lines
-    ax.text(117, ymax * 0.20, "shortfall" % (viol * 100),
+    ax.text(117, ymax * 0.20, f"shortfall {viol * 100:.1f}%",
             fontsize=8.0, color=RED, ha="center", va="center",
             zorder=8, bbox=WBOX)
 
@@ -130,11 +130,11 @@ def fig_meanvalue():
     xq = np.quantile(xi, levels)
     ax.plot((1 - levels) * 100, xq, color=BLUE, lw=1.7, zorder=4)
 
-    ax.scatter([50], [np.quantile(xi, 0.5)], color="k", s=22, zorder=6)
+    ax.scatter([viol * 100], [mean_xi], color="k", s=22, zorder=6)
     ax.scatter([5], [q95], color=GREEN, s=22, zorder=6)
 
     ax.annotate("mean-value plan",
-                xy=(50, np.quantile(xi, 0.5)), xytext=(50, 112),
+                xy=(viol * 100, mean_xi), xytext=(44, 112),
                 fontsize=8.3, ha="center", zorder=8, bbox=WBOX,
                 arrowprops=dict(arrowstyle="->", lw=0.8, shrinkB=3))
     ax.annotate("$\\varepsilon = 0.05$",
@@ -218,9 +218,9 @@ def fig_spectrum():
                 fontsize=8.7, color=RED, ha="center", zorder=8, bbox=WBOX,
                 arrowprops=dict(arrowstyle="->", lw=0.9, color=RED,
                                 shrinkB=4))
-    # worst-case label: upper-left of the dot, arrow pointing right to it,
+    # bounded-set robust proxy: upper-left of the dot, arrow pointing right to it,
     # so the arrow never overlaps the text
-    ax.annotate("worst-case robust:\nguaranteed, expensive",
+    ax.annotate("bounded-set robust design:\nhigh-quantile proxy",
                 xy=(100, rob_y), xytext=(82, rob_y * 1),
                 fontsize=8.7, color=GRAY, ha="center", va="center",
                 zorder=8, bbox=WBOX,

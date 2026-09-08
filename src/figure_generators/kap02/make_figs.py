@@ -249,7 +249,7 @@ def fig_methods():
 # ===========================================================================
 def fig_kernels():
     u = np.linspace(-2.2, 2.2, 600)
-    shift = 0.55
+    shift = 1.0  # shift full support [-1, 1] to [0, 2] for a one-sided CDF envelope
 
     gauss  = stats.norm.pdf(u)
     epan   = np.where(np.abs(u) <= 1, 0.75*(1 - u**2), 0)
@@ -381,8 +381,8 @@ def fig_curse():
 
     for dd, label, xy_text in [
             (1,  "$d=1$: $N\\approx 10^{2}$", (1.55, 9e2)),
-            (5,  "$d=5$: $N\\approx 10^{4}$", (5.6,  1.1e3)),
-            (10, "$d=10$: $N\\approx 10^{6}$", (7.4,  5.5e5))]:
+            (5,  "$d=5$: $N\\approx 4\\times10^{3}$", (5.6,  1.1e3)),
+            (10, "$d=10$: $N\\approx 4\\times10^{5}$", (7.4,  5.5e5))]:
         ax.annotate(label,
                     xy=(dd, N1**((dd + 4)/5)),
                     xytext=xy_text,
