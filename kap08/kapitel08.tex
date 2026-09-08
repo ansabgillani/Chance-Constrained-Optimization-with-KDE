@@ -1,77 +1,30 @@
-\section{Experimental Study}
+\section{Experimental Evaluation}
 \label{ch:experiments}
 
 This chapter reports the local evidence rather than treating every output field as a theorem. The analytical formulation question (RQ1) is established in Chapters~3--5. The experiments address RQ2 by comparing nominal, scenario, unbiased KDE, and locally shifted Epanechnikov constraints across residual laws and a balance-constrained dispatch adapter; RQ3 by varying bandwidth and nested sample size; and RQ4 by comparing scalar joint-event statistics. The lunar continuation is a separate audit objective that establishes what the local transcription can support after its numerical checks. All experiments are synthetic, seeded, and run locally. The resulting measurements are empirical frequencies or estimator diagnostics; they are not out-of-sample certificates.
 
 \subsection{Design, estimands, and provenance}
+\subsubsection{Benchmarks and estimands}
 
-The static model has two decision variables and a nonlinear residual whose uncertainty enters through a scalar residual map. Four residual laws are used: Gaussian, bimodal, skewed, and heavy-tailed. For each law, 250 training observations define the optimization constraint and 4,000 independent test observations define the held-out frequency. The target is $\varepsilon=0.1$. The method order is nominal, scenario, unbiased KDE, and local shifted Epanechnikov. The exact seed mapping is $20260906$ for the Gaussian static run, $20260907$ for dispatch and the bimodal row, $20260908$ for the joint comparison and the skewed row, $20260909$ for sensitivity and the heavy-tailed row, and $20260910$ for the lunar continuation. The mapping is recorded explicitly because a statement such as “the five benchmark seeds” is otherwise not reproducible.
-
-For a decision $x$, the principal held-out quantity is
-\begin{equation}
- \widehat v_{\mathrm{test}}(x)=\frac{1}{n_{\mathrm{test}}}
- \sum_{i=1}^{n_{\mathrm{test}}}{\bf1}\{r(x,\xi_i)>0\}.
- \label{eq:test-frequency}
-\end{equation}
-The standard error of this frequency is sampling error in the test set, not uncertainty in the optimized decision. For example, the Gaussian unbiased KDE row has 248 violations out of 4,000, giving $\widehat v=0.0620$ and an approximate 95\% binomial interval $[0.0547,0.0699]$; the local row has 77 violations and interval $[0.0152,0.0240]$. These intervals describe repeated test sampling conditional on the fitted decision. They do not account for selecting the decision after inspecting training data, and they do not become scenario confidence bounds by relabelling them.
+The static model has two decision variables and a nonlinear residual whose uncertainty enters through a scalar residual map. Four residual laws are used: Gaussian, bimodal, skewed, and heavy-tailed. For each law, 250 training observations define the optimization constraint and 4,000 independent test observations define the held-out frequency of Eq.~\eqref{eq:test-violation}. The target is $\varepsilon=0.1$. The method order is nominal, scenario, unbiased KDE, and local shifted Epanechnikov. The exact seed mapping is $20260906$ for the Gaussian static run, $20260907$ for dispatch and the bimodal row, $20260908$ for the joint comparison and the skewed row, $20260909$ for sensitivity and the heavy-tailed row, and $20260910$ for the lunar continuation. The mapping is recorded explicitly because a statement such as “the five benchmark seeds” is otherwise not reproducible.
 
 The result ledger contains objective, training violation, held-out violation, estimated violation, solver status, and gap fields. The original runner had a reporting defect: it stored a Gaussian diagnostic under \texttt{estimated\_violation} for the shifted Epanechnikov method. The corrected runner now reports the same biased Epanechnikov estimator that appears in the NLP; its successful rows are active at approximately $0.1$. The older records remain preserved as an audit artifact, while the corrected and paper-aligned records are used for the comparisons below. This correction changes the interpretation of the estimator field but does not change the stored decisions or held-out frequencies.
 
-The experiment contract is summarized in Table~\ref{tab:experiment-contract}. Each row has one estimand and one validation gate; a result is not promoted to a method claim when the gate fails.
-
-\begin{table}[tb]
-\centering\small
-\caption{Experiment contract used for the local evidence.}
-\label{tab:experiment-contract}
-\begin{tabular}{p{0.22\textwidth}p{0.24\textwidth}p{0.25\textwidth}p{0.19\textwidth}}
-\toprule
-Question & Controlled change & Primary estimand & Validation gate\\
-\midrule
-Static method comparison & estimator and residual law & objective and held-out violation & solver status plus Gaussian check\\
-Paper-aligned sequence & $N$ and $h_N$ & decision path over nested prefixes & fixed independent test set\\
-Dispatch transfer & model adapter and estimator & objective and balance violation & exact mixture CDF\\
-Joint statistic & scalar event map & test union frequency & component/event definition\\
-Lunar continuation & continuation stage & feasibility and audit invariant & KKT/status and path scope\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Paper-aligned hyperparameter experiment}
-\label{sec:paper-aligned-experiment}
-
-The first question is whether the qualitative conclusions survive a bandwidth and sample-size regime that is recognisably related to the literature. Schuster's convergence work does not prescribe a finite numerical bandwidth; it requires a shrinking bandwidth with increasing sample size and gives a Gaussian product kernel with diagonal bandwidth as a concrete route. The related numerical work uses the normal-reference scaling $h_N=1.06s_NN^{-1/5}$ in one dimension and large independent Monte Carlo samples \citep{schuster2022}. Keil et al. specify a different object: the one-sided Epanechnikov bias $B(h)=h$, risk levels $\varepsilon_a=0.1$ and $\varepsilon_b=0.01$, and continuation in bandwidth and sample size inside an LGR optimal-control calculation \citep{keil2020,keil2021,keil2021warm}.
-
-The local profile implements only the portable parts. It uses nested IID prefixes of $N\in\{250,1000,5000\}$, a fixed independent test set of 10,000 observations, the scalar Schuster bandwidth scaling in equation~\eqref{eq:schuster-local-bandwidth}, and the Keil biased Epanechnikov translation $B(h)=h$. The Keil analogue tries bandwidth multipliers $(0.25,0.5,1,2)$ and warm-starts each attempt. It does not use HMC, the 50,000-sample Keil chain, LGR nodes, SNOPT, or mesh-error triggers. The output is consequently a scale-normalized local comparison, not a reproduction of either paper.
-
-The question is whether increasing $N$ makes the two estimators approach the same fitted decision. In the Gaussian static row, the Schuster Gaussian objective changes from $0.2270$ at $N=250$ to $0.2016$ and $0.1599$ at $N=1000$ and $N=5000$, with test violations $0.0464$, $0.0586$, and $0.0834$. The Keil biased Epanechnikov objective is $0.3623$, $0.3077$, and $0.4100$, with test violations $0.0138$, $0.0228$, and $0.0091$. The observation is not monotone convergence: the Gaussian decisions move toward the empirical target as smoothing decreases, whereas the biased decisions remain more conservative and change bandwidth branch at $N=5000$. The mechanism is the one-sided support shift: $B(h)=h$ eliminates optimistic contributions from positive residuals, while the Gaussian estimator allows smooth mass on both sides of the threshold.
-
-The distribution-shape comparison gives the same analytical distinction. At $N=5000$, Schuster Gaussian test violations are $0.0548$ for bimodal, $0.0910$ for skewed, and $0.0794$ for heavy-tailed residuals. The corresponding biased Epanechnikov values are $0$, $0.0383$, and $0.0275$, with objectives $0.8223$, $0.4677$, and $0.7202$. The biased method is safer on this test split but more conservative. This is consistent with Keil's pointwise upper-bound construction, but it does not validate Schuster's optimizer convergence theorem: no uniform residual-grid error was computed, the feasible decision was not shown to converge, and the static objective does not satisfy all of Schuster's assumptions.
-
-\begin{table}[tb]
-\centering\small
-\caption{Paper-aligned Gaussian static sequence. The test set contains 10,000 fixed independent observations.}
-\label{tab:paper-aligned-sequence}
-\begin{tabular}{lrrrrrr}
-\toprule
-$N$ & $h_{\rm Schuster}$ & $J_{\rm Schuster}$ & $v_{\rm Schuster}$ & $h_{\rm Keil}$ & $J_{\rm Keil}$ & $v_{\rm Keil}$\\
-\midrule
-250  & 0.3476 & 0.2270 & 0.0464 & 0.3476 & 0.3623 & 0.0138\\
-1000 & 0.2740 & 0.2016 & 0.0586 & 0.2740 & 0.3077 & 0.0228\\
-5000 & 0.1925 & 0.1599 & 0.0834 & 0.3851 & 0.4100 & 0.0091\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The table answers a narrower question than Schuster's theorem. It shows how the chosen finite-dimensional solver behaves along one nested sample path. It does not show almost-sure convergence, because three values of $N$ and one seed cannot establish a limit. Conversely, the lower violations of the biased rows are not a contradiction of Schuster; they result from changing the estimator and deliberately imposing the Keil safety shift. This distinction is the central interpretive rule for the remaining experiments.
-
-\begin{figure}[tb]
-  \centering
-  \includegraphics[width=0.94\textwidth]{kap08/figures/fig_paper_aligned_static}
-  \caption{Paper-aligned static sequence. Lines show held-out violation for the Schuster Gaussian scaling and the Keil-biased Epanechnikov surrogate over nested training sizes. The dashed line is $\varepsilon=0.1$; it is a target, not a confidence bound.}
-  \label{fig:paper-aligned-static}
-\end{figure}
+Each experiment changes one declared part of the method and has one primary
+estimand and one validation gate. The static comparison changes the estimator
+and residual law and measures objective together with held-out violation; solver
+status and an independent Gaussian check are required. The paper-aligned
+sequence changes $N$ and $h_N$ and follows the decision path over nested
+prefixes against a fixed independent test set. The dispatch transfer changes the
+model adapter and estimator and measures objective and balance violation against
+the exact mixture CDF. The joint experiment changes only the scalar event map and
+measures the test union frequency after the component and event definitions are
+checked. The lunar continuation changes the continuation stage and records
+feasibility and the audit invariant, with KKT/status and path scope as gates. A
+result is not promoted to a method claim when its gate fails.
 
 \subsection{Static nonlinear benchmark}
+\subsubsection{Baseline comparison}
 
 The Gaussian case provides the clearest baseline because its true radial probability can be evaluated independently. The local results are:
 \begin{table}[tb]
@@ -112,7 +65,49 @@ The four panels in Figure~\ref{fig:static-violations} display these frequencies.
 
 The qualitative pattern is compatible with the motivation for KDE in process systems and data-driven chance constraints \citep{calfa2015}: a residual-space estimator can represent multimodality without committing to a single Gaussian family. It does not follow that KDE dominates scenario optimization in every regime. Scenario optimization has a different guarantee architecture, with explicit sample-complexity conditions for convex programs \citep{calafiore2006,campi2008}. The local nonlinear problem is outside the setting in which those results can simply be quoted.
 
+\subsection{Paper-aligned hyperparameter experiment}
+\subsubsection{Nested sample-size and bandwidth sequence}
+\label{sec:paper-aligned-experiment}
+
+The first question is whether the qualitative conclusions survive a bandwidth and sample-size regime that is recognisably related to the literature. Schuster's convergence work does not prescribe a finite numerical bandwidth; it requires a shrinking bandwidth with increasing sample size and gives a Gaussian product kernel with diagonal bandwidth as a concrete route. The related numerical work uses the normal-reference scaling $h_N=1.06s_NN^{-1/5}$ in one dimension and large independent Monte Carlo samples \citep{schuster2022}. Keil et al. specify a different object: the one-sided Epanechnikov bias $B(h)=h$, risk levels $\varepsilon_a=0.1$ and $\varepsilon_b=0.01$, and continuation in bandwidth and sample size inside an LGR optimal-control calculation \citep{keil2020,keil2021,keil2021warm}.
+
+The local profile implements only the portable parts. It uses nested IID prefixes of $N\in\{250,1000,5000\}$, a fixed independent test set of 10,000 observations, the scalar Schuster bandwidth scaling below, and the Keil biased Epanechnikov translation $B(h)=h$.
+\begin{equation}
+ h_N=s_N\left(\frac{4}{(d+2)N}\right)^{1/(d+4)},
+ \qquad d=1,
+ \label{eq:schuster-local-bandwidth}
+\end{equation} The Keil analogue tries bandwidth multipliers $(0.25,0.5,1,2)$ and warm-starts each attempt. It does not use HMC, the 50,000-sample Keil chain, LGR nodes, SNOPT, or mesh-error triggers. The output is consequently a scale-normalized local comparison, not a reproduction of either paper.
+
+The question is whether increasing $N$ makes the two estimators approach the same fitted decision. In the Gaussian static row, the Schuster Gaussian objective changes from $0.2270$ at $N=250$ to $0.2016$ and $0.1599$ at $N=1000$ and $N=5000$, with test violations $0.0464$, $0.0586$, and $0.0834$. The Keil biased Epanechnikov objective is $0.3623$, $0.3077$, and $0.4100$, with test violations $0.0138$, $0.0228$, and $0.0091$. The observation is not monotone convergence: the Gaussian decisions move toward the empirical target as smoothing decreases, whereas the biased decisions remain more conservative and change bandwidth branch at $N=5000$. The mechanism is the one-sided support shift: $B(h)=h$ eliminates optimistic contributions from positive residuals, while the Gaussian estimator allows smooth mass on both sides of the threshold.
+
+The distribution-shape comparison gives the same analytical distinction. At $N=5000$, Schuster Gaussian test violations are $0.0548$ for bimodal, $0.0910$ for skewed, and $0.0794$ for heavy-tailed residuals. The corresponding biased Epanechnikov values are $0$, $0.0383$, and $0.0275$, with objectives $0.8223$, $0.4677$, and $0.7202$. The biased method is safer on this test split but more conservative. This is consistent with Keil's pointwise upper-bound construction, but it does not validate Schuster's optimizer convergence theorem: no uniform residual-grid error was computed, the feasible decision was not shown to converge, and the static objective does not satisfy all of Schuster's assumptions.
+
+\begin{table}[tb]
+\centering\small
+\caption{Paper-aligned Gaussian static sequence. The test set contains 10,000 fixed independent observations.}
+\label{tab:paper-aligned-sequence}
+\begin{tabular}{lrrrrrr}
+\toprule
+$N$ & $h_{\rm Schuster}$ & $J_{\rm Schuster}$ & $v_{\rm Schuster}$ & $h_{\rm Keil}$ & $J_{\rm Keil}$ & $v_{\rm Keil}$\\
+\midrule
+250  & 0.3476 & 0.2270 & 0.0464 & 0.3476 & 0.3623 & 0.0138\\
+1000 & 0.2740 & 0.2016 & 0.0586 & 0.2740 & 0.3077 & 0.0228\\
+5000 & 0.1925 & 0.1599 & 0.0834 & 0.3851 & 0.4100 & 0.0091\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The table answers a narrower question than Schuster's theorem. It shows how the chosen finite-dimensional solver behaves along one nested sample path. It does not show almost-sure convergence, because three values of $N$ and one seed cannot establish a limit. Conversely, the lower violations of the biased rows are not a contradiction of Schuster; they result from changing the estimator and deliberately imposing the Keil safety shift. This distinction is the central interpretive rule for the remaining experiments.
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=0.94\textwidth]{kap08/figures/fig_paper_aligned_static}
+  \caption{Paper-aligned static sequence. Lines show held-out violation for the Schuster Gaussian scaling and the Keil-biased Epanechnikov surrogate over nested training sizes. The dashed line is $\varepsilon=0.1$; it is a target, not a confidence bound.}
+  \label{fig:paper-aligned-static}
+\end{figure}
+
 \subsection{Energy dispatch and exact distributional check}
+\subsubsection{Transfer benchmark and exact reference}
 
 The dispatch proxy has two generators and a balance residual. Capacity residuals are deterministic in this adapter, so the stochastic problem tests only renewable forecast error in the balance equation. The error is the mixture $0.6\mathcal N(-0.25,0.10^2)+0.4\mathcal N(0.35,0.15^2)$. The objective values and held-out frequencies are:
 \begin{table}[tb]
@@ -134,6 +129,7 @@ Local shifted Epanechnikov & 934.8865 & 0.0110 & 0.0110 & success\\
 Because the mixture is known, its CDF supplies an independent reference. The exact mixture probability at the nominal decision is approximately $0.5951$, while the Monte Carlo test frequency is $0.5788$. The corresponding probabilities for scenario, unbiased KDE, and local shifted decisions are approximately $0.0043$, $0.0450$, and $0.0107$. The sample frequencies are therefore plausible finite-sample measurements, and the objective ranking is not an artefact of an unknown test distribution. The scenario solution is most conservative; the local estimator is closer to it than the unbiased KDE in violation while retaining slightly lower objective than scenario. This is a single synthetic balance experiment and says nothing about network congestion, unit commitment, temporal correlation, or capacity uncertainty.
 
 \subsection{Bandwidth, sample size, and joint statistics}
+\subsubsection{Bandwidth sensitivity}
 
 The sensitivity experiment holds a scalar residual split fixed and changes only the estimator input. It is deliberately not an end-to-end reoptimization. The baseline bandwidth is $h_0=0.120976$ and the fixed test frequency is $0.3950$.
 \begin{table}[tb]
@@ -160,7 +156,11 @@ The curves in Figure~\ref{fig:sensitivity} show a smooth bandwidth response but 
   \label{fig:sensitivity}
 \end{figure}
 
+\subsubsection{Joint-event statistics}
+
 The joint experiment compares statistics rather than optimized risk allocations. Equal Boole allocation and the exact maximum statistic use the same Boolean event in the current runner, so their held-out rates coincide at $0.5530$. The log-sum-exp statistic with $\tau=0.1$ gives $0.5745$. These values are computed on the held-out half of a 4,000-sample pool; a separate ledger field averages over the full pool and must not be confused with the test rate. Component rates are approximately $0.3328$ and $0.3255$. The joint experiment therefore demonstrates how a smooth upper-envelope statistic changes the measured event, but it does not demonstrate a Boole allocation theorem or a joint chance-constrained optimizer. An actual allocation study would impose separate component constraints and report the union event on an independent test set.
+
+\subsubsection{Dispatch sample-size sequence}
 
 The dispatch sequence provides a second check because its mixture CDF is known exactly. Under Schuster scaling, the objective decreases from $934.1317$ at $N=250$ to $933.6669$ and $933.4633$ at $N=1000$ and $N=5000$; test violations are $0.0347$, $0.0646$, and $0.0798$. Under the biased Epanechnikov continuation, the objective is $937.3410$, $936.1048$, and $935.2208$, with test violations $0$, $0.0009$, and $0.0069$. The trend is more stable than in the static problem because the balance residual is affine and the dispatch objective is convex and increasing on the nonnegative box. This is the local problem closest to Schuster's structural assumptions, although the adapter still has only one stochastic balance residual and no repeated-seed convergence study. The higher objective and lower violation of the biased method are the expected price of the pointwise upper envelope, not evidence that the Gaussian estimator is inconsistent.
 
@@ -174,6 +174,7 @@ The dispatch results also answer a practical question: does a paper-aligned band
 \end{figure}
 
 \subsection{Lunar continuation record}
+\subsubsection{Continuation stages and status}
 
 The lunar records are included to make the experimental chain auditable. The stage table is:
 \begin{table}[tb]
@@ -197,23 +198,8 @@ The table should be read with the formulation audit in Chapter~6. The nominal re
 
 The difference from Keil et al. is expected. Their published costs around $9.09$ arise from a free-time LGR formulation with different initial conditions and a different numerical stack \citep{keil2020,keil2021}. The local rows cannot confirm or refute that result. They show instead that a locally assembled pipeline must expose transcription invariants and solver status before numerical comparisons are meaningful.
 
-\subsection{Evidence and reproducibility contract}
-
-The evidence hierarchy is operational rather than rhetorical (Table~\ref{tab:evidence-contract}). Independent analytic checks are strongest; descriptive sensitivity is diagnostic; failed optimal-control stages cannot support feasibility claims. Every ledger row retains its seed, split, bandwidth, estimator, objective convention, solver status, and validation scope, including failures. This preserves the distinction between a deterministic implementation check and a confirmatory study over repeated datasets.
-
-\begin{table}[tb]
-\centering\small
-\caption{Evidence classes and permitted claims.}
-\label{tab:evidence-contract}
-\begin{tabular}{p{0.27\textwidth}p{0.31\textwidth}p{0.29\textwidth}}
-\toprule
-Evidence class & Example in this chapter & Permitted claim\\
-\midrule
-Independent check & Gaussian probability and exact dispatch mixture CDF & implementation agreement on the declared model\\
-Empirical comparison & held-out frequency and objective across estimators & conditional finite-sample trade-off\\
-Diagnostic & bandwidth/sensitivity or failed lunar stage & numerical behaviour and failure mode only\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-The present design is a hybrid reproducibility study: code, seeds, ledgers, and figures are locally rerunnable, while the statistical conclusions remain conditional on the synthetic laws and one primary split per row. A confirmatory extension requires repeated independent fits, untouched test sets, interval estimates, and a consistent control quadrature; those requirements are carried into the repair plan in Chapter~9.
+\subsection{Evidence summary}
+\label{sec:experiment-evidence}
+The observations in this chapter are conditional on the declared synthetic laws,
+seeded sample splits, and solver statuses. The evidence classes and permitted
+claim language are defined in Chapter~7; Chapter~9 interprets these observations.

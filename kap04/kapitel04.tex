@@ -46,11 +46,12 @@ line. What is
 needed is an estimator that never credits a violating sample: a
 surrogate $\hat{p}_h^{\,b}$ whose every per-sample contribution is
 bounded by the indicator it replaces, so that
-$\E[\hat{p}_h^{\,b}(x)] \leq \Prob(g(x,\xi) \leq 0)$ at every decision,
-and any solution certified by the surrogate satisfies the true chance
-constraint in expectation. Equivalently, in the violation form of
-Chapter~2, the surrogate violation estimate must dominate the true
-violation probability from above. The estimator may still err, but the construction ensures that its
+$\E[\hat{p}_h^{\,b}(x)] \leq \Prob(g(x,\xi) \leq 0)$ at every decision. For a fixed decision $x$ independent of the sample, this gives an expectation
+bound. It does not by itself transfer to the data-dependent optimizer returned
+by the nonlinear program; a selection-aware concentration argument or an
+independent validation set is still required. Equivalently, in the violation
+form of Chapter~2, the surrogate violation estimate dominates the true
+violation probability pointwise. The estimator may still err, but the construction ensures that its
 errors no longer point in the unsafe direction.
 
 \subsection{The Biasing Construction}
@@ -89,13 +90,12 @@ the dominated surrogate over the residual samples of Chapter~3 gives
   \hat{p}_h^{\,b}(x) \;\geq\; 1-\varepsilon ,
   \label{eq:biasedcc}
 \end{equation}
-and the safety statement is now a provable property rather than an
-empirical observation: since each
-term of \cref{eq:biasedcc} is bounded by the corresponding indicator,
-$\E[\hat{p}_h^{\,b}(x)] \leq \Prob(g(x,\xi) \leq 0)$ pointwise, so any
-decision satisfying the biased constraint satisfies the true chance
-constraint in expectation, with only sampling fluctuation, vanishing as
-$N$ grows, standing between the certificate and the guarantee.
+For a fixed decision $x$ independent of the sample, each term of
+\cref{eq:biasedcc} is bounded by the corresponding indicator and therefore
+$\E[\hat{p}_h^{\,b}(x)] \leq \Prob(g(x,\xi) \leq 0)$. The inequality is a
+fixed-decision expectation statement. Because an optimized decision depends on
+the same samples, it is not a finite-sample feasibility certificate without a
+selection-aware concentration argument or independent validation.
 \Cref{fig:domination}(a) draws the construction: the unbiased surrogate
 crosses the indicator and grants credit to violating samples (the
 optimism Chapter~3 measured), while the biased surrogate sits entirely
@@ -103,7 +103,7 @@ beneath it, discounting boundary samples and crediting violations
 nothing at all. Smoothness has not been spent to buy safety; the biased
 surrogate is exactly as differentiable as the unbiased one, and every
 formula of Chapter~3, the closed-form constraint, the analytic gradient,
-the $N$-independent program size, survives with $-g(x,\xi_j)$ replaced
+the constraint count independent of $N$ (while evaluation cost is $O(N)$), survives with $-g(x,\xi_j)$ replaced
 by $-g(x,\xi_j) - b(h)$. In the language of the two error sources
 separated in Chapter~3, the bias acts on the smoothing error alone: the
 sampling error remains random and vanishes with $N$, while the
@@ -133,12 +133,12 @@ Condition \cref{eq:domination} is a constraint on kernel tails, and the
 three kernels of Chapter~2 meet it in three instructively different
 ways. The \emph{split-Bernstein kernel}, a piecewise-polynomial
 construction originating in approximation theory and adapted to chance
-constraints by \citet{keil2021}, satisfies the domination condition
-exactly for appropriate parameter choices: its compact, one-sided
-structure is designed around \cref{eq:domination} rather than retrofitted
-to it, and its integrated form is smooth and available in closed form.
-It is the reference kernel whenever the strict guarantee is the
-priority. The \emph{Epanechnikov kernel with bias} starts from the
+constraints by \citet{keil2021}, satisfies the domination condition exactly for appropriate parameter
+choices: its compact, one-sided structure is designed around
+\cref{eq:domination} rather than retrofitted to it, and its integrated form is
+smooth and available in closed form. It is the literature reference whenever
+an exact pointwise envelope is required; it is not implemented in the local
+runner. The \emph{Epanechnikov kernel with bias} starts from the
 AMISE-optimal kernel of Chapter~2 and exploits its compact support: with
 $b(h) = h$, the shifted surrogate vanishes identically on the violating
 half-line, so \cref{eq:domination} holds exactly, and in the lunar
@@ -176,26 +176,23 @@ kernel and bias from \cref{sec:biasedkernels}. Fourth, enforce
 $\hat{p}_h^{\,b}(x) \geq 1-\varepsilon$. Fifth, solve the resulting
 deterministic nonlinear program with the analytic derivatives that the
 construction provides. The program retains every structural property of
-Chapter~3: one smooth inequality, size independent of $N$, gradients by
-the chain rule.
+Chapter~3: one smooth inequality whose row count is independent of $N$,
+with evaluation and gradient cost proportional to $N$.
 
 What the bias changes is the trade, and \cref{fig:safetycost} prices it
-on the dispatch problem where the truth is computable. The comparison is
-the one promised in Chapter~3's closing: the unbiased reformulation is
-smooth and less conservative but carries no finite-sample safety, while
-the biased reformulation is slightly more conservative and carries it.
+on the dispatch problem where the truth is computable. The comparison follows the question posed at the end of Chapter~3: the unbiased reformulation is smooth and less conservative, while the
+biased reformulation is more conservative and has the fixed-decision
+pointwise envelope described above; neither statement alone is a
+selection-aware finite-sample certificate for an optimized decision.
 The numbers make the asymmetry of the trade explicit. Across sample
 sizes, the unbiased certificate fails in roughly $34$ to $43\%$ of
-trials and does not improve with data, because its error is directional,
-not statistical; the biased certificate fails in $14\%$ of trials at
+trials over the tested range, with no monotone improvement across sample sizes; the biased certificate fails in $14\%$ of trials at
 $N = 50$, falls to $5\%$ by $N = 200$, and is below $1\%$ from
 $N = 500$, the residual failures being pure sampling fluctuation around
 a safe-side mean. The premium paid for this is $2.6$ to $4\%$ of
-objective value, shrinking as $N$ grows. This exchange is familiar from reliability engineering: a bounded and
-vanishing cost in return for removing a class of certificate failures.
-The unbiased method answers the question \emph{what is the
-probability}; the biased method answers the question the application
-typically asks, \emph{can this decision be trusted}.
+objective value, shrinking as $N$ grows. The results quantify a bounded objective premium in this experiment and a
+lower observed failure rate for the biased surrogate. They do not establish
+that the ranking holds for other distributions or data-dependent decisions.
 
 \begin{figure}[t]
   \centering
@@ -206,7 +203,7 @@ typically asks, \emph{can this decision be trusted}.
   the target from below on a large fraction of trials at every $N$; the
   biased certificate (Epanechnikov, $b = h$) lands above it by a margin
   that shrinks as the estimator sharpens. (b) Certificate failure rates:
-  the unbiased rate is structural and does not improve with data; the
+  the tested unbiased rates show no monotone improvement across sample sizes; the
   biased rate is sampling fluctuation and collapses, falling below
   $1\%$ from $N = 500$. The average objective premium paid for safety is
   $2.6$ to $4\%$, decreasing in $N$.}
@@ -320,17 +317,12 @@ reformulation for joint constraints,
   \;\geq\; 1-\varepsilon ,
   \label{eq:jointreform}
 \end{equation}
-and \cref{eq:jointreform} is one of this thesis's main implementation
-contributions, a claim supported by what the formulation absorbs: a
+and \cref{eq:jointreform} is an implemented extension and diagnostic, a claim supported by what the formulation absorbs: a
 joint,
 non-Gaussian, possibly high-dimensional chance constraint has been
 reduced to a single smooth one-dimensional deterministic inequality,
-with two stacked approximation layers, kernel bias and log-sum-exp
-temperature, both of which err on the safe side by construction. The
-interaction of those two layers, how conservatism compounds across
-$h$ and $\tau$ and how the budget should be split between them, is a
-genuinely open question, and it is studied experimentally as research
-question RQ4 in Part~4.
+with two stacked approximation layers: the biased kernel supplies a fixed-decision expectation envelope, while log-sum-exp supplies a deterministic upper bound on the maximum. The
+interaction of these layers, including how conservatism compounds across $h$ and $\tau$, remains unresolved; Chapter~8 reports a joint-event diagnostic rather than a risk-allocation study.
 
 \begin{figure}[t]
   \centering
@@ -362,10 +354,9 @@ the constraint is heavily smoothed, the landscape benign, and the
 Gaussian kernel's speed available; solve, and pass the solution forward
 as the initial point for a smaller bandwidth; repeat, increasing the
 sample size as the bandwidth shrinks so that statistical resolution
-keeps pace with geometric resolution; and near convergence, switch from
-the Gaussian to an exactly-safe kernel, the split-Bernstein, so that the
-final certificate carries the strict guarantee of
-\cref{sec:biasedkernels} rather than the $99.87\%$ approximation.
+keeps pace with geometric resolution; and near convergence, switch to the locally implemented shifted
+Epanechnikov surrogate. The split-Bernstein switch shown in the cited workflow
+is a literature procedure and is not executed by the local runner.
 
 \begin{figure}[t]
   \centering
@@ -374,9 +365,8 @@ final certificate carries the strict guarantee of
   \citet{keil2021warm}. Early stages use a large bandwidth and the fast
   Gaussian kernel, producing a benign landscape and a cheap solution;
   each stage's solution warm-starts the next as the bandwidth shrinks
-  and the sample size grows; the final stage switches to the
-  split-Bernstein kernel so that the converged certificate carries the
-  exact domination guarantee. The homotopy stabilizes the solver and
+  and the sample size grows; the cited final stage switches to the split-Bernstein kernel; that
+  literature step is not executed by the local runner. The homotopy stabilizes the solver and
   avoids the numerical difficulty of attacking a small-bandwidth,
   nearly nonsmooth constraint from a cold start.}
   \label{fig:continuation}
@@ -388,11 +378,10 @@ tracked rather than rediscovered, and its effect in the experiments of
 \citet{keil2021warm} is precisely the one homotopies exist to deliver,
 stabilized convergence and substantially reduced solve times relative to
 cold starts at the final bandwidth. With it, Part~3 is complete as a
-method: a conservative, smooth, one-dimensional, $N$-independent
-reformulation for individual and joint chance constraints, equipped with
+method: a smooth, one-dimensional reformulation with constraint count
+independent of $N$ for individual and joint chance constraints, equipped with
 a practical solution strategy. What the method still lacks is a formal
 guarantee that its answers approximate \emph{the true problem}, in the
 sense that as data accumulates the reformulated solutions converge to
-the true ones. Supplying that license is the
-convergence theory of \citet{schuster2025}, and connecting it to the
+the true ones. The convergence theory of \citet{schuster2025}, and connecting it to the
 constructions of this chapter is the work the next chapter takes up.

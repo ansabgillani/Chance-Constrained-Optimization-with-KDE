@@ -1,8 +1,8 @@
 \section{Convergence Theory}
 \label{ch:convergence}
  
-Part~3 has so far been constructive. Chapter~4 built a smooth surrogate
-for the chance constraint, Chapter~5 redesigned it to err only on the
+Part~3 has so far been constructive. Chapter~3 built a smooth surrogate
+for the chance constraint, Chapter~4 redesigned it to err only on the
 safe side, and both chapters validated their constructions empirically
 on problems whose answers are known. What neither chapter could supply
 is the statement that elevates a construction to a method: the guarantee
@@ -21,19 +21,18 @@ proof architecture, and practical meaning
 (\cref{sec:thm1,sec:thm2,sec:thm3}), draws the boundary of what the
 theory does and does not cover (\cref{sec:coverage}), and closes on the
 structural gap between the two anchor papers of this thesis, which is
-arguably the most important open problem in the field
+an open problem in the field
 (\cref{sec:anchorgap}).
  
 \subsection{The Gap the Theory Fills}
 \label{sec:gap}
  
-The biased construction of Chapter~5 provides a safety guarantee by
-construction: any feasible solution of the biased reformulation
-satisfies the original chance constraint in expectation. It is essential
-to recognize precisely what this guarantees and what it does not. It is
-a statement about the \emph{feasibility of individual solutions}, made
-at finite $N$; it says nothing about whether the optimizer, in
-certifying and comparing such solutions, is converging to the right one.
+The biased construction of Chapter~4 provides a pointwise envelope for
+fixed decisions: the expected surrogate safe probability is no larger than
+the corresponding true probability. This does not by itself certify the
+sample-dependent optimizer returned by the reformulation. The distinction
+matters at finite $N$: the envelope concerns individual fixed decisions,
+whereas convergence concerns the optimizer and the feasible-set geometry.
 A method could be safe at every $N$ and still be solving, indefinitely,
 a problem whose minimizer differs substantially from the minimizer of
 the true problem. Safety and correctness are different properties, and Part~3 has
@@ -92,10 +91,13 @@ discretized. The standing assumptions are collected once.
 \begin{assumption}[Setting of \citealp{schuster2025}]
 \label{ass:setting}
 $V$ is a Banach space and $X \subseteq V$ is closed and nonempty. The
-objective $f$ is convex and monotonically increasing. The random
-parameter $\xi$ has an absolutely continuous distribution, so that for
-every $x \in X$ the pushforward density $\rho_{g(x)}$ of the residual
-vector $g(x,\xi) \in \R^m$ exists.
+objective $f$ is continuous, convex, and monotonically increasing. The random parameter $\xi$ has an absolutely continuous distribution,
+and we additionally assume that for every $x \in X$ the pushforward
+distribution of the residual vector $g(x,\xi) \in \R^m$ is absolutely
+continuous with density $\rho_{g(x)}$. This excludes degenerate or
+singular residual maps. We also assume that $(P_\infty)$ and the KDE
+problems considered below have solutions; the existence theorem adds its
+sharp-minimum condition when a convergent solution sequence is required.
 \end{assumption}
 
 Under \cref{ass:setting} the chance constraint is the statement that the
@@ -107,12 +109,12 @@ safe orthant,
   \label{eq:pushforward}
 \end{equation}
 which the reader will recognize as the residual-space identity of
-Chapter~4, here in its general $m$-dimensional form: the theory covers
+Chapter~3, here in its general $m$-dimensional form: the theory covers
 joint constraints through the multivariate residual, and the scalar case
-$m = 1$ of Chapters~4 and~5 is the special case used throughout this
+$m = 1$ of Chapters~3 and~4 is the special case used throughout this
 thesis. The approximation replaces $\rho_{g(x)}$ by its kernel estimate
 built from the residual samples $Y_i(x) = g(x,\xi_i)$, exactly the
-estimator of Chapter~4, and the pair of problems whose relationship the
+estimator of Chapter~3, and the pair of problems whose relationship the
 theory governs is
 \begin{align}
   (P_\infty):\quad
@@ -153,21 +155,20 @@ convergence of densities into convergence of the probabilities they
 induce, so that $|\hat{P}_N - \Prob|$ at $x^*$ falls, almost surely,
 below the strict feasibility margin
 $\gamma = \Prob(g(x^*,\xi) \leq 0) - \alpha > 0$ for all $N$ beyond some
-$N^*$. From that point on, $x^*$ remains feasible for every $(P_N)$, and
-a convexity-of-epigraph argument transfers the solution property: a
-point that is optimal among a larger feasible set and feasible for the
-smaller one is optimal for the smaller one as well.
+$N^*$. From that point on, $x^*$ remains feasible for every $(P_N)$. The
+convexity-of-epigraph argument in the cited theorem then transfers the
+optimality property; it does not rely on the approximate feasible sets being
+nested.
  
-\emph{Practical meaning.} Where the chance constraint does not bind at
-the optimum, the KDE approximation introduces no error at all for large
-samples; the constraint is effectively transparent, and the problem
-behaves locally like the deterministic problem it would be without the
-constraint. \Cref{fig:passive} draws the mechanism: the margin $\gamma$
+\emph{Practical meaning.} When the chance constraint is strictly inactive at the optimum, the theorem
+shows that the KDE problems eventually recover the same optimizer under its
+the theorem's passive-margin and regularity assumptions; it does not assert zero
+finite-sample statistical error. \Cref{fig:passive} draws the mechanism: the margin $\gamma$
 is a fixed buffer, the uniform estimation error is a tube around the
 true probability that shrinks with $N$, and once the tube fits inside
 the buffer the approximation can no longer disturb the solution. The
-theorem is the formal license for an instinct every practitioner has:
-approximation error only matters where the constraint matters.
+theorem formalizes why
+approximation error matters most where the chance constraint is active.
 
 \begin{figure}[t]
   \centering
@@ -255,11 +256,11 @@ $x^*$; in a shallow valley, nothing prevents them from drifting between
 distant near-optimal points.
  
 \emph{Practical meaning.} The conditions under which the full theory
-operates are not exotic, and \citet{schuster2025} makes both halves of
-that claim concrete. On the geometry side, strict convexity of the
-objective already implies both the uniqueness of $x^*$ and the growth
-condition, so the hypothesis of \cref{thm:existence} is met by a large
-and recognizable problem class. On the statistical side, the uniform
+operate under explicit regularity conditions, and \citet{schuster2025} makes
+those conditions concrete. On the geometry side, strict convexity of the
+objective on a convex feasible set, together with existence, implies
+uniqueness and supplies the growth condition, so the hypothesis of
+\cref{thm:existence} is met by a recognizable problem class. On the statistical side, the uniform
 convergence that \cref{thm:limits,thm:existence} require is not an
 abstract wish: a Gaussian product kernel with a diagonal bandwidth
 matrix, under the classical bandwidth conditions and uniform continuity
@@ -288,20 +289,17 @@ uses.
 \subsection{What the Theory Does and Does Not Cover}
 \label{sec:coverage}
  
-Taken together, the three theorems deliver the two assets this thesis
-claims from them. The first is mathematical credibility: the KDE
-approach is not a heuristic that happens to work but an asymptotically
-consistent method, with the consistency proven at the level that
-matters, the optimization problem, not merely the estimator inside it.
+Taken together, the three theorems establish two properties used by this
+thesis. First, the KDE approach is asymptotically consistent at the level of
+the optimization problem, rather than only at the estimator level.
 The second is precision about conditions: the theory identifies exactly
 what convergence costs, namely uniform convergence of the estimate on
 the feasible set, plus either a passive constraint or a sharp minimum,
 and it exhibits concrete, standard objects that pay the cost. A reader
-of Chapters~4 and~5 now knows not only how to build the reformulation
-but when to trust it.
+of Chapters~3 and~4 now knows not only how to build the reformulation
+but when its assumptions apply.
  
-Intellectual honesty about the boundary is equally part of the asset,
-and four items lie beyond it. There are, first, \emph{no convergence
+Four limitations remain outside the theory. There are, first, \emph{no convergence
 rates}: the theory guarantees that the optimization error vanishes but
 not how fast, and no theorem links the kernel's bias-variance behavior
 to the decay of $|f(x_N) - f(x^*)|$ or $\|x_N - x^*\|$;
@@ -310,17 +308,15 @@ to the decay of $|f(x_N) - f(x^*)|$ or $\|x_N - x^*\|$;
 optimization error decays along a clean empirical power law of slope
 roughly $-0.46$, a regular behavior that no available theorem
 currently predicts. Second, the theorems cover the \emph{unbiased} estimator of
-Chapter~4; whether and how they extend to the biased construction of
-Chapter~5 is open, a point developed in \cref{sec:anchorgap}. Third, the
+Chapter~3; whether and how they extend to the biased construction of
+Chapter~4 is open, a point developed in \cref{sec:anchorgap}. Third, the
 results lean on convexity of the objective, while the trajectory
 optimization problems of Part~4 are non-convex; comparable guarantees
 for the non-convex case do not exist. Fourth, the theory is asymptotic
-through and through: unlike the scenario approach of Chapters~2 and~3,
+through and through: unlike the scenario approach of Chapter~2,
 it offers no $N$-dependent probability that a computed solution is
-feasible for the true problem. These four boundaries are not defects of
-the theory; they are its honest perimeter, and they define precisely
-where the experimental program of Part~4 carries the burden of evidence
-that mathematics does not yet carry.
+feasible for the true problem. These limitations define the evidence that Part~4 must supply beyond the
+mathematical results.
 
 \begin{figure}[t]
   \centering
@@ -331,35 +327,31 @@ that mathematics does not yet carry.
   on logarithmic axes. The error follows a clean empirical power law of
   slope $\approx -0.46$, but the convergence theory guarantees only that
   the error vanishes; no theorem predicts the slope. Quantifying this
-  rate, and its dependence on the bandwidth rule, is the most important
-  open problem the anchor papers leave}
+  rate, and its dependence on the bandwidth rule, is an open problem left by the anchor papers}
   \label{fig:empconv}
 \end{figure}
  
 \subsection{The Gap Between the Two Anchor Papers}
 \label{sec:anchorgap}
  
-One observation deserves to close Part~3's theoretical development,
-stated as plainly as its importance warrants. The two anchor papers of
+One observation closes Part~3's theoretical development. The two anchor papers of
 this thesis work with the same high-level idea from opposite directions,
 and their results do not yet meet. \citet{keil2021} builds a
-\emph{biased} integrated kernel that dominates the indicator, securing a
-finite-sample safety guarantee, but proves no convergence of the
-resulting optimizers. \citet{schuster2025} proves convergence of the
+\emph{biased} integrated kernel that dominates the indicator for each
+residual, yielding a fixed-decision expectation bound, but proves no
+convergence of the resulting optimizers. \citet{schuster2025} proves convergence of the
 optimizers, but for the \emph{unbiased} kernel density estimate, with no
 safety guarantee at finite $N$. Neither paper's theorems cover the
-other's construction: the engineering line has safety without proven
-convergence, and the theoretical line has convergence without built-in
-safety.
+other's construction: the engineering line has a fixed-decision envelope
+without proven optimizer convergence, and the theoretical line has optimizer
+convergence without a built-in finite-sample envelope.
  
-The open problem this leaves is easy to state and, in the judgment of
-this thesis, arguably the most important one in the field: a unified
-convergence
+The resulting open problem is a unified convergence
 theory for the biased-KDE reformulation, establishing that the
-conservative construction of Chapter~5 inherits the asymptotic
+conservative construction of Chapter~4 inherits the asymptotic
 correctness of this chapter, ideally with rates. Its resolution would
-fuse the two guarantees that applications actually need, safety at every
-finite $N$ and correctness in the limit, into a single certified method.
+fuse a finite-sample, selection-aware safety result with correctness in the
+limit into a single certified method.
 This thesis does not claim to close that problem. What it does claim,
 and delivers in Part~4, is the systematic empirical groundwork on which
 a closure must rest: controlled experiments in which the biased and
@@ -367,5 +359,8 @@ unbiased reformulations are run side by side, across sample sizes,
 bandwidths, and risk levels, on problems whose true solutions are
 known, so that the conjectured convergence of the biased construction is
 measured even where it is not yet proven. The theory of this chapter
-tells us what such measurements mean; the gap between the anchors tells
-us why they are worth making.
+tells us how to interpret those measurements; the gap between the anchors
+motivates the comparison.
+The next chapter instantiates these distinctions in a discretized optimal-control
+formulation. It records which assumptions are represented by the local solver and
+which remain outside the numerical evidence.
