@@ -67,13 +67,13 @@ arrow(11.6, 2.0, 10.6, 4.0, color=GRAY, rad=-0.12)
 
 # top layer: three theorems
 box(0.3, 8.2, 4.1, 3.0, GREEN,
-    "Theorem 3.1\n(passive constraint)\n$x^*$ solves $(P_N)$\nfor all "
+    "Theorem 1\n(passive constraint)\n$x^*$ solves $(P_N)$\nfor all "
     "$N \\geq N^*$", fs=8.0, weight="bold")
 box(4.9, 8.2, 4.1, 3.0, GREEN,
-    "Theorem 3.2\n(limits are optimal)\nlimits of solutions\nof $(P_N)$ "
+    "Theorem 2\n(limits are optimal)\nlimits of solutions\nof $(P_N)$ "
     "solve $(P_\\infty)$", fs=8.0, weight="bold")
 box(9.5, 8.2, 4.2, 3.0, GREEN,
-    "Theorem 3.3\n(existence)\nsharp minimum gives\na convergent sequence",
+    "Theorem 3\n(existence)\nsharp minimum gives\na convergent sequence",
     fs=8.0, weight="bold")
 arrow(3.0, 6.2, 2.4, 8.2, color=PURPLE, rad=0.10)
 arrow(9.4, 6.2, 6.9, 8.2, color=PURPLE, rad=0.14)
