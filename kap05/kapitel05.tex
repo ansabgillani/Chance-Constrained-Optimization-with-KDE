@@ -1,425 +1,437 @@
-\section{Convergence Theory}
-\label{ch:convergence}
- 
-Part~3 has so far been constructive. Chapter~3 built a smooth surrogate
-for the chance constraint, Chapter~4 redesigned it to err only on the
-safe side, and both chapters validated their constructions empirically
-on problems whose answers are known. What neither chapter could supply
-is the statement that elevates a construction to a method: the guarantee
-that solving the approximated problem is, in the limit of data, the same
-as solving the true one. That statement exists. The convergence theory
-of \citet{schuster2025} proves three theorems which together establish
-that the KDE-approximated chance-constrained problem is a well-posed
-approximation of the original: the approximation is exact where the
-constraint is inactive, the limits of approximate solutions are true
-solutions, and under a sharp-minimum condition such limits exist. This
-chapter is the theoretical center of the thesis. It states the gap the
-theory fills and why density-estimator consistency alone cannot fill it
-(\cref{sec:gap}), fixes the setting and assumptions
-(\cref{sec:setupassump}), develops each theorem with its statement,
-proof architecture, and practical meaning
-(\cref{sec:thm1,sec:thm2,sec:thm3}), draws the boundary of what the
-theory does and does not cover (\cref{sec:coverage}), and closes on the
-structural gap between the two anchor papers of this thesis, which is
-an open problem in the field
-(\cref{sec:anchorgap}).
- 
-\subsection{The Gap the Theory Fills}
-\label{sec:gap}
+\section{The Biased KDE Approach and Conservative Reformulation}
+\label{ch:biasedkde}
 
-\subsubsection{From estimator consistency to optimizer consistency}
-\label{sec:estimatoroptimizergap}
- 
-The biased construction of Chapter~4 provides a pointwise envelope for
-fixed decisions: the expected surrogate safe probability is no larger than
-the corresponding true probability. This does not by itself certify the
-sample-dependent optimizer returned by the reformulation. The distinction
-matters at finite $N$: the envelope concerns individual fixed decisions,
-whereas convergence concerns the optimizer and the feasible-set geometry.
-A method could be safe at every $N$ and still be solving, indefinitely,
-a problem whose minimizer differs substantially from the minimizer of
-the true problem. Safety and correctness are different properties, and Part~3 has
-so far delivered only the first.
- 
-\subsubsection{The three-theorem chain}
-\label{sec:theoremchain}
+Chapter~4 closed on a measured verdict: the unbiased reformulation is an
+accuracy method, not a safety method, and its certificate fails in $39\%$ of
+the standalone diagnostic trials. This chapter converts the verdict into a
+construction.
+The repair is not a patch applied after estimation but a redesign of the
+estimator itself, due to \citet{keil2020,keil2021}: choose the kernel so
+that smoothing and conservatism become the same act, exactly the
+property previewed in Chapter~3's kernel figure and now developed in
+full. The chapter states the requirement the unbiased estimator fails
+(\cref{sec:notsafe}), formalizes the domination condition that defines a
+biased kernel (\cref{sec:biasing}), examines the three kernels that
+matter in practice and the precise sense in which each satisfies or
+approximates the condition (\cref{sec:biasedkernels}), assembles the
+conservative reformulation pipeline and prices its conservatism on a
+known-truth problem (\cref{sec:biasedreform}), and then extends the
+framework to joint chance constraints through three competing routes
+(\cref{sec:jointthree}), of which the scalar violation statistic with
+log-sum-exp smoothing (\cref{sec:lse}) is this thesis's recommended
+extension and one of its main implementation contributions. The chapter
+closes with the bandwidth-continuation strategy that makes the whole
+construction solvable in practice (\cref{sec:continuation}).
 
-The deeper question is therefore the one this chapter answers: as the
-sample size $N$ grows, do solutions of the KDE-approximated problem
-converge to solutions of the true chance-constrained problem?
-\citet{schuster2025} provides the first rigorous answer, and the key
-insight that organizes the entire theory deserves to be stated before
-any theorem is: \emph{density-estimator convergence does not
-automatically imply optimizer convergence}. That the kernel estimate
-converges to the true density has been known since \citet{parzen1962},
-and Chapter~2 reviewed the classical theory in full; but an optimization
-problem is not a density. Its solution is determined by the interaction
-of an objective with the \emph{boundary} of a feasible set, and a
-sequence of converging constraint functions can, in principle, produce
-feasible sets whose minimizers behave badly: solutions can fail to
-exist, can wander without converging, or can converge to limits that are
-infeasible or suboptimal for the true problem. A separate argument is
-needed to transfer convergence of the constraint approximation to
-convergence of the solution, and constructing that argument, in three
-theorems of increasing reach, is exactly what \citet{schuster2025} does.
-\Cref{fig:chain} displays the architecture the rest of this chapter
-walks through: a statistical foundation inherited from classical KDE
-theory, two analytical engines, and the three theorems they power.
- 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\textwidth]{kap05/figures/fig_chain.pdf}
-  \caption{The architecture of the convergence theory of
-  \citet{schuster2025}. The statistical foundation (bottom row) is
-  classical: $L^1$ consistency of the kernel estimator, upgraded to
-  probability convergence by Scheff\'e's lemma and to almost-sure
-  uniform convergence on the feasible set under the conditions surveyed
-  by \citet{wied2012}. Two analytical engines (middle row) convert
-  statistical convergence into optimization statements: a
-  convexity-of-epigraph argument with a strict feasibility margin, and
-  the optimization-convergence theorem of \citet{alvarezmena2005}
-  verified through three lemmas. The three theorems (top row) divide the
-  labor: exactness where the constraint is passive, optimality of limits,
-  and existence of convergent solution sequences.}
-  \label{fig:chain}
-\end{figure}
- 
-\subsection{Setup and Assumptions}
-\label{sec:setupassump}
+\subsection{Why Smoothing Alone Is Not Safe}
+\label{sec:notsafe}
 
-\subsubsection{Decision space and pushforward law}
-\label{sec:theorysetting}
- 
-The theory is formulated at a level of generality worth pausing on,
-because it is part of the result. The decision space is not assumed
-finite-dimensional: \citet{schuster2025} works in a Banach space, which
-is precisely the generality required for the optimal control ambitions
-of this thesis, where decisions are trajectories before they are
-discretized. The standing assumptions are collected once.
- 
-\begin{assumption}[Setting of \citealp{schuster2025}]
-\label{ass:setting}
-$V$ is a Banach space and $X \subseteq V$ is closed and nonempty. The
-objective $f$ is continuous, convex, and monotonically increasing. The random parameter $\xi$ has an absolutely continuous distribution,
-and we additionally assume that for every $x \in X$ the pushforward
-distribution of the residual vector $g(x,\xi) \in \R^m$ is absolutely
-continuous with density $\rho_{g(x)}$. This excludes degenerate or
-singular residual maps. We also assume that $(P_\infty)$ and the KDE
-problems considered below have solutions; the existence theorem adds its
-sharp-minimum condition when a convergent solution sequence is required.
-\end{assumption}
+\subsubsection{Directional failure of a symmetric surrogate}
+\label{sec:directionalfailure}
 
-\subsubsection{Population and sample problems}
-\label{sec:populationandempirical}
+The limitation must be located precisely before it can be addressed,
+because it does not lie where one might first look. The unbiased
+estimator of Chapter~4 is consistent, its bandwidth theory is classical,
+and its certificate concentrates near the target; none of its
+statistical properties is at fault. The limitation is directional. A symmetric kernel's
+integrated form crosses the indicator at the constraint boundary, so
+each sample's contribution to $\hat{p}_h(x)$ errs toward optimism for
+violating residuals and toward pessimism for safe ones, and nothing in
+the construction controls which effect dominates at the decision the
+optimizer actually returns. The optimizer, moreover, is not a neutral
+party: it systematically favors the cheapest certified decision, which
+tends to be a decision at which optimistic error contributed to the
+certificate being granted. Chapter~4 measured the result at
+$39\%$ certificate failure.
 
-Under \cref{ass:setting} the chance constraint is the statement that the
-pushforward density places mass at least $\alpha = 1-\varepsilon$ on the
-safe orthant,
+\subsubsection{Fixed-decision envelope versus optimizer selection}
+\label{sec:fixeddecisionenvelope}
+
+For engineering and safety-critical applications this behavior is
+problematic, and the requirement that replaces it can be stated in one
+line. What is
+needed is an estimator that never credits a violating sample: a
+surrogate $\hat{p}_h^{\,b}$ whose every per-sample contribution is
+bounded by the indicator it replaces. For a fixed decision $x$ independent
+of the sample, this gives the expectation bound
+$\E[\hat{p}_h^{\,b}(x)] \leq \Prob(g(x,\xi) \leq 0)$.
+bound. It does not by itself transfer to the data-dependent optimizer returned
+by the nonlinear program; a selection-aware concentration argument or an
+independent validation set is still required. Equivalently, in the violation
+form of Chapter~3, the per-sample surrogate dominates the empirical
+violation indicator; this does not make the population violation probability
+pointwise observable. Sampling and optimizer selection can still produce an
+unsafe population decision.
+
+\subsection{The Biasing Construction}
+\label{sec:biasing}
+
+\subsubsection{Pointwise domination condition}
+\label{sec:pointwisedomination}
+
+The construction of \citet{keil2020} unifies two half-solutions, each
+inadequate alone. The first replaces the violation indicator
+$\ind\{t > 0\}$ with any function $w(t) \geq \ind\{t > 0\}$: averaging
+$w$ over samples always upper-bounds the violation probability, but $w$
+need not be bounded by one, so the average is not a valid probability
+and distorts the optimization. The second is the standard KDE surrogate
+of Chapter~4, a valid CDF bounded in $[0,1]$ that violates the
+domination requirement. The biased kernel is the object that holds both
+properties at once. A kernel $K$ with integrated form $F_K$ and bias
+term $b(h) \geq 0$ satisfies the \emph{domination condition} when its
+safe-side surrogate is bounded by the indicator,
 \begin{equation}
-  \Prob\bigl(g(x,\xi) \leq 0\bigr)
-  \;=\; \int_{(-\infty,0]^m} \rho_{g(x)}(z)\, dz \;\geq\; \alpha ,
-  \label{eq:pushforward}
+  F_K\!\left(\frac{-\,t - b(h)}{h}\right) \;\leq\; \ind\{t \leq 0\}
+  \qquad \text{for all } t \in \R \text{ and } h > 0 ,
+  \label{eq:domination}
 \end{equation}
-which the reader will recognize as the residual-space identity of
-Chapter~3, here in its general $m$-dimensional form: the theory covers
-joint constraints through the multivariate residual, and the scalar case
-$m = 1$ of Chapters~3 and~4 is the special case used throughout this
-thesis. The approximation replaces $\rho_{g(x)}$ by its kernel estimate
-built from the residual samples $Y_i(x) = g(x,\xi_i)$, exactly the
-estimator of Chapter~3, and the pair of problems whose relationship the
-theory governs is
-\begin{align}
-  (P_\infty):\quad
-  &\minimize_{x \in X} f(x)
-  \quad\text{subject to}\quad
-  \Prob\bigl(g(x,\xi) \leq 0\bigr) \geq \alpha ,
-  \label{eq:pinf}\\
-  (P_N):\quad
-  &\minimize_{x \in X} f(x)
-  \quad\text{subject to}\quad
-  \hat{P}_N\bigl(g(x,\xi) \leq 0\bigr) \geq \alpha .
-  \label{eq:pn}
-\end{align}
-Every theorem below is a statement about how the solutions of $(P_N)$
-relate to those of $(P_\infty)$, almost surely with respect to the
-sampling of $\xi_1, \xi_2, \dots$, and the three theorems are numbered
-here as \cref{thm:passive,thm:limits,thm:existence}, corresponding to
-Theorems~3.1, 3.2, and~3.3 of \citet{schuster2025} respectively.
- 
-\subsection{The Passive Constraint Case}
-\label{sec:thm1}
+equivalently, when the complementary violation surrogate dominates
+$\ind\{t > 0\}$ from above for every residual. Condition
+\cref{eq:domination} asks for exactly one thing beyond Chapter~4: the
+surrogate must vanish on the entire violating half-line $t > 0$, which
+the bias $b(h)$ accomplishes by shifting the kernel's mass to the safe
+side of the boundary.
 
-\subsubsection{Statement and geometric hypotheses}
-\label{sec:passivestatement}
- 
-The first theorem settles the regime in which the chance constraint, at
-the optimum, is not doing any work.
- 
-\begin{theorem}[Passive constraint; Theorem 3.1 of \citealp{schuster2025}]
-\label{thm:passive}
-Let $x^*$ solve $(P_\infty)$ with the chance constraint strictly
-inactive, $\Prob(g(x^*,\xi) \leq 0) > \alpha$. Assume also the
-convexity or star-shaped projection and inner-approximation hypotheses
-used in the cited theorem. Then there exists $N^*$
-such that $x^*$ also solves $(P_N)$ for all $N \geq N^*$, almost surely.
-\end{theorem}
- 
-\subsubsection{Proof architecture and scope}
-\label{sec:passiveproof}
+\subsubsection{Expectation bound and its qualification}
+\label{sec:expectationbound}
 
-\emph{Proof architecture.} The argument runs along the bottom-left of
-\cref{fig:chain}. The $L^1$ consistency of the kernel estimator
-\citep{parzen1962,devroye1985} controls the integrated error of the
-density estimate; Scheff\'e's lemma \citep{scheffe1947} converts $L^1$
-convergence of densities into convergence of the probabilities they
-induce, so that $|\hat{P}_N - \Prob|$ at $x^*$ falls, almost surely,
-below the strict feasibility margin
-$\gamma = \Prob(g(x^*,\xi) \leq 0) - \alpha > 0$ for all $N$ beyond some
-$N^*$. From that point on, $x^*$ remains feasible for every $(P_N)$. The
-convexity-of-epigraph argument in the cited theorem then transfers the
-optimality property; it does not rely on the approximate feasible sets being
-nested.
- 
-\emph{Practical meaning.} When the chance constraint is strictly inactive at the optimum, the theorem
-shows that the KDE problems eventually recover the same optimizer under its
-the theorem's passive-margin and regularity assumptions; it does not assert zero
-finite-sample statistical error. \Cref{fig:passive} draws the mechanism: the margin $\gamma$
-is a fixed buffer, the uniform estimation error is a tube around the
-true probability that shrinks with $N$, and once the tube fits inside
-the buffer the approximation can no longer disturb the solution. The
-theorem formalizes why
-approximation error matters most where the chance constraint is active.
+The conservative estimator and constraint follow immediately. Averaging
+the dominated surrogate over the residual samples of Chapter~4 gives
+\begin{equation}
+  \hat{p}_h^{\,b}(x)
+  \;=\; \frac{1}{N}\sum_{j=1}^{N}
+  F_K\!\left(\frac{-\,g(x,\xi_j) - b(h)}{h}\right),
+  \qquad
+  \hat{p}_h^{\,b}(x) \;\geq\; 1-\varepsilon ,
+  \label{eq:biasedcc}
+\end{equation}
+For a fixed decision $x$ independent of the sample, each term of
+\cref{eq:biasedcc} is bounded by the corresponding indicator and therefore
+$\E[\hat{p}_h^{\,b}(x)] \leq \Prob(g(x,\xi) \leq 0)$. The inequality is a
+fixed-decision expectation statement. Because an optimized decision depends on
+the same samples, it is not a finite-sample feasibility certificate without a
+selection-aware concentration argument or independent validation.
+\Cref{fig:domination}(a) draws the construction: the unbiased surrogate
+crosses the indicator and grants credit to violating samples (the
+optimism Chapter~4 measured), while the biased surrogate sits entirely
+beneath it, discounting boundary samples and crediting violations
+nothing at all. Smoothness has not been spent to buy safety; the biased
+surrogate is exactly as differentiable as the unbiased one, and every
+formula of Chapter~4, the closed-form constraint, the analytic gradient,
+the constraint count independent of $N$ (while evaluation cost is $O(N)$), survives with $-g(x,\xi_j)$ replaced
+by $-g(x,\xi_j) - b(h)$. In the language of the two error sources
+separated in Chapter~4, the bias acts on the smoothing error alone: the
+sampling error remains random and vanishes with $N$, while the
+smoothing error is now signed toward safety rather than merely made
+small.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.86\textwidth]{kap05/figures/fig_passive.pdf}
-  \caption{The mechanism of \cref{thm:passive}, illustrated on a
-  standalone lognormal scalar probability curve (not generated from the
-  dispatch ledger). At a solution $x^*$ where the chance
-  constraint is strictly inactive, the feasibility margin
-  $\gamma = \Prob(g(x^*,\xi) \leq 0) - \alpha$ is a fixed positive
-  buffer. The KDE error is a tube around the true probability that
-  shrinks almost surely as $N$ grows; once
-  $\sup_x |\hat{p}_N - p| < \gamma$, the point $x^*$ is feasible for
-  every approximated problem and, by the epigraph argument, solves it.}
-  \label{fig:passive}
+  \includegraphics[width=\textwidth]{kap05/figures/fig_domination.pdf}
+  \caption{The biasing construction. (a) Per-sample contributions to the
+  probability estimate, in units of the bandwidth. The unbiased Gaussian
+  surrogate crosses the indicator and credits violating residuals
+  (shaded right), the optimism measured in Chapter~4; the biased
+  Epanechnikov surrogate with $b = h$ sits entirely beneath the
+  indicator, so every per-sample error points to the safe side (shaded
+  left). (b) Why the Gaussian kernel cannot be made exactly safe: its
+  maximal per-sample optimism $\Phi(-b/h)$ is positive for every finite
+  bias, decaying but never vanishing; $b = 3h$ leaves a residual
+  optimism of $0.13\%$ per sample.}
+  \label{fig:domination}
 \end{figure}
- 
-\subsection{Limits of Approximate Solutions Are Optimal}
-\label{sec:thm2}
 
-\subsubsection{Uniform convergence and limit statement}
-\label{sec:limitsstatement}
- 
-The second theorem addresses the regime the first one excludes, the one
-that matters most in practice: the constraint binds, the approximated
-solutions move with $N$, and the question is where they are allowed to
-go.
+\subsection{Specific Biased Kernels}
+\label{sec:biasedkernels}
 
-\begin{theorem}[Limits are optimal; Theorem 3.2 of \citealp{schuster2025}]
-\label{thm:limits}
-Suppose the kernel estimate satisfies
-\[
-  \sup_{x\in X}\left|\hat P_N\bigl(g(x,\xi)\leq 0\bigr)
-  - \Prob\bigl(g(x,\xi)\leq 0\bigr)\right| \xrightarrow[N\to\infty]{} 0
-\quad\text{almost surely}.
-\]
-If $(x_N)$ is a convergent sequence of solutions of $(P_N)$,
-then its limit solves $(P_\infty)$, almost surely.
-\end{theorem}
- 
-\subsubsection{Set-convergence proof architecture}
-\label{sec:limitsproof}
+\subsubsection{Exact one-sided kernels}
+\label{sec:exactbiasedkernels}
 
-\emph{Proof architecture.} This is the deepest of the three results, and
-its proof is an exercise in verifying the hypotheses of a general
-optimization-convergence theorem due to \citet{alvarezmena2005}, which
-gives conditions under which minimizers of a sequence of problems
-converge to minimizers of a limit problem. \citet{schuster2025}
-establishes the three required conditions through three lemmas. The
-first upgrades the statistical foundation: uniform convergence of the
-kernel estimate yields uniform convergence of the constraint function
-$\hat{P}_N$ to $\Prob$ on $X$. The second translates constraint
-convergence into geometry: the admissible sets of $(P_N)$ converge to
-the admissible set of $(P_\infty)$ in the Painlev\'e-Kuratowski sense,
-the notion of set convergence under which limits of feasible points are
-feasible. The third closes the loop from the other side: every feasible
-point of the limit problem can be approached by a sequence of points
-feasible for the approximating problems, so the approximations do not
-silently exclude parts of the true feasible set. With the three
-conditions in place, the theorem of \citet{alvarezmena2005} delivers the
-conclusion.
- 
-\emph{Practical meaning.} Under the stated uniform-convergence and
-optimization hypotheses, any convergent sequence of approximated solutions
-has a true-problem limit. The plots in Chapters~6--8 are diagnostics; they
-do not verify those hypotheses and therefore do not establish a limiting
-optimizer. What the theorem deliberately
-does not assert is that a convergent sequence exists; it is a statement
-about limits, conditional on their existence. Closing that gap is the
-third theorem's job, and the division of labor between
-\cref{thm:limits,thm:existence} is itself instructive: optimality of
-limits and existence of limits are separate mathematical events,
-requiring separate hypotheses.
+Condition \cref{eq:domination} is a constraint on kernel tails, and the
+three kernels of Chapter~3 meet it in three instructively different
+ways. The \emph{split-Bernstein kernel}, a piecewise-polynomial
+construction originating in approximation theory and adapted to chance
+constraints by \citet{keil2021}, satisfies the domination condition exactly for appropriate parameter
+choices: its compact, one-sided structure is designed around
+\cref{eq:domination} rather than retrofitted to it, and its integrated form is
+smooth and available in closed form. It is the literature reference whenever
+an exact pointwise envelope is required; it is not implemented in the local
+runner. The \emph{Epanechnikov kernel with bias} starts from the
+AMISE-optimal kernel of Chapter~3 and exploits its compact support: with
+$b(h) = h$, the shifted surrogate vanishes identically on the violating
+half-line, so \cref{eq:domination} holds exactly, and in the lunar
+landing experiments of \citet{keil2021} this kernel achieves the lowest
+average optimal cost among the biased family, the statistical efficiency
+of Chapter~3 carrying over into the optimization.
 
-\subsection{Existence of a Convergent Solution Sequence}
-\label{sec:thm3}
-\subsubsection{Sharp minimum and existence statement}
-\label{sec:existencestatement}
-\begin{theorem}[Existence; Theorem 3.3 of \citealp{schuster2025}]
-\label{thm:existence}
-Suppose $x^*$ is the unique solution of $(P_\infty)$ and satisfies a
-sharp-minimum condition: there exist $\bar{\varepsilon}, \delta > 0$
-such that $f(x) > f(x^*) + \bar{\varepsilon}$ for every feasible $x$
-outside the ball $B_\delta(x^*)$. Assume in addition the existence,
-projection, and inner-approximation hypotheses required by the cited
-theorem. Then a convergent sequence of
-solutions of the approximated problems exists, almost surely.
-\end{theorem}
- 
-\subsubsection{Why the sharp minimum is needed}
-\label{sec:existenceproof}
+\subsubsection{Approximate conservatism with Gaussian tails}
+\label{sec:approxgaussian}
 
-\emph{Proof architecture.} The sharp-minimum condition is exactly what
-forbids the failure mode that \cref{thm:limits} could not exclude. If
-near-optimal objective values were available far from $x^*$, the
-approximated solutions could achieve them and wander indefinitely;
-the growth condition makes every such excursion expensive, and combined
-with the set-convergence machinery of \cref{sec:thm2} it forces the
-solution sequence to be Cauchy, hence convergent.
-\Cref{fig:sharpmin} contrasts the two geometries: under a sharp minimum
-the approximate solutions are trapped in a shrinking neighborhood of
-$x^*$; in a shallow valley, nothing prevents them from drifting between
-distant near-optimal points.
- 
-\subsubsection{Recognizable sufficient conditions}
-\label{sec:existencesufficient}
+The \emph{Gaussian kernel} is the cautionary member, and its limitation
+here is structural rather than incidental: because its tails are
+strictly positive everywhere, no finite bias can make the surrogate
+vanish for $t > 0$, so the Gaussian cannot satisfy \cref{eq:domination}
+exactly \citep{keil2021}. \Cref{fig:domination}(b) quantifies the gap. The
+maximal per-sample optimism after biasing is $\Phi(-b/h)$, positive for
+every finite $b$; the practical compromise $b \approx 3h$ caps it at
+$\Phi(-3) \approx 0.13\%$, covering $99.87\%$ of the tail and rendering
+the kernel \emph{approximately} conservative. The Gaussian's
+compensating virtues are real, infinite smoothness and the fastest
+solver runtimes in the family, and the resulting division of labor is
+the one this thesis adopts: Gaussian kernels where speed and smoothness
+dominate, exact biased kernels where the guarantee does, and the
+continuation strategy of \cref{sec:continuation} to move between them
+within a single solve.
 
-\emph{Practical meaning.} The conditions under which the full theory
-operate are explicit regularity conditions, and \citet{schuster2025} makes
-those conditions concrete. On the geometry side, strict convexity of the
-objective on a convex feasible set, together with existence, implies
-uniqueness; a quantitative growth condition (for example, strong
-convexity on a finite-dimensional compact sublevel set) is still needed
-to supply the sharp minimum, so the hypothesis of
-\cref{thm:existence} is met by a recognizable problem class. On the statistical side, the uniform
-convergence that \cref{thm:limits,thm:existence} require is not an
-abstract wish: a Gaussian product kernel with a diagonal bandwidth
-matrix, under the classical bandwidth conditions and uniform continuity
-of the true density, is identified as a concrete realization that
-guarantees it, drawing on the consistency conditions surveyed by
-\citet{wied2012} and the $L^1$ theory of \citet{devroye1985}. The
-theory's assumptions can be discharged by objects this thesis already
-uses.
+\subsection{Stochastic Optimization Reformulated via Biased KDE}
+\label{sec:biasedreform}
+
+\subsubsection{Reformulation workflow}
+\label{sec:biasedworkflow}
+
+The full conservative pipeline assembles the chapters of Part~3 into
+five steps, stated once here as the procedure the experimental chapters
+implement. First, generate $N$ samples $\xi_1,\dots,\xi_N$ by
+simulation, Markov chain Monte Carlo, or historical data, exactly as in
+Chapter~2. Second, for each candidate decision $x$, form the residuals
+$y_j(x) = g(x,\xi_j)$ of Chapter~4. Third, evaluate the biased
+constraint function $\hat{p}_h^{\,b}(x)$ of \cref{eq:biasedcc} with a
+kernel and bias from \cref{sec:biasedkernels}. Fourth, enforce
+$\hat{p}_h^{\,b}(x) \geq 1-\varepsilon$. Fifth, solve the resulting
+deterministic nonlinear program with the analytic derivatives that the
+construction provides. The program retains every structural property of
+Chapter~4: one smooth inequality whose row count is independent of $N$,
+with evaluation and gradient cost proportional to $N$.
+
+\subsubsection{Observed safety--cost trade-off}
+\label{sec:safetycosttradeoff}
+
+What the bias changes is the trade, and \cref{fig:safetycost} prices it
+on a standalone lognormal scalar diagnostic where the truth is computable. The comparison follows the question posed at the end of Chapter~4: the unbiased reformulation is smooth and less conservative, while the
+biased reformulation is more conservative and has the fixed-decision
+pointwise envelope described above; neither statement alone is a
+selection-aware finite-sample certificate for an optimized decision.
+The numbers make the asymmetry of the trade explicit. Across sample
+sizes, the unbiased certificate fails in roughly $34$ to $43\%$ of
+trials over the tested range, with no monotone improvement across sample sizes; the biased certificate fails in $14\%$ of trials at
+$N = 50$, falls to $5\%$ by $N = 200$, and is below $1\%$ from
+$N = 500$. These observed failures are compatible with sampling error,
+but the experiment does not provide a selection-aware finite-sample
+guarantee. The premium paid for this is $2.6$ to $4\%$ of
+objective value, shrinking as $N$ grows. The results quantify a bounded objective premium in this experiment and a
+lower observed failure rate for the biased surrogate. They do not establish
+that the ranking holds for other distributions or data-dependent decisions.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{kap05/figures/fig_sharpmin.pdf}
-  \caption{Why \cref{thm:existence} needs the sharp-minimum condition.
-  (a) When the objective grows by at least $\bar{\varepsilon}$ outside
-  the ball $B_\delta(x^*)$ (shaded), every approximate solution
-  (orange) with near-optimal value is forced into the ball, and the
-  set-convergence machinery makes the sequence Cauchy. (b) In a shallow
-  valley the condition fails: near-optimal points exist far from $x^*$,
-  and approximate solutions may alternate between them without
-  converging, even though, by \cref{thm:limits}, any limit they did have
-  would be optimal. Strict convexity of $f$ implies the geometry of
-  panel (a).}
-  \label{fig:sharpmin}
+  \includegraphics[width=\textwidth]{kap05/figures/fig_safetycost.pdf}
+  \caption{The price and the purchase of conservatism, on a standalone
+  lognormal scalar diagnostic ($\varepsilon = 0.05$, $800$ trials per sample size, bands are
+  $10$th-to-$90$th percentiles). (a) The unbiased certificate straddles
+  the target from below on a large fraction of trials at every $N$; the
+  biased certificate (Epanechnikov, $b = h$) lands above it by a margin
+  that shrinks as the estimator sharpens. (b) Certificate failure rates:
+  the tested unbiased rates show no monotone improvement across sample sizes; the
+  biased rate decreases in this diagnostic, falling below $1\%$ from
+  $N = 500$; this empirical trend is not a finite-sample guarantee. The
+  average objective premium paid for safety is
+  $2.6$ to $4\%$, decreasing in $N$.}
+  \label{fig:safetycost}
 \end{figure}
- 
-\subsection{What the Theory Does and Does Not Cover}
-\label{sec:coverage}
 
-\subsubsection{What is established}
-\label{sec:coverageestablished}
- 
-Taken together, the three theorems establish two properties for sequences
-that satisfy their hypotheses. First, the KDE approach is asymptotically
-consistent at the level of the optimization problem, rather than only at
-the estimator level.
-The second is precision about conditions: the theory identifies exactly
-what convergence costs, namely uniform convergence of the estimate on
-the feasible set, plus either a passive constraint or a sharp minimum,
-and it exhibits concrete, standard objects that pay the cost. A reader
-of Chapters~3 and~4 now knows not only how to build the reformulation
-but when its assumptions apply.
- 
-\subsubsection{Boundaries of the theory}
-\label{sec:coverageboundaries}
+\subsection{Joint Chance Constraints: Three Approaches}
+\label{sec:jointthree}
 
-Four limitations remain outside the theory. There are, first, \emph{no convergence
-rates}: the theory guarantees that the optimization error vanishes but
-not how fast, and no theorem links the kernel's bias-variance behavior
-to the decay of $|f(x_N) - f(x^*)|$ or $\|x_N - x^*\|$;
-\citet{schuster2025} explicitly flags this as open.
-\Cref{fig:empconv} makes the gap tangible: on a standalone lognormal
-scalar diagnostic (not the dispatch ledger) the
-optimization error decays along a clean empirical power law of slope
-roughly $-0.46$, a regular behavior that no available theorem
-currently predicts. Second, the theorems cover the \emph{unbiased} estimator of
-Chapter~3; whether and how they extend to the biased construction of
-Chapter~4 is open, a point developed in \cref{sec:anchorgap}. Third, the
-results lean on convexity of the objective, while the lunar trajectory
-problem is non-convex. The dispatch adapter is affine with a convex
-increasing objective and is the closest local analogue to the theorem's
-geometry; comparable guarantees for the lunar case do not follow. Fourth,
-the theory is asymptotic
-through and through: unlike the scenario approach of Chapter~2,
-it offers no $N$-dependent probability that a computed solution is
-feasible for the true problem. These limitations define the evidence that Part~4 must supply beyond the
-mathematical results.
+\subsubsection{Boole risk allocation}
+\label{sec:booleallocation}
+
+Everything so far concerns a scalar residual. The joint constraint of
+Chapters~1 through~4,
+$\Prob(g_r(x,\xi) \leq 0,\, r = 1,\dots,m) \geq 1-\varepsilon$, asks
+about $m$ requirements at once, and the biased framework extends to it
+along three routes whose trade-offs this subsection fixes, because the
+choice among them is a design decision the experimental chapters revisit.
+
+\emph{Approach A: Boole's inequality with risk allocation.} The union
+bound $\Prob(\bigcup_r \{g_r > 0\}) \leq \sum_r \Prob(g_r > 0)$ yields a
+sufficient condition: enforce each component at level $\varepsilon_r$
+with $\sum_r \varepsilon_r \leq \varepsilon$, applying the
+one-dimensional biased KDE of \cref{sec:biasedreform} to each residual
+separately \citep{prekopa1995,keil2021}. The route is simple, fully
+tractable, and conservative twice over, once through the bias and once
+through the union bound; its conservatism grows with $m$ and is most
+costly exactly when the component violations are strongly correlated,
+the case the union bound prices worst.
+
+\subsubsection{Multivariate residual KDE}
+\label{sec:multivariatekde}
+
+\emph{Approach B: multivariate KDE.} Estimate the joint density of the
+residual vector $(g_1(x,\xi),\dots,g_m(x,\xi))$ with a multivariate
+kernel and bandwidth matrix $H$, and integrate over the safe orthant
+$(-\infty,0]^m$ \citep{wu2021,wu2023}. The route is exact in the sense
+that no decomposition is imposed, but it reintroduces precisely the
+difficulty the residual-space construction was designed to avoid: the
+curse of dimensionality of Chapter~3 now acts in the constraint
+dimension $m$,
+and the sample sizes it demands grow exponentially.
+
+\subsubsection{Exact scalar violation statistic}
+\label{sec:scalarviolation}
+
+\emph{Approach C: the scalar violation statistic.} The recommended
+extension of this thesis collapses the joint constraint exactly. For
+positive weights $w_r$, define
+\begin{equation}
+  s(x,\xi) \;=\; \max_{r = 1,\dots,m} \, w_r\, g_r(x,\xi) .
+  \label{eq:scalarstat}
+\end{equation}
+The reduction is an identity, not a bound: all components are
+nonpositive precisely when their weighted maximum is, so
+\begin{equation}
+  \Prob\bigl(g_r(x,\xi) \leq 0,\; r = 1,\dots,m\bigr)
+  \;=\; \Prob\bigl(s(x,\xi) \leq 0\bigr) ,
+  \label{eq:exactreduction}
+\end{equation}
+and the joint chance constraint is a scalar chance constraint on
+$s$. A one-dimensional biased KDE suffices; no Boole decomposition, no
+multivariate estimation, no curse of dimensionality. The constraint map
+itself has once again performed the dimension reduction, now in $m$ as
+well as in $d$. The single catch is the one Chapter~3 anticipated: the
+max in \cref{eq:scalarstat} is nonsmooth, and a nonsmooth residual would
+re-break exactly the differentiability that Chapter~4 worked to
+establish. Removing that catch is the purpose of the next subsection.
+
+\subsection{Log-Sum-Exp Smoothing of the Scalar Violation Statistic}
+\label{sec:lse}
+
+\subsubsection{Safe-side max approximation}
+\label{sec:lsesafebound}
+
+The max is smoothed by the log-sum-exp surrogate with temperature
+$\tau > 0$,
+\begin{equation}
+  s_\tau(x,\xi)
+  \;=\; \tau \log\!\left(\sum_{r=1}^{m}
+  \exp\!\left(\frac{w_r\, g_r(x,\xi)}{\tau}\right)\right),
+  \label{eq:lse}
+\end{equation}
+which satisfies the two-sided bound
+\begin{equation}
+  \max_r\, w_r\, g_r(x,\xi)
+  \;\leq\; s_\tau(x,\xi)
+  \;\leq\; \max_r\, w_r\, g_r(x,\xi) + \tau \log m ,
+  \label{eq:lsebounds}
+\end{equation}
+\citep{boyd2004}. The direction of the bound is the key property of the construction,
+and it should be read in the spirit of
+\cref{eq:domination}: the surrogate dominates the true statistic, so
+enforcing $\Prob(s_\tau \leq 0) \geq 1-\varepsilon$ \emph{implies} the
+true joint constraint, and the smoothing error, like the kernel bias, is
+conservative by construction. The temperature plays for the max exactly
+the role the bandwidth plays for the indicator: a smoothing parameter
+whose cost is a controlled, safe-side margin of at most
+$\tau \log m$. \Cref{fig:lse}(a) shows the geometry on a two-constraint
+slice, $s_\tau$ riding above the kink and collapsing onto it as $\tau$
+shrinks.
+
+\subsubsection{Softmax gradient and joint reformulation}
+\label{sec:lsegradient}
+
+The gradient completes the smoothness argument. Differentiating
+\cref{eq:lse} gives
+\begin{equation}
+  \nabla_x\, s_\tau(x,\xi)
+  \;=\; \sum_{r=1}^{m} \pi_r(x,\xi)\, w_r\, \nabla_x\, g_r(x,\xi),
+  \qquad
+  \pi_r \;=\;
+  \frac{\exp\bigl(w_r g_r / \tau\bigr)}
+       {\sum_{q} \exp\bigl(w_q g_q / \tau\bigr)} ,
+  \label{eq:lsegrad}
+\end{equation}
+a softmax-weighted blend of the component gradients, smooth in $x$ and
+analytically computable. \Cref{fig:lse}(b) shows the weights handing
+influence from one constraint to the other across the switching point,
+continuously, where the raw max would switch abruptly and
+nondifferentiably. Composing the pieces yields the full biased-KDE
+reformulation for joint constraints,
+\begin{equation}
+  \frac{1}{N}\sum_{j=1}^{N}
+  F_K\!\left(\frac{-\,s_\tau(x,\xi_j) - b(h)}{h}\right)
+  \;\geq\; 1-\varepsilon ,
+  \label{eq:jointreform}
+\end{equation}
+and \cref{eq:jointreform} is an implemented extension and diagnostic, a claim supported by what the formulation absorbs: a
+joint,
+non-Gaussian, possibly high-dimensional chance constraint has been
+reduced to a single smooth one-dimensional deterministic inequality,
+with two stacked approximation layers: the biased kernel supplies a fixed-decision expectation envelope, while log-sum-exp supplies a deterministic upper bound on the maximum. The
+interaction of these layers, including how conservatism compounds across $h$ and $\tau$, remains unresolved; Chapter~9 reports a joint-event diagnostic rather than a risk-allocation study.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.84\textwidth]{kap05/figures/fig_empconv.pdf}
-  \caption{Consistency without rates. Mean optimization error
-  $|x_N - x^*|$ of the unbiased KDE solution on a standalone lognormal
-  scalar diagnostic (not generated from the dispatch ledger)
-  ($500$ trials per sample size, band is $10$th-to-$90$th percentiles),
-  on logarithmic axes. The error follows a clean empirical power law of
-  slope $\approx -0.46$, but the convergence theory guarantees only that
-  the error vanishes; no theorem predicts the slope. Quantifying this
-  rate, and its dependence on the bandwidth rule, is an open problem left by the anchor papers}
-  \label{fig:empconv}
+  \includegraphics[width=\textwidth]{kap05/figures/fig_lse.pdf}
+  \caption{Log-sum-exp smoothing of the scalar violation statistic on a
+  two-constraint slice. (a) The surrogate $s_\tau$ dominates
+  $s = \max(g_1, g_2)$ everywhere, with gap at most $\tau \log m$
+  concentrated at the kink; as $\tau$ shrinks the surrogate collapses
+  onto the max, so the smoothing error is a tunable, safe-side margin.
+  (b) The softmax weights of the gradient formula hand influence from
+  one constraint to the other continuously across the switching point,
+  giving the solver a smooth blend where the raw max would give a
+  nondifferentiable jump.}
+  \label{fig:lse}
 \end{figure}
- 
-\subsection{The Gap Between the Two Anchor Papers}
-\label{sec:anchorgap}
 
-\subsubsection{Safety and convergence are proved separately}
-\label{sec:anchorcomparison}
- 
-One observation closes Part~3's theoretical development. The two anchor papers of
-this thesis work with the same high-level idea from opposite directions,
-and their results do not yet meet. \citet{keil2021} builds a
-\emph{biased} integrated kernel that dominates the indicator for each
-residual, yielding a fixed-decision expectation bound, but proves no
-convergence of the resulting optimizers. \citet{schuster2025} proves convergence of the
-optimizers, but for the \emph{unbiased} kernel density estimate, with no
-safety guarantee at finite $N$. Neither paper's theorems cover the
-other's construction: the engineering line has a fixed-decision envelope
-without proven optimizer convergence, and the theoretical line has optimizer
-convergence without a built-in finite-sample envelope.
- 
-\subsubsection{Open unified theory}
-\label{sec:unifiedopenproblem}
+\subsection{Bandwidth Continuation and Kernel Switching}
+\label{sec:continuation}
 
-The resulting open problem is a unified convergence
-theory for the biased-KDE reformulation, establishing that the
-conservative construction of Chapter~4 inherits the asymptotic
-correctness of this chapter, ideally with rates. Its resolution would
-fuse a finite-sample, selection-aware safety result with correctness in the
-limit into a single certified method.
-This thesis does not claim to close that problem. What it does claim,
-and delivers in Part~4, is the systematic empirical groundwork on which
-a closure must rest: controlled experiments in which the biased and
-unbiased reformulations are run side by side, across sample sizes,
-bandwidths, and risk levels, on problems whose true solutions are
-known, so that the conjectured convergence of the biased construction is
-measured even where it is not yet proven. The theory of this chapter
-tells us how to interpret those measurements; the gap between the anchors
-motivates the comparison.
-The next chapter instantiates these distinctions in a discretized optimal-control
-formulation. It records which assumptions are represented by the local solver and
-which remain outside the numerical evidence.
+\subsubsection{Continuation schedule}
+\label{sec:continuationschedule}
+
+The constructions of this chapter create a practical tension that one
+further idea resolves. Small bandwidths and exactly-safe kernels are
+where the guarantees live, but they are also where the optimization is
+hardest: a sharply smoothed constraint approaches the staircase of
+Chapter~2, and a solver started cold against it inherits a rugged,
+nearly nonsmooth landscape. The warm-start strategy of
+\citet{keil2021warm} converts this tension into a schedule.
+\Cref{fig:continuation} draws it. Begin with a large bandwidth, where
+the constraint is heavily smoothed, the landscape benign, and the
+Gaussian kernel's speed available; solve, and pass the solution forward
+as the initial point for a smaller bandwidth; repeat, increasing the
+sample size as the bandwidth shrinks so that statistical resolution
+keeps pace with geometric resolution; and near convergence, switch to the locally implemented shifted
+Epanechnikov surrogate. The split-Bernstein switch shown in the cited workflow
+is a literature procedure and is not executed by the local runner.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.82\textwidth]{kap05/figures/fig_continuation.pdf}
+  \caption{The bandwidth-continuation and kernel-switching schedule of
+  \citet{keil2021warm}. Early stages use a large bandwidth and the fast
+  Gaussian kernel, producing a benign landscape and a cheap solution;
+  each stage's solution warm-starts the next as the bandwidth shrinks
+  and the sample size grows; the cited final stage switches to the split-Bernstein kernel; that
+  literature step is not executed by the local runner. The homotopy stabilizes the solver and
+  avoids the numerical difficulty of attacking a small-bandwidth,
+  nearly nonsmooth constraint from a cold start.}
+  \label{fig:continuation}
+\end{figure}
+
+\subsubsection{Scope of the solver claim}
+\label{sec:continuationscope}
+
+The schedule is a homotopy in the proper sense: a continuous deformation
+from an easy problem to the target problem along which the solution is
+tracked rather than rediscovered, and its effect in the experiments of
+\citet{keil2021warm} is precisely the one homotopies exist to deliver,
+stabilized convergence and substantially reduced solve times relative to
+cold starts at the final bandwidth. With it, Part~3 is complete as a
+method: a smooth, one-dimensional reformulation with constraint count
+independent of $N$ for individual and joint chance constraints, equipped with
+a practical solution strategy. What the method still lacks is a formal
+guarantee that its answers approximate \emph{the true problem}, in the
+sense that as data accumulates the reformulated solutions converge to
+the true ones. The convergence theory of \citet{schuster2025}, and connecting it to the
+constructions of this chapter is the work the next chapter takes up.

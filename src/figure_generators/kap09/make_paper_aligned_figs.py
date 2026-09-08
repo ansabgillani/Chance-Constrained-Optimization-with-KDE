@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 RESULTS = ROOT / "results_paper_aligned_20260906"
-FIGURES = ROOT / "kap08" / "figures"
+FIGURES = ROOT / "kap09" / "figures"
 DISTS = ("gaussian", "bimodal", "skewed", "heavy_tailed")
 METHODS = {
     "schuster_gaussian": "Schuster Gaussian",

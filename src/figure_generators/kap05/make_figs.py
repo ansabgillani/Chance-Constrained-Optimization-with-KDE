@@ -1,7 +1,7 @@
 """
 make_chapter5_figures.py
 ========================
-Figures for Chapter 5 (convergence theory).
+Figures for Chapter 5 (biased KDE and conservative reformulation).
 Code reused from the thesis history; only the output path is relative.
 
 Usage:  pip install numpy scipy matplotlib
@@ -11,7 +11,6 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 from scipy import stats
 
 plt.rcParams.update({
@@ -21,202 +20,224 @@ plt.rcParams.update({
 })
 BLUE = "#1f4e79"; RED = "#b3392e"; GRAY = "#7a7a7a"
 GREEN = "#2e7d4f"; ORANGE = "#d9842b"; PURPLE = "#6a4c93"
-WBOX = dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.9)
+WBOX = dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.88)
 import os
-F6 = "figures/"
-os.makedirs(F6, exist_ok=True)
-rng = np.random.default_rng(41)
+F5 = "figures/"
+os.makedirs(F5, exist_ok=True)
+rng = np.random.default_rng(31)
+# Diagnostic figures below use a standalone scalar lognormal law; they are
+# not generated from the dispatch experiment ledger.
 
-# ===================================================== fig_chain
-fig, ax = plt.subplots(figsize=(7.2, 4.4))
-ax.set_xlim(0, 14); ax.set_ylim(0, 12)
-ax.axis("off")
+def C_epan(u):
+    """Integrated Epanechnikov kernel."""
+    u = np.asarray(u, dtype=float)
+    out = np.where(u < -1, 0.0, np.where(u > 1, 1.0,
+                   0.25*(2 + 3*u - u**3)))
+    return out
 
-def box(x, y, w, h, color, text, fs=7.8, weight=None):
-    r = mpatches.FancyBboxPatch((x, y), w, h,
-        boxstyle="round,pad=0.13", fc=color, ec=color, alpha=0.16, lw=1.0)
-    ax.add_patch(r)
-    ax.text(x + w/2, y + h/2, text, ha="center", va="center",
-            fontsize=fs, linespacing=1.25, weight=weight)
+# ===================================================== fig_domination
+y = np.linspace(-2.6, 2.6, 800)
+h = 1.0
+ind = (y <= 0).astype(float)            # indicator 1{y<=0}
+phi_unb = stats.norm.cdf(-y/h)          # unbiased Gaussian surrogate
+phi_bias = C_epan((-y - h)/h)           # biased Epanechnikov, b = h
 
-def arrow(x1, y1, x2, y2, color="k", rad=0.0, lw=1.1):
-    ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                arrowprops=dict(arrowstyle="->", lw=lw, color=color,
-                                connectionstyle=f"arc3,rad={rad}"),
-                zorder=3)
-
-# statistical foundation layer (bottom)
-box(0.3, 0.3, 4.0, 1.7, GRAY,
-    "$L^1$ consistency of the KDE\n(Parzen 1962;\nDevroye and Gy\u00f6rfi 1985)")
-box(5.0, 0.3, 3.8, 1.7, GRAY,
-    "Scheff\u00e9's lemma:\ndensity convergence gives\nprobability convergence")
-box(9.5, 0.3, 4.2, 1.7, GRAY,
-    "uniform convergence\nof $\\hat P_N$ on $X$, a.s.\n(Wied and Wei\u00dfbach 2012)")
-arrow(4.3, 1.15, 5.0, 1.15)
-arrow(8.8, 1.15, 9.5, 1.15)
-
-# middle layer: the two engines
-box(1.4, 4.0, 4.6, 2.2, PURPLE,
-    "convexity of the epigraph\n+ strict feasibility margin\n"
-    "$P(g(x^*,\\xi)\\leq 0) > \\alpha$")
-box(7.6, 4.0, 5.2, 2.2, PURPLE,
-    "Alvarez-Mena and\nHern\u00e1ndez-Lerma (2005):\n"
-    "three lemmas, Painlev\u00e9-\nKuratowski set convergence")
-arrow(2.3, 2.0, 3.0, 4.0, color=GRAY, rad=0.12)
-arrow(11.6, 2.0, 10.6, 4.0, color=GRAY, rad=-0.12)
-
-# top layer: three theorems
-box(0.3, 8.2, 4.1, 3.0, GREEN,
-    "Theorem 3.1\n(passive constraint)\n$x^*$ solves $(P_N)$\nfor all "
-    "$N \\geq N^*$", fs=8.0, weight="bold")
-box(4.9, 8.2, 4.1, 3.0, GREEN,
-    "Theorem 3.2\n(limits are optimal)\nlimits of solutions\nof $(P_N)$ "
-    "solve $(P_\\infty)$", fs=8.0, weight="bold")
-box(9.5, 8.2, 4.2, 3.0, GREEN,
-    "Theorem 3.3\n(existence)\nsharp minimum gives\na convergent sequence",
-    fs=8.0, weight="bold")
-arrow(3.0, 6.2, 2.4, 8.2, color=PURPLE, rad=0.10)
-arrow(9.4, 6.2, 6.9, 8.2, color=PURPLE, rad=0.14)
-arrow(10.8, 6.2, 11.5, 8.2, color=PURPLE, rad=-0.10)
-arrow(7.0, 11.2, 9.6, 11.2, color=GREEN, lw=1.0)
-ax.text(8.3, 11.55, "feeds", fontsize=7.0, color=GREEN, ha="center",
-        bbox=WBOX, zorder=7)
-fig.tight_layout()
-fig.savefig(F6 + "fig_chain.pdf", bbox_inches="tight")
-plt.close(fig)
-print("chain ok")
-
-# ===================================================== fig_passive
-law = stats.lognorm(s=0.18, scale=100)
-# Standalone scalar diagnostic law; these figures are not generated from
-# the dispatch experiment ledger.
-alpha = 0.95
-xs = np.linspace(118, 170, 700)
-p = law.cdf(xs)
-xstar = 146.0
-pstar = law.cdf(xstar)
-gamma = pstar - alpha
-
-fig, ax = plt.subplots(figsize=(6.2, 3.1))
-for half, alpha_f, lab in [(0.60*gamma, 0.13, None),
-                           (0.30*gamma, 0.22,
-                            "uniform KDE error tube, shrinking in $N$")]:
-    ax.fill_between(xs, p - half, p + half, color=BLUE, alpha=alpha_f,
-                    label=lab)
-ax.plot(xs, p, color="k", lw=1.7, label="true probability $p(x)$")
-ax.axhline(alpha, color=GREEN, ls="--", lw=1.3)
-ax.text(119.5, alpha - 0.0085, "$\\alpha = 1-\\varepsilon$",
-        color=GREEN, fontsize=8.5, bbox=WBOX, zorder=7)
-ax.scatter([xstar], [pstar], color=RED, s=42, zorder=6, ec="white")
-ax.annotate("$x^*$: constraint strictly inactive",
-            xy=(xstar, pstar), xytext=(128, 1.001), fontsize=8.3,
-            color=RED, ha="center", bbox=WBOX, zorder=7,
-            arrowprops=dict(arrowstyle="->", lw=0.9, color=RED,
-                            shrinkB=6))
-ax.annotate("", xy=(163, pstar), xytext=(163, alpha),
-            arrowprops=dict(arrowstyle="<->", lw=1.1, color=GRAY))
-ax.text(164.0, (pstar + alpha)/2, "margin\n$\\gamma > 0$",
-        fontsize=7.8, color=GRAY, va="center", bbox=WBOX, zorder=7)
-ax.text(140.5, 0.912,
-        "once $\\sup_x |\\hat p_N - p| < \\gamma$,\n"
-        "$x^*$ stays feasible for $(P_N)$",
-        fontsize=7.8, ha="center", bbox=WBOX, zorder=7)
-ax.set_xlim(118, 170); ax.set_ylim(0.875, 1.015)
-ax.set_xlabel("decision $x$")
-ax.set_ylabel("probability")
-leg = ax.legend(loc="lower right", fontsize=7.6, frameon=True,
+fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
+ax = axes[0]
+ax.step([-2.6, 0, 0, 2.6], [1, 1, 0, 0], where="post", color="k",
+        lw=1.4, label="indicator $\\mathbf{1}\\{y\\leq 0\\}$")
+ax.plot(y, phi_unb, color=RED, lw=1.6, label="unbiased (Gaussian)")
+ax.plot(y, phi_bias, color=GREEN, lw=1.6,
+        label="biased (Epanechnikov, $b=h$)")
+ax.fill_between(y, phi_unb, ind, where=(y > 0), color=RED, alpha=0.18)
+ax.fill_between(y, phi_bias, ind, where=(phi_bias < ind),
+                color=GREEN, alpha=0.18)
+ax.text(1.62, 0.62, "optimism:\ncredit for\nviolating samples",
+        fontsize=7.4, color=RED, ha="center", bbox=WBOX, zorder=7)
+ax.text(-1.85, 0.52, "safety margin:\ndiscount for\nboundary samples",
+        fontsize=7.4, color=GREEN, ha="center", bbox=WBOX, zorder=7)
+ax.set_xlabel("residual $y$ (units of $h$)")
+ax.set_ylabel("per-sample contribution to $\\hat p$")
+ax.set_title("(a) The domination condition")
+leg = ax.legend(loc="lower left", fontsize=7.0, frameon=True,
                 framealpha=0.9, edgecolor="none", facecolor="white")
 leg.set_zorder(7)
+
+ax = axes[1]
+bh = np.linspace(0.5, 4.5, 300)
+overshoot = stats.norm.cdf(-bh)
+ax.semilogy(bh, overshoot, color=BLUE, lw=1.7)
+ax.scatter([3.0], [stats.norm.cdf(-3.0)], color=RED, s=30, zorder=6)
+ax.annotate("$b = 3h$: residual optimism\n$\\Phi(-3) \\approx 0.13\\%$",
+            xy=(3.0, stats.norm.cdf(-3.0)), xytext=(1.65, 4e-4),
+            fontsize=7.8, bbox=WBOX, zorder=7,
+            arrowprops=dict(arrowstyle="->", lw=0.8, shrinkB=4))
+ax.set_xlabel("bias $b$ in units of $h$")
+ax.set_ylabel("max per-sample optimism")
+ax.set_title("(b) The Gaussian kernel: no finite bias suffices")
 fig.tight_layout()
-fig.savefig(F6 + "fig_passive.pdf", bbox_inches="tight")
+fig.savefig(F5 + "fig_domination.pdf", bbox_inches="tight")
 plt.close(fig)
-print("passive ok")
+print("domination ok")
 
-# ===================================================== fig_sharpmin
-t = np.linspace(-2.2, 2.2, 600)
-f_sharp = 0.55*t**2 + 1.0
-f_flat = 1.0 + 0.06*t**4
-
-fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9), sharey=True)
-for ax, f, title, ok in [
-        (axes[0], f_sharp, "(a) Sharp minimum: condition holds", True),
-        (axes[1], f_flat, "(b) Shallow valley: condition fails", False)]:
-    ax.plot(t, f, color="k", lw=1.7)
-    fstar = 1.0
-    delta = 0.55
-    ebar = (f_sharp if ok else f_flat)[np.argmin(np.abs(t - delta))] - fstar
-    ax.scatter([0], [fstar], color=GREEN, s=40, zorder=6, ec="white")
-    ax.axvspan(-delta, delta, color=GREEN, alpha=0.10)
-    ax.axhline(fstar + ebar, color=GRAY, lw=1.0, ls=":")
-    # approximate solutions
-    if ok:
-        xn = np.array([0.45, -0.3, 0.18, -0.08])
-    else:
-        xn = np.array([1.6, -1.3, 1.0, -1.75])
-    fn = np.interp(xn, t, f)
-    ax.scatter(xn, fn, color=ORANGE, s=26, zorder=6, ec="white")
-    ax.set_title(title)
-    ax.set_xlabel("decision space")
-    ax.set_xlim(-2.2, 2.2)
-axes[0].set_ylabel("objective $f$")
-axes[0].set_ylim(0.7, 3.6)
-axes[0].text(0, 0.84, "$B_\\delta(x^*)$", color=GREEN, fontsize=8.3,
-             ha="center", bbox=WBOX, zorder=7)
-axes[0].text(-1.32, 2.95,
-             "outside the ball,\n$f > f(x^*) + \\bar\\varepsilon$:\n"
-             "approximate solutions\nare trapped near $x^*$",
-             fontsize=7.4, ha="center", bbox=WBOX, zorder=7)
-axes[1].text(0, 0.84, "$B_\\delta(x^*)$", color=GREEN, fontsize=8.3,
-             ha="center", bbox=WBOX, zorder=7)
-axes[1].text(0.05, 2.75,
-             "near-optimal points exist\nfar from $x^*$: the sequence\n"
-             "may wander without converging",
-             fontsize=7.4, ha="center", bbox=WBOX, zorder=7)
-fig.tight_layout()
-fig.savefig(F6 + "fig_sharpmin.pdf", bbox_inches="tight")
-plt.close(fig)
-print("sharpmin ok")
-
-# ===================================================== fig_empconv
+# ===================================================== fig_safetycost
+law = stats.lognorm(s=0.18, scale=100)
 eps = 0.05
-xstar_true = law.ppf(1 - eps)
-Ns = np.unique(np.geomspace(50, 6400, 8).astype(int))
-trials = 500
-err_x, err_f = [], []
+true_q = law.ppf(1-eps)
+Ns = [50, 100, 200, 500, 1000]
+trials = 800
+
+def decide_unbiased(s, h):
+    grid = np.linspace(s.min()-4*h, s.max()+4*h, 900)
+    cdf = stats.norm.cdf((grid[:, None]-s[None, :])/h).mean(axis=1)
+    return np.interp(1-eps, cdf, grid)
+
+def decide_biased(s, h):
+    # p_b(x) = mean C_E(((x - xi_j) - h)/h), nondecreasing in x
+    grid = np.linspace(s.min()-h, s.max()+4*h, 900)
+    cdf = C_epan(((grid[:, None]-s[None, :]) - h)/h).mean(axis=1)
+    return np.interp(1-eps, cdf, grid)
+
+res = {"unbiased": {"rel": [], "cap": []},
+       "biased": {"rel": [], "cap": []}}
 for N in Ns:
-    ex = []
+    ru, rb, cu, cb = [], [], [], []
     for _ in range(trials):
         s = law.rvs(N, random_state=rng.integers(int(1e9)))
         h = 0.9*min(s.std(ddof=1), stats.iqr(s)/1.34)*N**(-0.2)
-        grid = np.linspace(s.min()-3*h, s.max()+3*h, 700)
-        cdf = stats.norm.cdf((grid[:, None]-s[None, :])/h).mean(axis=1)
-        xN = np.interp(1-eps, cdf, grid)
-        ex.append(abs(xN - xstar_true))
-    err_x.append((np.mean(ex), np.percentile(ex, 10),
-                  np.percentile(ex, 90)))
-err_x = np.array(err_x)
+        xu = decide_unbiased(s, h)
+        xb = decide_biased(s, h)
+        ru.append(law.cdf(xu)); rb.append(law.cdf(xb))
+        cu.append(xu); cb.append(xb)
+    res["unbiased"]["rel"].append(
+        (np.mean(ru), np.percentile(ru, 10), np.percentile(ru, 90),
+         np.mean(np.array(ru) < 1-eps)))
+    res["biased"]["rel"].append(
+        (np.mean(rb), np.percentile(rb, 10), np.percentile(rb, 90),
+         np.mean(np.array(rb) < 1-eps)))
+    res["unbiased"]["cap"].append(np.mean(cu))
+    res["biased"]["cap"].append(np.mean(cb))
 
-# fit slope
-slope, intercept = np.polyfit(np.log(Ns), np.log(err_x[:, 0]), 1)
-
-fig, ax = plt.subplots(figsize=(6.0, 3.1))
-ax.loglog(Ns, err_x[:, 0], "-o", ms=4, lw=1.6, color=BLUE,
-          label="mean $|x_N - x^*|$")
-ax.fill_between(Ns, err_x[:, 1], err_x[:, 2], color=BLUE, alpha=0.13)
-fit = np.exp(intercept)*Ns**slope
-ax.loglog(Ns, fit, color=RED, lw=1.2, ls="--",
-          label=f"fitted slope $\\approx {slope:.2f}$")
-ax.text(900, err_x[0, 0]*0.75,
-        "consistency is guaranteed;\nthe rate is not: no theorem\n"
-        "predicts this slope",
-        fontsize=7.8, ha="center", bbox=WBOX, zorder=7)
+fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
+ax = axes[0]
+for key, c, lab in [("unbiased", RED, "unbiased (Gaussian)"),
+                    ("biased", GREEN, "biased (Epan., $b=h$)")]:
+    arr = np.array([r[:3] for r in res[key]["rel"]])
+    ax.plot(Ns, arr[:, 0], "-o", ms=3.4, lw=1.5, color=c, label=lab)
+    ax.fill_between(Ns, arr[:, 1], arr[:, 2], color=c, alpha=0.13)
+ax.axhline(1-eps, color="k", ls="--", lw=1.1)
+ax.set_xscale("log"); ax.set_xticks(Ns); ax.set_xticklabels(Ns)
 ax.set_xlabel("sample size $N$")
-ax.set_ylabel("optimization error")
-leg = ax.legend(loc="lower left", fontsize=8.0, frameon=True,
+ax.set_ylabel("achieved reliability")
+ax.set_title("(a) Where the certificates land")
+leg = ax.legend(loc="lower right", fontsize=7.6, frameon=True,
+                framealpha=0.9, edgecolor="none", facecolor="white")
+leg.set_zorder(7)
+
+ax = axes[1]
+fr_u = [r[3]*100 for r in res["unbiased"]["rel"]]
+fr_b = [r[3]*100 for r in res["biased"]["rel"]]
+w = 0.32
+xpos = np.arange(len(Ns))
+ax.bar(xpos - w/2, fr_u, width=w, color=RED, alpha=0.8,
+       label="unbiased")
+ax.bar(xpos + w/2, fr_b, width=w, color=GREEN, alpha=0.8,
+       label="biased")
+ax.set_xticks(xpos); ax.set_xticklabels(Ns)
+ax.set_xlabel("sample size $N$")
+ax.set_ylabel("trials violating target [%]")
+ax.set_title("(b) Certificate failure rate")
+leg = ax.legend(loc="upper right", fontsize=8.0, frameon=True,
                 framealpha=0.9, edgecolor="none", facecolor="white")
 leg.set_zorder(7)
 fig.tight_layout()
-fig.savefig(F6 + "fig_empconv.pdf", bbox_inches="tight")
+fig.savefig(F5 + "fig_safetycost.pdf", bbox_inches="tight")
 plt.close(fig)
-print("empconv ok, slope:", round(slope, 3))
+prem = [(b-u)/u*100 for u, b in
+        zip(res["unbiased"]["cap"], res["biased"]["cap"])]
+print("safetycost ok; fail% unb:", [round(f,1) for f in fr_u],
+      "bias:", [round(f,1) for f in fr_b],
+      "premium%:", [round(p,2) for p in prem])
+
+# ===================================================== fig_lse
+# two-constraint toy along a 1D slice
+t = np.linspace(-2, 2, 600)
+g1 = t - 0.8
+g2 = -1.2*t - 0.6
+mx = np.maximum(g1, g2)
+
+fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
+ax = axes[0]
+ax.plot(t, g1, color=GRAY, lw=1.0, ls=":", label="$g_1$")
+ax.plot(t, g2, color=GRAY, lw=1.0, ls="--", label="$g_2$")
+ax.plot(t, mx, color="k", lw=1.8, label="$s=\\max(g_1, g_2)$")
+for tau, c in [(0.4, ORANGE), (0.15, BLUE)]:
+    lse = tau*np.log(np.exp(g1/tau) + np.exp(g2/tau))
+    ax.plot(t, lse, color=c, lw=1.5,
+            label=f"$s_\\tau$, $\\tau={tau}$")
+ax.axhline(0, color=GREEN, lw=0.9, ls=":")
+ax.set_xlabel("slice through decision space")
+ax.set_ylabel("violation statistic")
+ax.set_title("(a) Log-sum-exp dominates the max")
+leg = ax.legend(loc="lower left", fontsize=7.2, frameon=True,
+                framealpha=0.9, edgecolor="none", facecolor="white")
+leg.set_zorder(7)
+
+ax = axes[1]
+tau = 0.15
+p1 = np.exp(g1/tau) / (np.exp(g1/tau) + np.exp(g2/tau))
+ax.plot(t, p1, color=BLUE, lw=1.7, label="$\\pi_1$ (weight on $g_1$)")
+ax.plot(t, 1-p1, color=ORANGE, lw=1.7, label="$\\pi_2$ (weight on $g_2$)")
+xc = (0.8 - 0.6/1.2) / (1 + 1.2) * 0 + ( -0.6 + 0.8*0)  # solve g1=g2
+xstar = ( -0.6 - (-0.8)*1 ) / (1 + 1.2)
+xstar = ( -0.6 + 0.8 ) / (1 + 1.2)
+ax.axvline(xstar, color=GRAY, lw=0.9, ls=":")
+ax.annotate("active constraint\nswitches here",
+            xy=(xstar, 0.5), xytext=(-1.45, 0.55), fontsize=7.4,
+            color=GRAY, ha="center", bbox=WBOX, zorder=7,
+            arrowprops=dict(arrowstyle="->", lw=0.8, color=GRAY,
+                            shrinkB=6))
+ax.set_xlabel("slice through decision space")
+ax.set_ylabel("softmax weight")
+ax.set_ylim(-0.05, 1.05)
+ax.set_title("(b) Smooth gradient blending ($\\tau = 0.15$)")
+leg = ax.legend(loc="center right", fontsize=7.4, frameon=True,
+                framealpha=0.9, edgecolor="none", facecolor="white")
+leg.set_zorder(7)
+fig.tight_layout()
+fig.savefig(F5 + "fig_lse.pdf", bbox_inches="tight")
+plt.close(fig)
+print("lse ok")
+
+# ===================================================== fig_continuation
+stages = np.arange(1, 6)
+hs = np.array([8.0, 4.0, 2.0, 1.0, 1.0])
+kernels = [BLUE, BLUE, BLUE, BLUE, GREEN]
+
+fig, ax = plt.subplots(figsize=(5.8, 2.9))
+ax.semilogy(stages, hs, color=GRAY, lw=1.0, ls="--", zorder=2)
+for st, hh, c in zip(stages, hs, kernels):
+    ax.scatter(st, hh, s=70, color=c, zorder=6, ec="white", lw=0.6)
+for st in stages[:-1]:
+    ax.annotate("", xy=(st+0.86, hs[st]*1.0), xytext=(st+0.14, hs[st-1]),
+                arrowprops=dict(arrowstyle="->", lw=0.9, color=ORANGE,
+                                connectionstyle="arc3,rad=-0.25"),
+                zorder=3)
+ax.text(2.5, 9.5, "warm start: each solution\ninitializes the next stage",
+        fontsize=7.8, color=ORANGE, ha="center", bbox=WBOX, zorder=7)
+ax.text(1.0, 5.6, "Gaussian kernel\n(smooth, fast)", fontsize=7.6,
+        color=BLUE, ha="center", bbox=WBOX, zorder=7)
+ax.text(4.62, 0.55, "switch to split-Bernstein\n(exact safety)",
+        fontsize=7.6, color=GREEN, ha="center", bbox=WBOX, zorder=7)
+ax.text(4.85, 6.8, "$N$ increases as\n$h$ decreases", fontsize=7.6,
+        color=GRAY, ha="center", bbox=WBOX, zorder=7)
+ax.set_xticks(stages)
+ax.set_xlabel("continuation stage")
+ax.set_ylabel("bandwidth $h$ (log scale)")
+ax.set_xlim(0.5, 5.7)
+ax.set_ylim(0.35, 14)
+fig.tight_layout()
+fig.savefig(F5 + "fig_continuation.pdf", bbox_inches="tight")
+plt.close(fig)
+print("continuation ok")
 print("all done")

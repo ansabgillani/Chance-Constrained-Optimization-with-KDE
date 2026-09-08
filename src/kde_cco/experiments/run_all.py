@@ -1,4 +1,4 @@
-"""Run the fully local evidence matrix used by Chapters 8 and 9.
+"""Run the fully local evidence matrix used by Chapters 9 and 10.
 
 Every stochastic input is seeded and saved.  The runner never removes an
 existing file; ``--force`` only permits replacing files with the same name.

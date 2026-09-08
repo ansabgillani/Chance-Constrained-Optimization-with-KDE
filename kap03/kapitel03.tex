@@ -1,373 +1,113 @@
-\section{Smooth Approximation with Ordinary Symmetric KDE}
-\label{ch:unbiasedkde}
+% !TeX root = ../Masterarbeit.tex
+\graphicspath{{kap03/figures/}{./figures/}}
+\section{Chance Constraints and Kernel Density Estimation}
+\label{ch:kde}
 
-Chapter~2 closed its method survey on a specification written by the
-limitations of black-box approximations: a single deterministic
-constraint that approximates the safe probability, depends smoothly on
-the decision, and carries an analytic gradient. This chapter constructs that object. The construction has five
-steps, and the order matters because each step is what makes the next
-one possible: the change of variables that moves estimation into
-residual space (\cref{sec:residualtransform}), the residual samples that
-the change of variables produces (\cref{sec:residualsamples}), the
-kernel density estimate built on them (\cref{sec:residualkde}), the
-integrated-kernel identity that collapses the probability into a finite
-smooth sum (\cref{sec:integratedkernel}), and the analytic gradient that
-the identity makes available (\cref{sec:gradient}). With the object
-built, \cref{sec:reformulation} assembles the full reformulated
-nonlinear program, and \cref{sec:properties} states its properties and
-limitations, including the one property it lacks,
-whose repair is the business of Chapter~4.
+Chapter~2 surveyed the optimization paradigms and approximation methods that motivate a nonparametric treatment of chance constraints. This chapter narrows that survey to kernel density estimation (KDE): it defines the residual-space estimator, explains bandwidth and dimensionality trade-offs, and maps the relevant chance-constraint literature to the gap addressed by the thesis. Chapter~4 then derives the smooth residual-KDE reformulation used in the optimization experiments.
 
-\subsection{The Residual-Space Transformation}
-\label{sec:residualtransform}
+\subsection{Kernel density estimation for residual probabilities}
+\label{sec:kde}
 
-\subsubsection{Safe-event identity}
-\label{sec:residualidentity}
+\subsubsection{Parzen--Rosenblatt estimator and residual CDF}
+\label{ssec:parzen}
 
-The fundamental insight behind the KDE approach, previewed in Chapter~1
-and made load-bearing here, is a change of the space in which
-probabilities are estimated. The question the chance constraint
-literally poses is geometric: what is the probability that $\xi$ lands
-in the safe region $S(x) = \{\xi : g(x,\xi) \leq 0\}$, a subset of
-$\R^d$ whose shape deforms with every candidate decision? The question
-this thesis poses instead is scalar: what is the probability that the
-constraint residual
+Let $y_1(x),\ldots,y_N(x)$ be IID residual samples and let $\rho_x$ denote the density of $Y(x)=g(x,\xi)$, assumed to exist for the decisions under study. For a nonnegative kernel $K$ with $\int K(u)\,du=1$ and bandwidth $h>0$, the KDE is
 \begin{equation}
-  Y(x) \;=\; g(x,\xi) ,
-  \label{eq:residual}
+ \hat\rho_h(y;x)=\frac{1}{Nh}\sum_{i=1}^N K\!\left(\frac{y-y_i(x)}{h}\right),
+ \qquad
+ \hat p_h(x)=\int_{-\infty}^{0}\hat\rho_h(y;x)\,dy.
+ \label{eq:ch3-kde}
 \end{equation}
-is non-positive? The two questions have the same answer, identically and
-without approximation,
+This is the Parzen--Rosenblatt estimator~\citep{rosenblatt1956,parzen1962}. If $F_K(t)=\int_{-\infty}^tK(u)\,du$, then $\hat p_h(x)=N^{-1}\sum_iF_K(-y_i(x)/h)$. Thus the probability is a finite sum of integrated-kernel evaluations rather than a numerical integral over uncertainty space. Consistency requires a shrinking bandwidth with enough observations in each local window; a standard sufficient sequence is $h\to0$ and $Nh\to\infty$~\citep{parzen1962,devroye1985}. This consistency is pointwise/statistical and does not by itself imply convergence of a data-selected optimizer.
+
+The uncertainty sample is drawn once and kept fixed during optimization, while $y_i(x)=g(x,\xi_i)$ changes at every iterate. This preserves a deterministic sample problem and permits differentiation through the residual map. With fixed $h$ and continuous $K$, the integrated estimate is continuously differentiable wherever $g$ is continuously differentiable; a continuously differentiable kernel supports a second derivative when the residual also has the required regularity. Thus a kernel need not itself be infinitely smooth to provide a differentiable probability constraint.
+
+The statistical and computational roles of the estimator are different. One scalar chance constraint becomes one aggregated inequality, but its evaluation and gradient still require $N$ residual contributions. Residual scalarization reduces the dimension of the density estimate; it does not make simulation cost independent of sample size. Chapter~4 makes these costs explicit when deriving the gradient and assembling the nonlinear program.
+
+\subsubsection{Kernel choices and one-sided bias}
+\label{ssec:kernels}
+
+The Gaussian kernel is infinitely differentiable and has $F_K=\Phi$. The compactly supported Epanechnikov kernel, $K(u)=\tfrac34(1-u^2)_+$, is efficient for classical density estimation~\citep{epanechnikov1969}. Both are symmetric: their integrated functions smooth the indicator from both sides and can overestimate the safe probability. The Split--Bernstein constructions of Keil et al. are designed for a one-sided safety property~\citep{keil2020,keil2021}. The local implementation in this thesis uses a shifted Epanechnikov analogue and does not reproduce the published Split--Bernstein/MCMC/optimal-control workflow. A pointwise kernel inequality for a fixed decision is therefore distinct from a finite-sample guarantee for the optimized decision.
+
+For the safe-probability convention used here, a fully shifted compact kernel gives a simple illustration. With the Epanechnikov CDF $F_K$ and shift $b(h)=h$, the per-sample contribution is
 \begin{equation}
-  \Prob\bigl(Y(x) \leq 0\bigr)
-  \;=\; \Prob\bigl(g(x,\xi) \leq 0\bigr)
-  \;\geq\; 1-\varepsilon ,
-  \label{eq:equivalence}
+ s_h(y)=F_K\!\left(\frac{-y-h}{h}\right)
+ \leq\ind\{y\leq0\}.
+ \label{eq:ch3-kernel-envelope}
 \end{equation}
-because the event $\{Y(x) \leq 0\}$ \emph{is} the event
-$\{\xi \in S(x)\}$, written in the variable the constraint actually
-speaks about.
-
-\subsubsection{Dimension reduction and its scope}
-\label{sec:residualdimension}
-
-What changes is not the answer but the tractability of computing it,
-and the change is substantial rather than cosmetic. The original question demands
-the integral of an unknown $d$-dimensional density over a moving region,
-the second of the three difficulties catalogued in Chapter~1, with the
-curse of dimensionality of Chapter~2 attached to any attempt to estimate
-that density nonparametrically. The transformed question asks for a
-one-dimensional cumulative distribution function evaluated at a fixed
-point, zero. The dimension of $\xi$ no longer enters the estimation
-problem: whether the uncertainty lives in two dimensions or two
-hundred, the residual of an individual constraint is a scalar, and the
-constraint map $g$ itself has performed the dimension reduction, without
-information loss, because \cref{eq:equivalence} is an identity. This is
-the construction \citet{schuster2025} places at the foundation of the
-convergence theory, and it is the reason the KDE machinery of Chapter~2
-can be deployed in exactly the one-dimensional regime where it is
-strongest.
-
-\subsection{Residual Samples}
-\label{sec:residualsamples}
-
-\subsubsection{Frozen uncertainty samples}
-\label{sec:frozensamples}
-
-For a fixed decision $x$ and the samples $\xi_1,\dots,\xi_N$ of
-Chapter~2, define the residual samples
-\begin{equation}
-  y_j(x) \;=\; g(x,\xi_j), \qquad j = 1,\dots,N .
-  \label{eq:ressamples}
-\end{equation}
-These are realizations of the random variable $Y(x)$, obtained by
-pushing each uncertainty sample through the constraint map at the
-current decision, and they are the raw material of everything that
-follows.
-
-\subsubsection{Decision-dependent residuals}
-\label{sec:decisionresiduals}
-
-One property of \cref{eq:ressamples} must be understood precisely,
-because it is the property that distinguishes this construction from
-ordinary density estimation and shapes the analysis of the entire
-thesis: the residual samples are functions of the decision variable.
-The uncertainty samples $\xi_j$ are drawn once and frozen; the residual
-cloud $\{y_j(x)\}$ moves whenever the optimizer moves $x$. Estimation
-and optimization are therefore not sequential stages but a single
-coupled process. The estimator is rebuilt, implicitly, at every iterate,
-and the constraint the solver sees is not a fixed statistical object but
-a family of them indexed by $x$. This coupling is what makes the
-smoothness of the next two subsections consequential rather than
-decorative: a smooth estimator of a fixed density would be a statistical
-convenience, while a smooth estimator of a moving one is a differentiable
-constraint.
-
-\subsection{KDE of the Residual Distribution}
-\label{sec:residualkde}
-
-\subsubsection{Pushforward regularity assumption}
-\label{sec:pushforwardregularity}
-
-\subsubsection{Estimator and safe-side mass}
-\label{sec:residualestimator}
-
-Assume that the pushforward variable $Y(x)=g(x,\xi)$ admits a density for the decisions under study. The Parzen--Rosenblatt estimator of Chapter~2, applied to the residual samples, estimates that density as
-\begin{equation}
-  \hat{\rho}_h(z;x)
-  \;=\; \frac{1}{Nh}\sum_{j=1}^{N}
-  K\!\left(\frac{z - y_j(x)}{h}\right),
-  \label{eq:reskde}
-\end{equation}
-with kernel $K$ and bandwidth $h > 0$ carrying the meanings and the
-selection theory established there. The estimated probability that the
-constraint is satisfied is the mass this density places on the safe
-half-line,
-\begin{equation}
-  \hat{p}_h(x)
-  \;=\; \int_{-\infty}^{0} \hat{\rho}_h(z;x)\, dz .
-  \label{eq:phat-integral}
-\end{equation}
-Two features of \cref{eq:phat-integral} should be recognized as the
-direct payoff of the residual-space transformation. The integration
-region is fixed: it is $(-\infty, 0]$ for every decision, every problem,
-and every distribution, because all dependence on $x$ has migrated into
-the samples. And the integrand is a known finite sum of kernel bumps,
-not an unknown density, so the integral is not a numerical task but an
-algebraic one, which the next subsection carries out.
-
-\subsection{The Integrated Kernel Reformulation}
-\label{sec:integratedkernel}
-
-\subsubsection{Integrated-kernel identity}
-\label{sec:integratedidentity}
-
-Substituting \cref{eq:reskde} into \cref{eq:phat-integral} and
-integrating term by term against the integrated kernel
-$F_K(t) = \int_{-\infty}^{t} K(s)\,ds$ yields the closed form
-\begin{equation}
-  \boxed{\;
-  \hat{p}_h(x)
-  \;=\; \frac{1}{N}\sum_{j=1}^{N}
-  F_K\!\left(\frac{-\,y_j(x)}{h}\right)
-  \;=\; \frac{1}{N}\sum_{j=1}^{N}
-  F_K\!\left(\frac{-\,g(x,\xi_j)}{h}\right)
-  \;} \, ,
-  \label{eq:integrated}
-\end{equation}
-and, for the Gaussian kernel, $F_K = \Phi$, the standard normal CDF, so
-\begin{equation}
-  \hat{p}_h(x)
-  \;=\; \frac{1}{N}\sum_{j=1}^{N}
-  \Phi\!\left(\frac{-\,g(x,\xi_j)}{h}\right) .
-  \label{eq:gaussiancase}
-\end{equation}
-The deterministic approximation of the chance constraint is then the
-single smooth inequality
-\begin{equation}
-  \hat{p}_h(x) \;\geq\; 1-\varepsilon .
-  \label{eq:smoothcc}
-\end{equation}
-
-\subsubsection{Gaussian specialization and interpretation}
-\label{sec:gaussianspecialization}
-
-\Cref{eq:integrated} is a central equation in
-this thesis, and the claim deserves its justification. Set
-\cref{eq:integrated} beside the indicator estimator of Chapter~2: the
-two expressions are term-for-term identical except that the
-discontinuous indicator $\ind\{g(x,\xi_j) \leq 0\}$ has been replaced by
-the smooth sigmoid $F_K(-g(x,\xi_j)/h)$, exactly the substitution drawn
-in Chapter~2's kernel figure. Every sample still votes on feasibility,
-but the vote is no longer binary; a sample near the constraint boundary
-contributes a graded value that responds continuously as the decision
-moves. The staircase has been replaced by a ramp, and the entire
-discontinuous probabilistic feasibility requirement of Chapter~2 by a
-smooth, differentiable, deterministic nonlinear constraint. \Cref{fig:smoothing}(a) shows the
-replacement in the standalone scalar diagnostic: the staircase, the true
-probability, and the KDE constraint at three bandwidths, with the
-bandwidth visibly controlling how tightly the ramp hugs the step.
+Consequently, the smoothed safe fraction is bounded by the empirical safe fraction for every fixed sample. Taking expectations at a fixed decision gives a lower bound on the population safe probability. Neither statement removes random sampling error at a decision selected using that sample. Figure~\ref{fig:kernels} displays the underlying integrated-kernel inequality using a standardized argument.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{kap03/figures/fig_smoothing.pdf}
-  \caption{What the reformulation hands the solver, illustrated with a
-  standalone lognormal scalar diagnostic ($N = 200$ samples; this figure
-  is not generated from the dispatch ledger). (a) The empirical staircase,
-  the true probability $p(x)$, and the KDE constraint $\hat{p}_h(x)$ at
-  three bandwidths: small $h$ tracks the staircase including its noise,
-  Silverman's $h = 5.4$ tracks the truth, and large $h$ distorts the
-  curve and shifts the feasibility boundary where it crosses
-  $1-\varepsilon$. (b) The derivatives. The staircase derivative is zero
-  between samples and undefined at them (ticks on the axis); the KDE
-  derivative is an analytically available density estimate that
-  gives the solver usable directional information at every $x$.}
-  \label{fig:smoothing}
+  \includegraphics[width=\textwidth]{fig_kernels.pdf}
+  \caption{Kernel shapes and integrated kernels. The shifted Epanechnikov kernel has support $[0,2]$ in the standardized argument, so its CDF is bounded above by $\ind\{u\geq0\}$. This is a per-sample smoothing inequality. It does not by itself give a finite-sample population guarantee for a data-selected decision.}
+  \label{fig:kernels}
 \end{figure}
 
-\subsection{Gradient Computation}
-\label{sec:gradient}
+\subsubsection{Bandwidth and AMISE}
+\label{ssec:bandwidth}
 
-\subsubsection{Analytic first derivative}
-\label{sec:analyticgradient}
-
-Differentiating \cref{eq:integrated} by the chain rule, using
-$F_K' = K$, gives the gradient in closed form,
+Bandwidth controls the bias--variance trade-off. For a twice-differentiable density $\rho_x$, define $R(\phi)=\int\phi(u)^2du$ and $\mu_2(K)=\int u^2K(u)\,du$. The standard one-dimensional expansion is
 \begin{equation}
-  \nabla_x\, \hat{p}_h(x)
-  \;=\; -\,\frac{1}{Nh}\sum_{j=1}^{N}
-  K\!\left(\frac{-\,g(x,\xi_j)}{h}\right)\nabla_x\, g(x,\xi_j) .
-  \label{eq:gradient}
+ \operatorname{AMISE}(h)=\frac{R(K)}{Nh}+\frac{h^4\mu_2(K)^2}{4}R(\rho_x''),
+ \label{eq:ch3-amise}
 \end{equation}
-\subsubsection{Boundary weighting and solver use}
-\label{sec:gradientinterpretation}
-
-The formula repays a moment of reading, because its structure is
-central to the mechanism of the method. The gradient is a kernel-weighted average
-of the constraint gradients $\nabla_x g(x,\xi_j)$, and the weights
-$K(-g(x,\xi_j)/h)$ are largest for the samples whose residuals lie
-within a bandwidth of the boundary. The estimator automatically
-concentrates the solver's attention on the scenarios that are about to
-change status, which is exactly the directional information Chapter~2
-showed the indicator withholds. For the Gaussian kernel every quantity
-in \cref{eq:gradient} is elementary. Second derivatives can be obtained by
- the same chain rule when $g$ is twice differentiable; the implementation
-used here supplies the analytic first gradient. Sequential quadratic
-programming and interior-point methods therefore avoid finite differences of
-a staircase
-\citep{waechter2006}. \Cref{fig:smoothing}(b) displays the comparison
-directly: the staircase derivative is
-zero except at isolated undefined points, while the KDE derivative is a
-smooth, analytically available function at every decision. This
-differentiability is the core computational advantage of the KDE
-reformulation over both blackboxes of Chapter~2.
-
-\subsection{Stochastic Optimization Reformulated via Unbiased KDE}
-\label{sec:reformulation}
-
-\subsubsection{Deterministic nonlinear program}
-\label{sec:deterministicnlp}
-
-Assembling the pieces, the chance-constrained program of Chapters~1
-through~3,
-\begin{equation}
-  \minimize_{x \in X}\; f(x)
-  \quad\text{subject to}\quad
-  \Prob\bigl(g(x,\xi) \leq 0\bigr) \geq 1-\varepsilon,
-  \label{eq:original}
-\end{equation}
-becomes, after the KDE substitution,
-\begin{equation}
-  \minimize_{x \in X}\; f(x)
-  \quad\text{subject to}\quad
-  \frac{1}{N}\sum_{j=1}^{N}
-  F_K\!\left(\frac{-\,g(x,\xi_j)}{h}\right) \geq 1-\varepsilon .
-  \label{eq:reformulated}
-\end{equation}
-Problem \cref{eq:reformulated} is a deterministic nonlinear program,
-and its structure should be read off explicitly because it answers,
-point by point, the specification Chapter~2 issued. One smooth nonlinear
-inequality replaces one probabilistic constraint; the number of constraint rows does not grow with the sample size, in
-deliberate contrast to the scenario approach. The samples $\xi_j$ enter as
-fixed parameters inside a single sum, although evaluating the constraint and
-its gradient costs $O(N)$. The decision variable enters only through the residuals
-$g(x,\xi_j)$, so the constraint is exactly as smooth as the constraint
-map itself. Standard solvers, IPOPT, SNOPT, and SQP implementations,
-consume \cref{eq:reformulated} directly, with the analytic derivatives
-of \cref{sec:gradient} supplied through the modeling layer
-\citep{waechter2006}.
-
-\subsubsection{Evaluation complexity and computational loop}
-\label{sec:reformulationloop}
-
-\Cref{fig:pipeline} draws the complete loop: the
-frozen samples and the moving decision meet in the residuals, the KDE
-turns the residuals into a smooth constraint value and gradient, and the
-solver feeds the next iterate back into the residual map. This loop is
-the computational object the remainder of the thesis studies, extends,
-and stress-tests.
+with optimal order $h=O(N^{-1/5})$ and error $O(N^{-4/5})$~\citep{silverman1986}. Silverman's and Scott's rules, plug-in estimates, and cross-validation estimate the unknown scale or curvature term~\citep{silverman1986,scott1992,wand1995}. They minimize a density-estimation criterion, however. In this thesis the KDE is thresholded at zero, differentiated through $g(x,\xi_i)$, and embedded in an optimizer; the bandwidth that minimizes AMISE need not minimize objective error, constraint error, or tail error. Figure~\ref{fig:bandwidth} illustrates the density-level bias--variance trade-off used to motivate the optimization sensitivity study.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.95\textwidth]{kap03/figures/fig_pipeline.pdf}
-  \caption{The reformulation as a computational loop. Uncertainty
-  samples are drawn once and frozen; at each iterate the constraint map
-  produces the residual cloud $y_j(x)$, the kernel estimator converts
-  the cloud into the smooth constraint $\hat{p}_h(x) \geq 1-\varepsilon$
-  with value and analytic gradient, and the nonlinear programming solver
-  returns the next iterate to the residual map. One smooth inequality
-  replaces one probabilistic constraint, and the program size is
-  independent of $N$.}
-  \label{fig:pipeline}
+  \includegraphics[width=0.82\textwidth]{fig_bandwidth.pdf}
+  \caption{Bandwidth trade-off for a seeded bimodal density reconstruction. (a) Small bandwidth follows sample noise, an intermediate bandwidth recovers the two modes, and large bandwidth blurs them. (b) Across 120 replications, variance decreases and squared bias increases with bandwidth; their sum has an interior minimum. The plot concerns density error, so its minimizer need not be optimal for a chance-constrained decision.}
+  \label{fig:bandwidth}
 \end{figure}
 
-\subsection{Properties of the Unbiased KDE Approximation}
-\label{sec:properties}
+For example, the robust normal-reference rule commonly attributed to Silverman is
+\begin{equation}
+ h_N=0.9\min\{\widehat\sigma,\operatorname{IQR}/1.34\}N^{-1/5},
+ \label{eq:ch3-bandwidth-rule}
+\end{equation}
+where $\widehat\sigma$ and the interquartile range measure sample scale~\citep{silverman1986}. A normal-reference constant is an initialization choice, not evidence that a multimodal or heavy-tailed residual is Gaussian. Cross-validation and plug-in procedures use different criteria and can select different bandwidths. If the bandwidth is recomputed as the decision changes, its dependence must also be accounted for in the derivatives or explicitly frozen; the formula in Chapter~4 assumes a fixed bandwidth during that differentiation.
 
-\subsubsection{Smoothness and pointwise consistency}
-\label{sec:smoothconsistency}
+Tail constraints require additional care even in one dimension. A sample contains on average $N\varepsilon$ observations in an event of probability $\varepsilon$, so a small violation budget can be weakly resolved despite a visually smooth density. Density-integrated error also weights regions differently from a constraint evaluated at one threshold. The experiments therefore report bandwidth, sample size, and held-out event frequency together instead of interpreting a favorable density plot as a reliability certificate.
 
-The reformulation \cref{eq:reformulated} has four relevant properties; the fourth is a genuine limitation. First, it is smooth: for continuous kernels $K$, the constraint is continuously differentiable in $x$ wherever $g$ is; a twice continuously differentiable constraint additionally requires a $C^1$ kernel (as for the Gaussian), and the derivatives are the
-closed forms of \cref{sec:gradient}. Second, it is consistent: as
-$N \to \infty$ with $h \to 0$ and $Nh \to \infty$, the estimate
-$\hat{p}_h(x)$ converges to the true probability
-$\Prob(g(x,\xi) \leq 0)$, inheriting the classical consistency of the
-kernel estimator \citep{parzen1962,silverman1986}, and under the
-conditions of \citet{schuster2025} the convergence lifts from the
-constraint to the optimization problem itself, optimal values and
-solution sets included. It is instructive to separate the two error
-sources at play, as anticipated in Chapter~2: a random sampling error of
-order $N^{-1/2}$, inherited from the finite sample, and a deterministic
-smoothing error controlled by the bandwidth, introduced by the kernel
-\citep{silverman1986,wand1995}. The conditions $h \to 0$ and
-$Nh \to \infty$ balance exactly these two contributions, and the
-biased construction of Chapter~4 acts on the second source alone,
-giving it a sign rather than removing it.
+\subsubsection{Multivariate KDE and residual scalarization}
+\label{ssec:curse}
 
-\subsubsection{Bandwidth and finite-sample error}
-\label{sec:bandwidthtradeoff}
+For a $d$-dimensional variable, a bandwidth matrix $H$ gives
+\begin{equation*}
+  \widehat f_H(y)=\frac{1}{N}\sum_{i=1}^N |H|^{-1/2} K\!\left(H^{-1/2}(y-y_i)\right).
+\end{equation*}
+The optimal error rate becomes $O(N^{-4/(d+4)})$, with bandwidth order $O(N^{-1/(d+4)})$~\citep{silverman1986,scott1992}. Holding accuracy fixed therefore requires rapidly increasing sample size. Figure~\ref{fig:curse} plots the rate-based sample requirement normalized to $N=100$ in one dimension; its values are illustrations from the rate, not measured minimum sample sizes.
 
-Third, the bandwidth controls a genuine
-trade-off: \cref{fig:smoothing}(a) shows small $h$ reproducing the
-staircase together with its sampling noise and large $h$ distorting the
-feasible boundary, so $h$ is not a nuisance parameter but a design
-variable, the optimization-versus-AMISE question flagged in Chapter~2
-and studied experimentally in Part~4.
-
-\subsubsection{Finite-sample optimism}
-\label{sec:finiteoptimism}
-
-Fourth, and importantly for the structure of this thesis, the
-approximation is not conservative. A symmetric kernel smooths the
-indicator from both sides, so in finite samples the estimate
-$\hat{p}_h(x)$ can exceed the true probability, and the constraint
-$\hat{p}_h(x) \geq 1-\varepsilon$ can certify a decision the true chance
-constraint rejects. \Cref{fig:optimism} measures the consequence in the
-standalone lognormal scalar diagnostic: across three thousand independent trials at
-$N = 100$, the decision certified by the unbiased KDE violates the true
-reliability target in $39\%$ of trials. The failures are individually
-small, the estimator is consistent and the misses concentrate near the
-target, but they are systematic, and a reformulation whose certificate
-fails in roughly four of ten trials functions as an accuracy method
-rather than a safety method. For applications where $\varepsilon$ is a
-hard requirement, a lander, a grid code, a risk mandate, accuracy alone
-does not meet the requirement; a conservative guarantee is needed. Constructing a KDE reformulation that keeps every
-property of this chapter while erring, by design, only on the safe side
-is the contribution of the biased kernels of \citet{keil2021}, and it is
-the business of the next chapter.
+The residual-space construction avoids estimating the full $d$-dimensional uncertainty law for an individual constraint. It estimates the scalar $Y(x)=g(x,\xi)$ and integrates over the fixed half-line $(-\infty,0]$. This removes the uncertainty dimension from the KDE itself, but not from sampling or simulation. A joint constraint has a residual vector of dimension $m$; a scalar maximum preserves one-dimensional estimation but introduces a non-smooth maximum, while multivariate residual KDE reintroduces the dimensionality cost. Chapter~5 compares these alternatives.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.82\textwidth]{kap03/figures/fig_optimism.pdf}
-  \caption{The unbiased reformulation is accurate but not safe in this
-  standalone lognormal scalar diagnostic ($3000$ independent trials,
-  $N = 100$; it is not generated from the dispatch ledger). The
-  decision certified by the unbiased KDE constraint at
-  $1-\varepsilon = 0.95$ is evaluated against the true demand law. The
-  achieved reliability concentrates near the target, the signature of a
-  consistent estimator, but falls below it in $39\%$ of trials: the
-certificate $\hat{p}_h(x) \geq 1-\varepsilon$ is optimistic in this
-diagnostic. This finite-sample optimism is the defect the biased
-  construction of Chapter~4 removes.}
-  \label{fig:optimism}
+  \includegraphics[width=0.8\textwidth]{fig_curse.pdf}
+  \caption{Rate-based illustration of the curse of dimensionality. The plotted sample count is the order required to retain the accuracy of $N=100$ samples in one dimension under the AMISE rate $O(N^{-4/(d+4)})$. The annotations are approximate scaling values, not empirical requirements for a particular application.}
+  \label{fig:curse}
+\end{figure}
+
+\subsection{KDE in the chance-constrained literature}
+\label{sec:litmap}
+
+\subsubsection{Application streams}
+\label{ssec:firstwave}
+
+An early practical use of kernel-smoothed chance constraints replaced a specified process-planning distribution with historical data~\citep{calfa2015}. The same residual-probability construction was subsequently used in aerospace optimal control for launcher ascent and the Goddard problem~\citep{caillau2018}. Energy-system work developed adaptive KDE formulations for microgrids and extended them to dispatch and power-system scheduling with multivariate or joint constraints~\citep{ciftci2017,ciftci2019,wu2021,wu2023}. These streams establish practical breadth, but their guarantees are primarily estimator-level.
+
+The application papers do not all estimate the same object or provide the same guarantee. Calfa et al. treat individual and joint constraints with right-hand-side uncertainty using kernel-smoothed univariate quantiles and multivariate distribution functions, together with a divergence-based treatment of distributional uncertainty~\citep{calfa2015}. The optimal-control line uses kernel probability approximations inside trajectory optimization, where derivative availability and transcription accuracy become central~\citep{caillau2018,keil2021}. The energy and network papers demonstrate settings in which empirical disturbance distributions and coupled constraints are relevant. Their results motivate the model adapters in this thesis, but are not reproduced merely by applying a scalar estimator to a synthetic residual.
+
+\subsubsection{Safety-oriented kernels and convergence theory}
+\label{ssec:safetyline}
+
+Keil et al. introduced biased kernels whose integrated functions are constructed to lie on the conservative side of the violation indicator and applied them to chance-constrained soft lunar landing~\citep{keil2020,keil2021}. A warm-start continuation strategy reduces the numerical cost of changing bandwidth and kernel bias~\citep{keil2021warm}. Network applications and analytic-gradient treatments further demonstrate that the construction is not limited to one domain~\citep{gugat2018,schuster2022}. Adjacent work studies nonparametric prediction intervals, distributionally robust load shedding, portfolio tail risk, and kernel embeddings in robotics~\citep{wan2020,wang2021,qi2026,liu2022,gopalakrishnan2018}.
+
+KDE consistency alone concerns the estimated probability for a fixed decision. Schuster's optimizer-level results establish convergence of optimal values and solution sets under explicit assumptions on the residual density, kernel, bandwidth sequence, uniform convergence, and the optimization problem~\citep{schuster2025}. They are asymptotic results, not finite-sample confidence bounds. The unresolved practical boundary addressed here is the connection between these assumptions and nonlinear numerical programs: how bandwidth choices behave inside an optimizer, how a one-sided local surrogate affects cost and held-out violations, and how joint-event reductions change the measured risk. Chapters~4--6 develop the formulation and its qualifications; Chapters~7--9 test the resulting evidence chain on declared synthetic models.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.88\textwidth]{fig_litmap.pdf}
+  \caption{Condensed path from analytical chance constraints to data-driven residual KDE. The literature spans process systems, aerospace, energy and network applications, safety-oriented biased kernels, and optimizer-level convergence theory. The thesis studies their connection under explicit finite-sample and implementation qualifications.}
+  \label{fig:litmap}
 \end{figure}

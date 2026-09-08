@@ -1,243 +1,253 @@
+#!/usr/bin/env python3
 """
 make_chapter4_figures.py
 ========================
-Figures for Chapter 4 (biased KDE and conservative reformulation).
-Code reused from the thesis history; only the output path is relative.
+Generates the three figures for Chapter 4 (the unbiased-KDE chapter) of the thesis
+"Chance-Constrained Optimization with Kernel Density Estimation".
 
-Usage:  pip install numpy scipy matplotlib
-        python make_chapter4_figures.py
+Usage (from any directory):
+    pip install numpy scipy matplotlib
+    python make_chapter4_figures.py
+
+Outputs five PDFs and matching PNG previews in ./figures/.
+
+Figures produced
+----------------
+fig_pipeline       -- KDE reformulation computational loop
+fig_smoothing      -- KDE smoothed constraint and its derivative (standalone lognormal scalar law)
+fig_optimism       -- unbiased KDE certificate failure rate (standalone lognormal scalar law)
+(fig_staircase and fig_scenariogrowth moved to the Chapter 2 survey script)
+
+House style
+-----------
+- Serif fonts, no top/right spines, dpi=200
+- All in-axes labels use a semi-opaque white backplate so that curves
+  and lines never strike through text
+- Annotations point at features from clear space with short arrows
+- LaTeX is NOT required
 """
+
+import os
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")
+matplotlib.use("Agg")        # remove this line for an interactive window
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from scipy import stats
 
+# ------------------------------------------------------------------ style
 plt.rcParams.update({
-    "font.size": 9.5, "font.family": "serif",
-    "axes.spines.top": False, "axes.spines.right": False,
-    "figure.dpi": 200, "axes.titlesize": 10, "legend.fontsize": 8.3,
+    "font.size": 9.5,
+    "font.family": "serif",
+    "mathtext.fontset": "dejavuserif",
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "figure.dpi": 200,
+    "axes.titlesize": 10,
+    "legend.fontsize": 8.3,
 })
-BLUE = "#1f4e79"; RED = "#b3392e"; GRAY = "#7a7a7a"
-GREEN = "#2e7d4f"; ORANGE = "#d9842b"; PURPLE = "#6a4c93"
+
+BLUE   = "#1f4e79"
+RED    = "#b3392e"
+GRAY   = "#7a7a7a"
+GREEN  = "#2e7d4f"
+ORANGE = "#d9842b"
+PURPLE = "#6a4c93"
+
 WBOX = dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.88)
-import os
-F5 = "figures/"
-os.makedirs(F5, exist_ok=True)
-rng = np.random.default_rng(31)
-# Diagnostic figures below use a standalone scalar lognormal law; they are
-# not generated from the dispatch experiment ledger.
 
-def C_epan(u):
-    """Integrated Epanechnikov kernel."""
-    u = np.asarray(u, dtype=float)
-    out = np.where(u < -1, 0.0, np.where(u > 1, 1.0,
-                   0.25*(2 + 3*u - u**3)))
-    return out
+OUT = "figures"
+os.makedirs(OUT, exist_ok=True)
 
-# ===================================================== fig_domination
-y = np.linspace(-2.6, 2.6, 800)
-h = 1.0
-ind = (y <= 0).astype(float)            # indicator 1{y<=0}
-phi_unb = stats.norm.cdf(-y/h)          # unbiased Gaussian surrogate
-phi_bias = C_epan((-y - h)/h)           # biased Epanechnikov, b = h
+# Fixed seed for reproducibility
+rng = np.random.default_rng(21)
 
-fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
-ax = axes[0]
-ax.step([-2.6, 0, 0, 2.6], [1, 1, 0, 0], where="post", color="k",
-        lw=1.4, label="indicator $\\mathbf{1}\\{y\\leq 0\\}$")
-ax.plot(y, phi_unb, color=RED, lw=1.6, label="unbiased (Gaussian)")
-ax.plot(y, phi_bias, color=GREEN, lw=1.6,
-        label="biased (Epanechnikov, $b=h$)")
-ax.fill_between(y, phi_unb, ind, where=(y > 0), color=RED, alpha=0.18)
-ax.fill_between(y, phi_bias, ind, where=(phi_bias < ind),
-                color=GREEN, alpha=0.18)
-ax.text(1.62, 0.62, "optimism:\ncredit for\nviolating samples",
-        fontsize=7.4, color=RED, ha="center", bbox=WBOX, zorder=7)
-ax.text(-1.85, 0.52, "safety margin:\ndiscount for\nboundary samples",
-        fontsize=7.4, color=GREEN, ha="center", bbox=WBOX, zorder=7)
-ax.set_xlabel("residual $y$ (units of $h$)")
-ax.set_ylabel("per-sample contribution to $\\hat p$")
-ax.set_title("(a) The domination condition")
-leg = ax.legend(loc="lower left", fontsize=7.0, frameon=True,
-                framealpha=0.9, edgecolor="none", facecolor="white")
-leg.set_zorder(7)
+# Standalone scalar lognormal law used by diagnostic figures; this is not
+# the dispatch experiment ledger.
+LAW  = stats.lognorm(s=0.18, scale=100)
+EPS  = 0.05
+TRUE_Q = LAW.ppf(1 - EPS)
 
-ax = axes[1]
-bh = np.linspace(0.5, 4.5, 300)
-overshoot = stats.norm.cdf(-bh)
-ax.semilogy(bh, overshoot, color=BLUE, lw=1.7)
-ax.scatter([3.0], [stats.norm.cdf(-3.0)], color=RED, s=30, zorder=6)
-ax.annotate("$b = 3h$: residual optimism\n$\\Phi(-3) \\approx 0.13\\%$",
-            xy=(3.0, stats.norm.cdf(-3.0)), xytext=(1.65, 4e-4),
-            fontsize=7.8, bbox=WBOX, zorder=7,
-            arrowprops=dict(arrowstyle="->", lw=0.8, shrinkB=4))
-ax.set_xlabel("bias $b$ in units of $h$")
-ax.set_ylabel("max per-sample optimism")
-ax.set_title("(b) The Gaussian kernel: no finite bias suffices")
-fig.tight_layout()
-fig.savefig(F5 + "fig_domination.pdf", bbox_inches="tight")
-plt.close(fig)
-print("domination ok")
 
-# ===================================================== fig_safetycost
-law = stats.lognorm(s=0.18, scale=100)
-eps = 0.05
-true_q = law.ppf(1-eps)
-Ns = [50, 100, 200, 500, 1000]
-trials = 800
+def finish(fig, name):
+    """Save PDF and PNG preview then close."""
+    fig.savefig(os.path.join(OUT, name + ".pdf"), bbox_inches="tight")
+    fig.savefig(os.path.join(OUT, name + ".png"), dpi=110, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  wrote {name}")
 
-def decide_unbiased(s, h):
-    grid = np.linspace(s.min()-4*h, s.max()+4*h, 900)
-    cdf = stats.norm.cdf((grid[:, None]-s[None, :])/h).mean(axis=1)
-    return np.interp(1-eps, cdf, grid)
 
-def decide_biased(s, h):
-    # p_b(x) = mean C_E(((x - xi_j) - h)/h), nondecreasing in x
-    grid = np.linspace(s.min()-h, s.max()+4*h, 900)
-    cdf = C_epan(((grid[:, None]-s[None, :]) - h)/h).mean(axis=1)
-    return np.interp(1-eps, cdf, grid)
+def styled_legend(ax, **kw):
+    """Framed legend with white background at z-order 7."""
+    leg = ax.legend(frameon=True, framealpha=0.9, edgecolor="none",
+                    facecolor="white", **kw)
+    leg.set_zorder(7)
+    return leg
 
-res = {"unbiased": {"rel": [], "cap": []},
-       "biased": {"rel": [], "cap": []}}
-for N in Ns:
-    ru, rb, cu, cb = [], [], [], []
+
+# ===========================================================================
+# Figure 1  fig_staircase  (Chapter 4)
+# Left panel: empirical indicator is a staircase.
+# Right panel: three sample draws near the feasibility boundary.
+# ===========================================================================
+def fig_pipeline():
+    fig, ax = plt.subplots(figsize=(7.0, 2.6))
+    ax.set_xlim(0, 14)
+    ax.set_ylim(0, 6)
+    ax.axis("off")
+
+    def pbox(x, y, w, h, color, lines, fs=8.0):
+        r = mpatches.FancyBboxPatch(
+            (x, y), w, h, boxstyle="round,pad=0.12",
+            fc=color, ec=color, alpha=0.18, lw=1.0)
+        ax.add_patch(r)
+        ax.text(x + w/2, y + h/2, lines,
+                ha="center", va="center", fontsize=fs, linespacing=1.25)
+
+    yb, hb = 3.0, 2.0
+    pbox(0.2,  yb, 2.4, hb, BLUE,
+         "samples\n$\\xi_1,\\dots,\\xi_N$")
+    pbox(3.2,  yb, 2.6, hb, BLUE,
+         "residuals\n$y_j(x)=g(x,\\xi_j)$")
+    pbox(6.4,  yb, 2.5, hb, GREEN,
+         "KDE\n$\\hat\\rho_h(\\,\\cdot\\,;x)$")
+    pbox(9.5,  yb, 4.2, hb, GREEN,
+         "smooth constraint\n$\\hat p_h(x)\\geq 1-\\varepsilon$")
+    pbox(5.0, 0.2, 4.2, 1.6, ORANGE,
+         "NLP solver updates $x$\n(uses $\\nabla_x \\hat p_h$)", fs=8.0)
+
+    arr = dict(arrowstyle="->", lw=1.2, color="k")
+    for x1, x2 in [(2.6, 3.2), (5.8, 6.4), (8.9, 9.5)]:
+        ax.annotate("", xy=(x2, yb + hb/2), xytext=(x1, yb + hb/2),
+                    arrowprops=arr)
+
+    # feedback arrows
+    ax.annotate("", xy=(9.2, 1.0), xytext=(11.6, 3.0),
+                arrowprops=dict(arrowstyle="->", lw=1.1, color=ORANGE,
+                                connectionstyle="arc3,rad=-0.25"))
+    ax.annotate("", xy=(4.5, 3.0), xytext=(5.0, 1.0),
+                arrowprops=dict(arrowstyle="->", lw=1.1, color=ORANGE,
+                                connectionstyle="arc3,rad=-0.25"))
+
+    ax.text(11.9, 1.45, "value and\ngradient",
+            fontsize=7.4, color=ORANGE, ha="center", bbox=WBOX, zorder=7)
+    ax.text(3.65, 1.45, "new iterate\n$x^{(k+1)}$",
+            fontsize=7.4, color=ORANGE, ha="center", bbox=WBOX, zorder=7)
+
+    fig.tight_layout()
+    finish(fig, "fig_pipeline")
+
+
+# ===========================================================================
+# Figure 4  fig_smoothing  (Chapter 4)
+# Left: KDE smoothed constraint vs staircase.
+# Right: its derivative vs the staircase's undefined derivative.
+# ===========================================================================
+def fig_smoothing():
+    N = 200
+    samp = LAW.rvs(N, random_state=7)
+    xs = np.linspace(95, 165, 900)
+    p_true = LAW.cdf(xs)
+    p_emp  = (samp[None, :] <= xs[:, None]).mean(axis=1)
+    h_silv = 0.9*min(samp.std(ddof=1), stats.iqr(samp)/1.34)*N**(-0.2)
+
+    def p_kde(x, h):
+        return stats.norm.cdf((x[:, None] - samp[None, :]) / h).mean(axis=1)
+
+    def dp_kde(x, h):
+        return (stats.norm.pdf((x[:, None] - samp[None, :]) / h)
+                .mean(axis=1) / h)
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
+
+    # panel (a): constraint functions
+    ax = axes[0]
+    ax.step(xs, p_emp, where="post", color=GRAY, lw=1.0, alpha=0.8,
+            label="empirical (staircase)")
+    ax.plot(xs, p_true, color="k", ls="--", lw=1.3, label="true $p(x)$")
+    for h, c in [(2.0, RED), (h_silv, BLUE), (15.0, ORANGE)]:
+        lab = (f"KDE, $h={h:.0f}$" if h != h_silv
+               else f"KDE, $h={h_silv:.1f}$ (Silverman)")
+        ax.plot(xs, p_kde(xs, h), color=c, lw=1.5, label=lab)
+    ax.axhline(1 - EPS, color=GREEN, ls=":", lw=1.2)
+    ax.text(96.5, 0.905, "$1-\\varepsilon$",
+            color=GREEN, fontsize=8.5, bbox=WBOX, zorder=7)
+    ax.set_xlabel("decision $x$ [MW]")
+    ax.set_ylabel("$\\hat p_h(x)$")
+    ax.set_ylim(0.35, 1.03)
+    ax.set_title("(a) The constraint function")
+    styled_legend(ax, loc="lower right", fontsize=7.0)
+
+    # panel (b): derivatives
+    ax = axes[1]
+    # staircase derivative: zero everywhere (marked by tick lines at samples)
+    ax.axhline(0.0, color=GRAY, lw=1.6, zorder=3)
+    ax.plot(samp, np.zeros_like(samp), linestyle="none", marker="|",
+            ms=7, color=GRAY, alpha=0.7, zorder=4)
+    for h, c in [(2.0, RED), (h_silv, BLUE), (15.0, ORANGE)]:
+        ax.plot(xs, dp_kde(xs, h), color=c, lw=1.5, zorder=5)
+    ax.set_xlabel("decision $x$ [MW]")
+    ax.set_ylabel("$d\\hat p_h/dx$")
+    ax.set_title("(b) Its derivative")
+    ax.set_ylim(-0.006, 0.040)
+    ax.set_xlim(95, 165)
+    ax.text(148.5, 0.0265,
+            "staircase derivative:\nzero between samples,\n"
+            "undefined at them (ticks)",
+            fontsize=7.2, color=GRAY, ha="center", bbox=WBOX, zorder=7)
+    ax.annotate("", xy=(146, 0.0012), xytext=(148.5, 0.021),
+                arrowprops=dict(arrowstyle="->", lw=0.8, color=GRAY))
+
+    fig.tight_layout()
+    finish(fig, "fig_smoothing")
+    print(f"    h_Silverman = {h_silv:.2f}")
+
+
+# ===========================================================================
+# Figure 5  fig_optimism  (Chapter 4)
+# True reliability of unbiased KDE certificates over 3000 trials.
+# ===========================================================================
+def fig_optimism():
+    N = 100
+    trials = 3000
+    rels = []
     for _ in range(trials):
-        s = law.rvs(N, random_state=rng.integers(int(1e9)))
-        h = 0.9*min(s.std(ddof=1), stats.iqr(s)/1.34)*N**(-0.2)
-        xu = decide_unbiased(s, h)
-        xb = decide_biased(s, h)
-        ru.append(law.cdf(xu)); rb.append(law.cdf(xb))
-        cu.append(xu); cb.append(xb)
-    res["unbiased"]["rel"].append(
-        (np.mean(ru), np.percentile(ru, 10), np.percentile(ru, 90),
-         np.mean(np.array(ru) < 1-eps)))
-    res["biased"]["rel"].append(
-        (np.mean(rb), np.percentile(rb, 10), np.percentile(rb, 90),
-         np.mean(np.array(rb) < 1-eps)))
-    res["unbiased"]["cap"].append(np.mean(cu))
-    res["biased"]["cap"].append(np.mean(cb))
+        st = LAW.rvs(N, random_state=rng.integers(int(1e9)))
+        h  = 0.9*min(st.std(ddof=1), stats.iqr(st)/1.34)*N**(-0.2)
+        grid = np.linspace(st.min() - 3*h, st.max() + 3*h, 700)
+        cdf  = stats.norm.cdf(
+            (grid[:, None] - st[None, :]) / h).mean(axis=1)
+        xk = np.interp(1 - EPS, cdf, grid)
+        rels.append(LAW.cdf(xk))
+    rels = np.array(rels)
+    frac_below = (rels < 1 - EPS).mean()
 
-fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
-ax = axes[0]
-for key, c, lab in [("unbiased", RED, "unbiased (Gaussian)"),
-                    ("biased", GREEN, "biased (Epan., $b=h$)")]:
-    arr = np.array([r[:3] for r in res[key]["rel"]])
-    ax.plot(Ns, arr[:, 0], "-o", ms=3.4, lw=1.5, color=c, label=lab)
-    ax.fill_between(Ns, arr[:, 1], arr[:, 2], color=c, alpha=0.13)
-ax.axhline(1-eps, color="k", ls="--", lw=1.1)
-ax.set_xscale("log"); ax.set_xticks(Ns); ax.set_xticklabels(Ns)
-ax.set_xlabel("sample size $N$")
-ax.set_ylabel("achieved reliability")
-ax.set_title("(a) Where the certificates land")
-leg = ax.legend(loc="lower right", fontsize=7.6, frameon=True,
-                framealpha=0.9, edgecolor="none", facecolor="white")
-leg.set_zorder(7)
+    fig, ax = plt.subplots(figsize=(5.8, 2.9))
+    bins = np.linspace(0.88, 1.0, 49)
+    ax.hist(rels[rels >= 1 - EPS], bins=bins, color=GREEN, alpha=0.55,
+            label="meets target")
+    ax.hist(rels[rels < 1 - EPS],  bins=bins, color=RED,   alpha=0.55,
+            label=f"violates target ({frac_below*100:.0f}% of trials)")
+    ax.axvline(1 - EPS, color="k", ls="--", lw=1.2)
 
-ax = axes[1]
-fr_u = [r[3]*100 for r in res["unbiased"]["rel"]]
-fr_b = [r[3]*100 for r in res["biased"]["rel"]]
-w = 0.32
-xpos = np.arange(len(Ns))
-ax.bar(xpos - w/2, fr_u, width=w, color=RED, alpha=0.8,
-       label="unbiased")
-ax.bar(xpos + w/2, fr_b, width=w, color=GREEN, alpha=0.8,
-       label="biased")
-ax.set_xticks(xpos); ax.set_xticklabels(Ns)
-ax.set_xlabel("sample size $N$")
-ax.set_ylabel("trials violating target [%]")
-ax.set_title("(b) Certificate failure rate")
-leg = ax.legend(loc="upper right", fontsize=8.0, frameon=True,
-                framealpha=0.9, edgecolor="none", facecolor="white")
-leg.set_zorder(7)
-fig.tight_layout()
-fig.savefig(F5 + "fig_safetycost.pdf", bbox_inches="tight")
-plt.close(fig)
-prem = [(b-u)/u*100 for u, b in
-        zip(res["unbiased"]["cap"], res["biased"]["cap"])]
-print("safetycost ok; fail% unb:", [round(f,1) for f in fr_u],
-      "bias:", [round(f,1) for f in fr_b],
-      "premium%:", [round(p,2) for p in prem])
+    # label placed in upper region, clear of both histogram bars
+    ymax = ax.get_ylim()[1] if ax.get_ylim()[1] > 0 else 200
+    ax.text(0.9505, ymax * 0.90, "target $0.95$",
+            fontsize=8.5, bbox=WBOX, zorder=7)
 
-# ===================================================== fig_lse
-# two-constraint toy along a 1D slice
-t = np.linspace(-2, 2, 600)
-g1 = t - 0.8
-g2 = -1.2*t - 0.6
-mx = np.maximum(g1, g2)
+    ax.set_xlabel("true reliability of the KDE solution ($N=100$)")
+    ax.set_ylabel("trials")
+    styled_legend(ax, loc="upper left", fontsize=8.2)
 
-fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
-ax = axes[0]
-ax.plot(t, g1, color=GRAY, lw=1.0, ls=":", label="$g_1$")
-ax.plot(t, g2, color=GRAY, lw=1.0, ls="--", label="$g_2$")
-ax.plot(t, mx, color="k", lw=1.8, label="$s=\\max(g_1, g_2)$")
-for tau, c in [(0.4, ORANGE), (0.15, BLUE)]:
-    lse = tau*np.log(np.exp(g1/tau) + np.exp(g2/tau))
-    ax.plot(t, lse, color=c, lw=1.5,
-            label=f"$s_\\tau$, $\\tau={tau}$")
-ax.axhline(0, color=GREEN, lw=0.9, ls=":")
-ax.set_xlabel("slice through decision space")
-ax.set_ylabel("violation statistic")
-ax.set_title("(a) Log-sum-exp dominates the max")
-leg = ax.legend(loc="lower left", fontsize=7.2, frameon=True,
-                framealpha=0.9, edgecolor="none", facecolor="white")
-leg.set_zorder(7)
+    fig.tight_layout()
+    finish(fig, "fig_optimism")
+    print(f"    fraction below target: {frac_below*100:.1f}%")
 
-ax = axes[1]
-tau = 0.15
-p1 = np.exp(g1/tau) / (np.exp(g1/tau) + np.exp(g2/tau))
-ax.plot(t, p1, color=BLUE, lw=1.7, label="$\\pi_1$ (weight on $g_1$)")
-ax.plot(t, 1-p1, color=ORANGE, lw=1.7, label="$\\pi_2$ (weight on $g_2$)")
-xc = (0.8 - 0.6/1.2) / (1 + 1.2) * 0 + ( -0.6 + 0.8*0)  # solve g1=g2
-xstar = ( -0.6 - (-0.8)*1 ) / (1 + 1.2)
-xstar = ( -0.6 + 0.8 ) / (1 + 1.2)
-ax.axvline(xstar, color=GRAY, lw=0.9, ls=":")
-ax.annotate("active constraint\nswitches here",
-            xy=(xstar, 0.5), xytext=(-1.45, 0.55), fontsize=7.4,
-            color=GRAY, ha="center", bbox=WBOX, zorder=7,
-            arrowprops=dict(arrowstyle="->", lw=0.8, color=GRAY,
-                            shrinkB=6))
-ax.set_xlabel("slice through decision space")
-ax.set_ylabel("softmax weight")
-ax.set_ylim(-0.05, 1.05)
-ax.set_title("(b) Smooth gradient blending ($\\tau = 0.15$)")
-leg = ax.legend(loc="center right", fontsize=7.4, frameon=True,
-                framealpha=0.9, edgecolor="none", facecolor="white")
-leg.set_zorder(7)
-fig.tight_layout()
-fig.savefig(F5 + "fig_lse.pdf", bbox_inches="tight")
-plt.close(fig)
-print("lse ok")
 
-# ===================================================== fig_continuation
-stages = np.arange(1, 6)
-hs = np.array([8.0, 4.0, 2.0, 1.0, 1.0])
-kernels = [BLUE, BLUE, BLUE, BLUE, GREEN]
-
-fig, ax = plt.subplots(figsize=(5.8, 2.9))
-ax.semilogy(stages, hs, color=GRAY, lw=1.0, ls="--", zorder=2)
-for st, hh, c in zip(stages, hs, kernels):
-    ax.scatter(st, hh, s=70, color=c, zorder=6, ec="white", lw=0.6)
-for st in stages[:-1]:
-    ax.annotate("", xy=(st+0.86, hs[st]*1.0), xytext=(st+0.14, hs[st-1]),
-                arrowprops=dict(arrowstyle="->", lw=0.9, color=ORANGE,
-                                connectionstyle="arc3,rad=-0.25"),
-                zorder=3)
-ax.text(2.5, 9.5, "warm start: each solution\ninitializes the next stage",
-        fontsize=7.8, color=ORANGE, ha="center", bbox=WBOX, zorder=7)
-ax.text(1.0, 5.6, "Gaussian kernel\n(smooth, fast)", fontsize=7.6,
-        color=BLUE, ha="center", bbox=WBOX, zorder=7)
-ax.text(4.62, 0.55, "switch to split-Bernstein\n(exact safety)",
-        fontsize=7.6, color=GREEN, ha="center", bbox=WBOX, zorder=7)
-ax.text(4.85, 6.8, "$N$ increases as\n$h$ decreases", fontsize=7.6,
-        color=GRAY, ha="center", bbox=WBOX, zorder=7)
-ax.set_xticks(stages)
-ax.set_xlabel("continuation stage")
-ax.set_ylabel("bandwidth $h$ (log scale)")
-ax.set_xlim(0.5, 5.7)
-ax.set_ylim(0.35, 14)
-fig.tight_layout()
-fig.savefig(F5 + "fig_continuation.pdf", bbox_inches="tight")
-plt.close(fig)
-print("continuation ok")
-print("all done")
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    print("Generating Chapter 4 figures ...")
+    fig_pipeline()
+    fig_smoothing()
+    fig_optimism()         # ~20 s for 3000 trials
+    print(f"\nAll figures written to ./{OUT}/ (PDF + PNG).")

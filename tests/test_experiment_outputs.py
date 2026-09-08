@@ -9,7 +9,7 @@ def test_saved_experiment_contract():
     metadata = root / "run_metadata.json"
     assert summary.exists() and summary.stat().st_size > 0
     assert metadata.exists()
-    figure_root = root.parent / "kap08" / "figures"
+    figure_root = root.parent / "kap09" / "figures"
     for name in ("fig_static_test_violation.pdf", "fig_static_tradeoff.pdf", "fig_sensitivity.pdf"):
         figure = figure_root / name
         assert figure.exists() and figure.stat().st_size > 1000

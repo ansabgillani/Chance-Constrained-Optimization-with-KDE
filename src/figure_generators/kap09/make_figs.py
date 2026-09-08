@@ -1,4 +1,4 @@
-"""Generate publication-style Chapter 8 figures from saved result CSV data.
+"""Generate publication-style Chapter 9 figures from saved result CSV data.
 
 The script reads ``results/summary.csv`` and does not recompute experiment values.
 It uses PGFPlots because the local environment has TeX but no Matplotlib.
@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 RESULTS = ROOT / "results"
-FIGURES = ROOT / "kap08" / "figures"
+FIGURES = ROOT / "kap09" / "figures"
 METHODS = {
     "nominal": "Nominal",
     "scenario": "Scenario",
@@ -126,7 +126,7 @@ def compile_pdf(tex, name, work):
 def main():
     rows = rows_from_csv()
     FIGURES.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="kap08-pgfplots-") as directory:
+    with tempfile.TemporaryDirectory(prefix="kap09-pgfplots-") as directory:
         work = Path(directory)
         for name, tex in zip(("fig_static_test_violation", "fig_static_tradeoff", "fig_sensitivity"), documents(rows)):
             compile_pdf(tex, name, work)
