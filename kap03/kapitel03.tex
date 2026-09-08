@@ -18,7 +18,7 @@ Let $y_1(x),\ldots,y_N(x)$ be IID residual samples and let $\rho_x$ denote the d
  \hat p_h(x)=\int_{-\infty}^{0}\hat\rho_h(y;x)\,dy.
  \label{eq:ch3-kde}
 \end{equation}
-This is the Parzen--Rosenblatt estimator~\citep{rosenblatt1956,parzen1962}. If $F_K(t)=\int_{-\infty}^tK(u)\,du$, then $\hat p_h(x)=N^{-1}\sum_iF_K(-y_i(x)/h)$. Thus the probability is a finite sum of integrated-kernel evaluations rather than a numerical integral over uncertainty space. Consistency requires a shrinking bandwidth with enough observations in each local window; a standard sufficient sequence is $h\to0$ and $Nh\to\infty$~\citep{parzen1962,devroye1985}. This consistency is pointwise/statistical and does not by itself imply convergence of a data-selected optimizer.
+This is the Parzen--Rosenblatt estimator~\citep{rosenblatt1956,parzen1962}. If $F_K(t)=\int_{-\infty}^tK(u)\,du$, then $\hat p_h(x)=N^{-1}\sum_iF_K(-y_i(x)/h)$. Thus the probability is a finite sum of integrated-kernel evaluations rather than a numerical integral over uncertainty space. For IID samples and a regular residual density (for example, the usual smoothness and integrability conditions on $\rho_x$), pointwise consistency uses a bandwidth sequence $h_N$ satisfying $h_N\to0$ and $Nh_N\to\infty$~\citep{parzen1962,devroye1985}. The sequence links smoothing to sample size: the normal-reference rule introduced below chooses $h_N=O(N^{-1/5})$. This is pointwise/statistical consistency for a fixed decision and does not by itself imply convergence of a data-selected optimizer; optimizer convergence requires stronger uniform convergence and optimization regularity, as discussed in Section~\ref{ssec:safetyline}.
 
 The uncertainty sample is drawn once and kept fixed during optimization, while $y_i(x)=g(x,\xi_i)$ changes at every iterate. This preserves a deterministic sample problem and permits differentiation through the residual map. With fixed $h$ and continuous $K$, the integrated estimate is continuously differentiable wherever $g$ is continuously differentiable; a continuously differentiable kernel supports a second derivative when the residual also has the required regularity. Thus a kernel need not itself be infinitely smooth to provide a differentiable probability constraint.
 
@@ -61,7 +61,7 @@ with optimal order $h=O(N^{-1/5})$ and error $O(N^{-4/5})$~\citep{silverman1986}
   \label{fig:bandwidth}
 \end{figure}
 
-For example, the robust normal-reference rule commonly attributed to Silverman is
+In practice, the bandwidth is selected jointly with the sample size rather than held fixed across the asymptotic sequence. For example, the robust normal-reference rule commonly attributed to Silverman is
 \begin{equation}
  h_N=0.9\min\{\widehat\sigma,\operatorname{IQR}/1.34\}N^{-1/5},
  \label{eq:ch3-bandwidth-rule}

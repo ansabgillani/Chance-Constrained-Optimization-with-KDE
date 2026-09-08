@@ -175,7 +175,7 @@ exactly \citep{keil2021}. \Cref{fig:domination}(b) quantifies the gap. The
 maximal per-sample optimism after biasing is $\Phi(-b/h)$, positive for
 every finite $b$; the practical compromise $b \approx 3h$ caps it at
 $\Phi(-3) \approx 0.13\%$, covering $99.87\%$ of the tail and rendering
-the kernel \emph{approximately} conservative. The Gaussian's
+the kernel \emph{approximately} conservative. A truncated or compactly supported Gaussian-like kernel could remove the positive tail and close this exact-safety gap, but truncation changes normalization and boundary smoothness, so its one-sided inequality and optimization behavior would require a separate analysis; such a kernel is left for future work. The Gaussian's
 compensating virtues are real, infinite smoothness and the fastest
 solver runtimes in the family, and the resulting division of labor is
 the one this thesis adopts: Gaussian kernels where speed and smoothness
@@ -392,7 +392,7 @@ interaction of these layers, including how conservatism compounds across $h$ and
 The constructions of this chapter create a practical tension that one
 further idea resolves. Small bandwidths and exactly-safe kernels are
 where the guarantees live, but they are also where the optimization is
-hardest: a sharply smoothed constraint approaches the staircase of
+hardest: a sharply smoothed constraint approaches the piecewise-constant empirical estimator of
 Chapter~2, and a solver started cold against it inherits a rugged,
 nearly nonsmooth landscape. The warm-start strategy of
 \citet{keil2021warm} converts this tension into a schedule.

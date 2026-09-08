@@ -87,7 +87,7 @@ def styled_legend(ax, **kw):
 
 # ===========================================================================
 # Figure 1  fig_staircase  (Chapter 4)
-# Left panel: empirical indicator is a staircase.
+# Left panel: empirical indicator is piecewise constant.
 # Right panel: three sample draws near the feasibility boundary.
 # ===========================================================================
 def fig_pipeline():
@@ -140,8 +140,8 @@ def fig_pipeline():
 
 # ===========================================================================
 # Figure 4  fig_smoothing  (Chapter 4)
-# Left: KDE smoothed constraint vs staircase.
-# Right: its derivative vs the staircase's undefined derivative.
+# Left: KDE smoothed constraint vs piecewise-constant empirical estimator.
+# Right: its derivative vs the piecewise-constant estimator's undefined derivative.
 # ===========================================================================
 def fig_smoothing():
     N = 200
@@ -163,7 +163,7 @@ def fig_smoothing():
     # panel (a): constraint functions
     ax = axes[0]
     ax.step(xs, p_emp, where="post", color=GRAY, lw=1.0, alpha=0.8,
-            label="empirical (staircase)")
+            label="empirical (piecewise constant)")
     ax.plot(xs, p_true, color="k", ls="--", lw=1.3, label="true $p(x)$")
     for h, c in [(2.0, RED), (h_silv, BLUE), (15.0, ORANGE)]:
         lab = (f"KDE, $h={h:.0f}$" if h != h_silv
@@ -180,7 +180,7 @@ def fig_smoothing():
 
     # panel (b): derivatives
     ax = axes[1]
-    # staircase derivative: zero everywhere (marked by tick lines at samples)
+    # piecewise-constant empirical estimator derivative: zero everywhere (marked by tick lines at samples)
     ax.axhline(0.0, color=GRAY, lw=1.6, zorder=3)
     ax.plot(samp, np.zeros_like(samp), linestyle="none", marker="|",
             ms=7, color=GRAY, alpha=0.7, zorder=4)
@@ -192,7 +192,7 @@ def fig_smoothing():
     ax.set_ylim(-0.006, 0.040)
     ax.set_xlim(95, 165)
     ax.text(148.5, 0.0265,
-            "staircase derivative:\nzero between samples,\n"
+            "piecewise-constant derivative:\nzero between samples,\n"
             "undefined at them (ticks)",
             fontsize=7.2, color=GRAY, ha="center", bbox=WBOX, zorder=7)
     ax.annotate("", xy=(146, 0.0012), xytext=(148.5, 0.021),

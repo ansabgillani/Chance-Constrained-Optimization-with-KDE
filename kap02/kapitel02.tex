@@ -75,8 +75,19 @@ Pr\'ekopa's theorem identifies an important convexity island. If the law of $\xi
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.82\textwidth]{fig_levelsets.pdf}
-  \caption{Convexity boundary for the computed bilinear constraint $\xi^\top x\leq1$. The Gaussian panel has a convex $0.9$ probability level set, as follows from its Gaussian second-order-cone representation. Replacing the law by a two-component Gaussian mixture produces the non-convex $0.55$ level set.}
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{fig_levelsets_gaussian.png}
+    \caption{Gaussian law: the $0.9$ probability level set is convex.}
+    \label{fig:levelsets-gaussian}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{fig_levelsets_mixture.png}
+    \caption{Two-component Gaussian mixture: the $0.55$ level set is non-convex.}
+    \label{fig:levelsets-mixture}
+  \end{subfigure}
+  \caption{Convexity boundary for the computed bilinear constraint $\xi^\top x\leq1$. The Gaussian case follows the Gaussian second-order-cone representation discussed below; changing only the law to a two-component mixture produces the non-convex geometry.}
   \label{fig:levelsets}
 \end{figure}
 
@@ -106,12 +117,12 @@ The scenario approach draws independent samples $\xi_1,\ldots,\xi_N$ and enforce
  g(x,\xi_i)\leq0,\qquad i=1,\ldots,N.
  \label{eq:ch2-scenario}
 \end{equation}
-For convex programs, scenario theory gives a distribution-free finite-sample confidence statement. A standard binomial bound has the form
+For convex programs, scenario theory gives a distribution-free finite-sample confidence statement over IID samples from the underlying law. It does not require a parametric law, but it does require convexity and support-rank conditions. Like robust optimization, scenario enforcement protects every sampled realization; its certificate is probabilistic over the sampling process rather than a claim that the uncertainty law is absent. A standard binomial bound has the form
 \begin{equation}
  \sum_{i=0}^{r-1}\binom{N}{i}\varepsilon^i(1-\varepsilon)^{N-i}\leq\beta,
  \label{eq:ch2-scenario-bound}
 \end{equation}
-where $r$ is an appropriate support rank and $\beta$ is the allowed confidence failure probability~\citep{calafiore2006,campi2008}. The guarantee is valuable because it does not require a parametric law. It requires, however, convexity and the stated independent-sampling and support-rank conditions. The program contains one hard constraint per sample and therefore grows with $N$; it also protects every sampled point, which can be substantially more conservative than the permitted violation budget. The guarantee does not transfer automatically to the non-convex nonlinear programs studied here.
+where $r$ is an appropriate support rank and $\beta$ is the allowed confidence failure probability~\citep{calafiore2006,campi2008}. The program contains one hard constraint per sample and therefore grows with $N$; it also protects every sampled point, which can be substantially more conservative than the permitted violation budget. The guarantee does not transfer automatically to the non-convex nonlinear programs studied here.
 
 Scenario enforcement and probability estimation should also be distinguished computationally. If each residual is smooth, each scenario constraint is smooth; the method's cost comes from the number of rows and the structure of the resulting program, rather than an indicator discontinuity. In the scalar dispatch example, enforcing every scenario gives $x_N=\max_i\xi_i$, whereas the empirical chance constraint permits a prescribed number of exceedances. This example explains possible scenario conservatism without asserting that every scenario formulation becomes more conservative in the same way or excludes sampling-and-discarding variants.
 
@@ -127,10 +138,10 @@ The estimator is transparent and, under standard conditions, SAA solutions have 
 
 The surrogate budget $\widehat\varepsilon$ need not equal the target $\varepsilon$. A smaller budget can compensate for sampling uncertainty, provided the adjustment is justified by a statistical argument. At a fixed decision, the count is an unbiased estimate of the violation probability. At the optimizer, the same count has also influenced selection of the decision, so fixed-decision unbiasedness is insufficient to certify the selected point. Independent validation, uniform bounds over the decision class, or an applicable scenario argument address different parts of this selection problem. This distinction remains necessary when smoothing replaces the indicator.
 
-\subsubsection{CVaR and convex restrictions}
+\subsubsection{Conditional Value-at-Risk (CVaR) and convex restrictions}
 \label{ssec:cvar}
 
-For loss $L(x,\xi)=g(x,\xi)$ and confidence level $\alpha\in(0,1)$, conditional value-at-risk has the representation
+For loss $L(x,\xi)=g(x,\xi)$ and confidence level $\alpha\in(0,1)$, conditional value-at-risk (CVaR) has the representation
 \begin{equation}
  \operatorname{CVaR}_{\alpha}(L)=\min_{t\in\mathbb R}\left[t+\frac{1}{1-\alpha}\mathbb E(L-t)_+\right].
  \label{eq:ch2-cvar}
@@ -147,12 +158,12 @@ The chance constraint is equivalent, under the usual quantile convention, to
 \end{equation}
 The empirical quantile is an order statistic and is non-smooth in $x$. Pe\~na-Ordieres, Luedtke, and W\"achter construct a differentiable sample-based quantile approximation and a trust-region SQP method~\citep{penaordieres2020}. This is a close methodological comparator because it constructs a smooth constraint from the same residual samples. Its smoothed CDF and inverse-quantile construction are closely related to integrated-kernel probability estimation. The useful distinction is which constraint representation and numerical method are used, rather than a claim that KDE uniquely provides smooth data-driven chance constraints. The present implementation evaluates the residual CDF at the fixed threshold zero; it does not benchmark the full trust-region algorithm of that paper.
 
-A black-box method evaluates the simulator, counts failures, and optimizes using only function values, for example with pattern search or other derivative-free methods~\citep{neldermead1965,audet2017}. Its universality is useful for discontinuous or legacy simulators, but evaluations grow rapidly with decision dimension. In a discretized trajectory problem, the hundreds of decision variables make this route difficult to use as a primary method. Figure~\ref{fig:staircase} shows the underlying obstacle: the empirical violation estimate is a staircase, with flat regions and jumps at sampled residual crossings.
+A black-box method evaluates the simulator, counts failures, and optimizes using only function values, for example with pattern search or other derivative-free methods~\citep{neldermead1965,audet2017}. Its universality is useful for discontinuous or legacy simulators, but evaluations grow rapidly with decision dimension. In a discretized trajectory problem, the hundreds of decision variables make this route difficult to use as a primary method. Figure~\ref{fig:staircase} shows the underlying obstacle: the empirical violation estimate is a piecewise-constant empirical estimator, with flat regions and jumps at sampled residual crossings.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.82\textwidth]{fig_staircase.pdf}
-  \caption{Empirical violation probability for the lognormal dispatch illustration. With $N=60$ samples the estimator is a staircase, and independent draws disagree near the $\varepsilon=0.05$ boundary. The figure is a seeded synthetic diagnostic of the indicator and resampling limitations.}
+  \caption{Empirical violation probability for the lognormal dispatch illustration. With $N=60$ samples the estimator is piecewise constant, and independent draws disagree near the $\varepsilon=0.05$ boundary. The figure is a seeded synthetic diagnostic of the indicator and resampling limitations.}
   \label{fig:staircase}
 \end{figure}
 

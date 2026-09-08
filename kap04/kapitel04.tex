@@ -181,10 +181,10 @@ the smooth sigmoid $F_K(-g(x,\xi_j)/h)$, exactly the substitution drawn
 in Chapter~3's kernel figure. Every sample still votes on feasibility,
 but the vote is no longer binary; a sample near the constraint boundary
 contributes a graded value that responds continuously as the decision
-moves. The staircase has been replaced by a ramp, and the entire
+moves. The piecewise-constant empirical estimator has been replaced by a ramp, and the entire
 discontinuous probabilistic feasibility requirement of Chapter~2 by a
 smooth, differentiable, deterministic nonlinear constraint. \Cref{fig:smoothing}(a) shows the
-replacement in the standalone scalar diagnostic: the staircase, the true
+replacement in the standalone scalar diagnostic: the piecewise-constant empirical estimator, the true
 probability, and the KDE constraint at three bandwidths, with the
 bandwidth visibly controlling how tightly the ramp hugs the step.
 
@@ -193,13 +193,13 @@ bandwidth visibly controlling how tightly the ramp hugs the step.
   \includegraphics[width=\textwidth]{kap04/figures/fig_smoothing.pdf}
   \caption{What the reformulation hands the solver, illustrated with a
   standalone lognormal scalar diagnostic ($N = 200$ samples; this figure
-  is not generated from the dispatch ledger). (a) The empirical staircase,
+  is not generated from the dispatch ledger). (a) The piecewise-constant empirical estimator,
   the true probability $p(x)$, and the KDE constraint $\hat{p}_h(x)$ at
-  three bandwidths: small $h$ tracks the staircase including its noise,
+  three bandwidths: small $h$ tracks the piecewise-constant empirical estimator including its noise,
   Silverman's $h = 5.4$ tracks the truth, and large $h$ distorts the
   curve and shifts the feasibility boundary where it crosses
-  $1-\varepsilon$. (b) The derivatives. The staircase derivative is zero
-  between samples and undefined at them (ticks on the axis); the KDE
+  $1-\varepsilon$. (b) The derivatives. The derivative of the piecewise-constant
+  empirical estimator is zero between samples and undefined at crossings (ticks on the axis); the KDE
   derivative is an analytically available density estimate that
   gives the solver usable directional information at every $x$.}
   \label{fig:smoothing}
@@ -234,9 +234,9 @@ in \cref{eq:gradient} is elementary. Second derivatives can be obtained by
  the same chain rule when $g$ is twice differentiable; the implementation
 used here supplies the analytic first gradient. Sequential quadratic
 programming and interior-point methods therefore avoid finite differences of
-a staircase
+a piecewise-constant empirical estimator
 \citep{waechter2006}. \Cref{fig:smoothing}(b) displays the comparison
-directly: the staircase derivative is
+directly: the derivative of the piecewise-constant empirical estimator is
 zero except at isolated undefined points, while the KDE derivative is a
 smooth, analytically available function at every decision. This
 differentiability is the core computational advantage of the KDE
@@ -328,8 +328,7 @@ giving it a sign rather than removing it.
 \label{sec:bandwidthtradeoff}
 
 Third, the bandwidth controls a genuine
-trade-off: \cref{fig:smoothing}(a) shows small $h$ reproducing the
-staircase together with its sampling noise and large $h$ distorting the
+trade-off: \cref{fig:smoothing}(a) shows small $h$ reproducing the piecewise-constant empirical estimator together with its sampling noise and large $h$ distorting the
 feasible boundary, so $h$ is not a nuisance parameter but a design
 variable, the optimization-versus-AMISE question flagged in Chapter~3
 and studied experimentally in Part~4.

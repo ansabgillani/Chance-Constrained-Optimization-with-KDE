@@ -14,7 +14,7 @@ Outputs the generated PDFs and matching PNG previews in ./figures/.
 Figures produced
 ----------------
 fig_taxonomy     -- four-paradigm conceptual map
-fig_levelsets    -- Prekopa log-concavity and its boundary
+fig_levelsets    -- Prekopa log-concavity and its boundary (composite and panels)
 fig_methods      -- survey experiment: achieved reliability vs N
 fig_kernels      -- KDE background (Chapter 3; retained for regeneration)
 fig_bandwidth    -- KDE background bandwidth trade-off (Chapter 3)
@@ -154,34 +154,47 @@ def fig_levelsets():
                      + Sig[1, 1]*X2**2) + 1e-12)
         return stats.norm.cdf((1 - (mu[0]*X1 + mu[1]*X2)) / s)
 
+    def draw_panel(ax, mixture=False):
+        """Draw one level-set panel on ``ax``."""
+        if mixture:
+            PA = p_gauss(np.array([1.9, 0.1]), np.array([[0.05, 0], [0, 0.05]]))
+            PB = p_gauss(np.array([0.1, 1.9]), np.array([[0.05, 0], [0, 0.05]]))
+            P = 0.5 * PA + 0.5 * PB
+            colour, level, alpha = RED, 0.55, 0.25
+            label_x, label_y = -0.42, -0.30
+            title = "Two-component Gaussian mixture $\\xi$: non-convex level set"
+        else:
+            P = p_gauss(np.array([0.8, 0.8]),
+                        np.array([[0.16, 0.0], [0.0, 0.16]]))
+            colour, level, alpha = GREEN, 0.9, 0.30
+            label_x, label_y = -0.30, 0.05
+            title = "Gaussian $\\xi$: convex level set"
+
+        ax.contourf(X1, X2, P, levels=[level, 1.001],
+                    colors=[colour], alpha=alpha)
+        ax.contour(X1, X2, P, levels=[level], colors=[colour], linewidths=1.6)
+        ax.text(label_x, label_y, rf"$\{{x: p(x)\geq {level:g}\}}$",
+                fontsize=9, color=colour, bbox=WBOX, zorder=7)
+        ax.set_title(title)
+        ax.set_xlabel("$x_1$")
+        ax.set_ylabel("$x_2$")
+        ax.set_xlim(g[0], g[-1])
+        ax.set_ylim(g[0], g[-1])
+
+    # Preserve the original composite asset for backwards compatibility.
     fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.1))
-
-    # panel (a): Gaussian -> convex level set
-    ax = axes[0]
-    P = p_gauss(np.array([0.8, 0.8]), np.array([[0.16, 0.0], [0.0, 0.16]]))
-    ax.contourf(X1, X2, P, levels=[0.9, 1.001], colors=[GREEN], alpha=0.30)
-    ax.contour(X1, X2, P, levels=[0.9], colors=[GREEN], linewidths=1.6)
-    ax.text(-0.30, 0.05, "$\\{x: p(x)\\geq 0.9\\}$",
-            fontsize=9, color=GREEN, bbox=WBOX, zorder=7)
-    ax.set_title("(a) Gaussian $\\xi$: level set is convex")
-    ax.set_xlabel("$x_1$")
-    ax.set_ylabel("$x_2$")
-
-    # panel (b): mixture -> non-convex level set
-    ax = axes[1]
-    PA = p_gauss(np.array([1.9, 0.1]), np.array([[0.05, 0], [0, 0.05]]))
-    PB = p_gauss(np.array([0.1, 1.9]), np.array([[0.05, 0], [0, 0.05]]))
-    P2 = 0.5*PA + 0.5*PB
-    ax.contourf(X1, X2, P2, levels=[0.55, 1.001], colors=[RED], alpha=0.25)
-    ax.contour(X1, X2, P2, levels=[0.55], colors=[RED], linewidths=1.6)
-    ax.text(-0.42, -0.30, "$\\{x: p(x)\\geq 0.55\\}$",
-            fontsize=9, color=RED, bbox=WBOX, zorder=7)
-    ax.set_title("(b) Mixture $\\xi$: level set is non-convex")
-    ax.set_xlabel("$x_1$")
-    ax.set_ylabel("$x_2$")
-
+    draw_panel(axes[0], mixture=False)
+    draw_panel(axes[1], mixture=True)
     fig.tight_layout()
     finish(fig, "fig_levelsets")
+
+    # Standalone panels are used by the paper's ``subfigure`` environment.
+    for name, mixture in (("fig_levelsets_gaussian", False),
+                          ("fig_levelsets_mixture", True)):
+        panel_fig, panel_ax = plt.subplots(figsize=(3.45, 3.1))
+        draw_panel(panel_ax, mixture=mixture)
+        panel_fig.tight_layout()
+        finish(panel_fig, name)
 
 
 # ===========================================================================
@@ -484,7 +497,7 @@ def fig_staircase():
 
     fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
 
-    # (a) one draw: staircase vs truth
+    # (a) one draw: piecewise-constant estimator vs truth
     ax = axes[0]
     N = 60
     samp = LAW.rvs(N, random_state=3)
@@ -498,7 +511,7 @@ def fig_staircase():
             fontsize=8.5, bbox=WBOX, zorder=7)
     ax.set_xlabel("decision $x$ [MW]")
     ax.set_ylabel("violation probability")
-    ax.set_title("(a) The estimator is a staircase")
+    ax.set_title("(a) Piecewise-constant empirical estimator")
     styled_legend(ax, loc="upper right", fontsize=8)
 
     # (b) three draws near the boundary
