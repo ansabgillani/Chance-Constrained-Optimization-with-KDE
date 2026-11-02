@@ -1,7 +1,7 @@
-\section{The Biased KDE Approach and Conservative Reformulation}
+\section[The Biased KDE Approach and Conservative Reformulation]{The Biased KDE Approach and\\Conservative Reformulation}
 \label{ch:biasedkde}
 
-Chapter~4 closed on a measured verdict: the unbiased reformulation is an
+Chapter~4 closes on a measured verdict: the unbiased reformulation is an
 accuracy method, not a safety method, and its certificate fails in $39\%$ of
 the standalone diagnostic trials. This chapter converts the verdict into a
 construction.
@@ -14,17 +14,24 @@ full. The chapter states the requirement the unbiased estimator fails
 biased kernel (\cref{sec:biasing}), examines the three kernels that
 matter in practice and the precise sense in which each satisfies or
 approximates the condition (\cref{sec:biasedkernels}), assembles the
-conservative reformulation pipeline and prices its conservatism on a
+conservative reformulation pipeline and quantifies its conservatism on a
 known-truth problem (\cref{sec:biasedreform}), and then extends the
 framework to joint chance constraints through three competing routes
 (\cref{sec:jointthree}), of which the scalar violation statistic with
-log-sum-exp smoothing (\cref{sec:lse}) is this thesis's recommended
-extension and one of its main implementation contributions. The chapter
+log-sum-exp smoothing (\cref{sec:lse}) is the extension this thesis
+recommends; it is proposed here and examined in Chapter~9 only at the
+level of the event statistic. The chapter
 closes with the bandwidth-continuation strategy that makes the whole
 construction solvable in practice (\cref{sec:continuation}).
 
 \subsection{Why Smoothing Alone Is Not Safe}
 \label{sec:notsafe}
+
+This section explains why the unbiased surrogate of Chapter~4 cannot
+serve as a safety method. It first shows that its failure is directional
+rather than statistical, and then states the requirement a safe surrogate
+must meet, distinguishing a bound for a fixed decision from a guarantee
+for the decision that the optimizer returns.
 
 \subsubsection{Directional failure of a symmetric surrogate}
 \label{sec:directionalfailure}
@@ -38,10 +45,10 @@ integrated form crosses the indicator at the constraint boundary, so
 each sample's contribution to $\hat{p}_h(x)$ errs toward optimism for
 violating residuals and toward pessimism for safe ones, and nothing in
 the construction controls which effect dominates at the decision the
-optimizer actually returns. The optimizer, moreover, is not a neutral
-party: it systematically favors the cheapest certified decision, which
+optimizer actually returns. The optimizer, moreover, is not neutral:
+it systematically favors the cheapest certified decision, which
 tends to be a decision at which optimistic error contributed to the
-certificate being granted. Chapter~4 measured the result at
+certificate being granted. Chapter~4 measures the result at
 $39\%$ certificate failure.
 
 \subsubsection{Fixed-decision envelope versus optimizer selection}
@@ -49,16 +56,11 @@ $39\%$ certificate failure.
 
 For engineering and safety-critical applications this behavior is
 problematic, and the requirement that replaces it can be stated in one
-line. What is
-needed is an estimator that never credits a violating sample: a
-surrogate $\hat{p}_h^{\,b}$ whose every per-sample contribution is
-bounded by the indicator it replaces. For a fixed decision $x$ independent
-of the sample, this gives the expectation bound
-$\E[\hat{p}_h^{\,b}(x)] \leq \Prob(g(x,\xi) \leq 0)$.
-bound. It does not by itself transfer to the data-dependent optimizer returned
-by the nonlinear program; a selection-aware concentration argument or an
-independent validation set is still required. Equivalently, in the violation
-form of Chapter~3, the per-sample surrogate dominates the empirical
+line. What is needed is an estimator that never credits a violating
+sample: a surrogate $\hat{p}_h^{\,b}$ whose every per-sample contribution
+never exceeds the indicator it replaces. \Cref{sec:biasing} makes this
+precise. Equivalently, in the violation
+form of Chapter~2, the per-sample surrogate dominates the empirical
 violation indicator; this does not make the population violation probability
 pointwise observable. Sampling and optimizer selection can still produce an
 unsafe population decision.
@@ -66,13 +68,10 @@ unsafe population decision.
 \subsection{The Biasing Construction}
 \label{sec:biasing}
 
-\subsubsection{Pointwise domination condition}
-\label{sec:pointwisedomination}
-
 The construction of \citet{keil2020} unifies two half-solutions, each
 inadequate alone. The first replaces the violation indicator
-$\ind\{t > 0\}$ with any function $w(t) \geq \ind\{t > 0\}$: averaging
-$w$ over samples always upper-bounds the violation probability, but $w$
+${\ind\{t > 0\}}$ with any function $\omega(t) \geq {\ind\{t > 0\}}$: averaging
+$\omega$ over samples always upper-bounds the violation probability, but $\omega$
 need not be bounded by one, so the average is not a valid probability
 and distorts the optimization. The second is the standard KDE surrogate
 of Chapter~4, a valid CDF bounded in $[0,1]$ that violates the
@@ -86,14 +85,10 @@ safe-side surrogate is bounded by the indicator,
   \label{eq:domination}
 \end{equation}
 equivalently, when the complementary violation surrogate dominates
-$\ind\{t > 0\}$ from above for every residual. Condition
-\cref{eq:domination} asks for exactly one thing beyond Chapter~4: the
+${\ind\{t > 0\}}$ from above for every residual. Condition~\eqref{eq:domination} asks for exactly one thing beyond Chapter~4: the
 surrogate must vanish on the entire violating half-line $t > 0$, which
 the bias $b(h)$ accomplishes by shifting the kernel's mass to the safe
 side of the boundary.
-
-\subsubsection{Expectation bound and its qualification}
-\label{sec:expectationbound}
 
 The conservative estimator and constraint follow immediately. Averaging
 the dominated surrogate over the residual samples of Chapter~4 gives
@@ -102,7 +97,7 @@ the dominated surrogate over the residual samples of Chapter~4 gives
   \;=\; \frac{1}{N}\sum_{j=1}^{N}
   F_K\!\left(\frac{-\,g(x,\xi_j) - b(h)}{h}\right),
   \qquad
-  \hat{p}_h^{\,b}(x) \;\geq\; 1-\varepsilon ,
+  \hat{p}_h^{\,b}(x) \;\geq\; 1-\varepsilon .
   \label{eq:biasedcc}
 \end{equation}
 For a fixed decision $x$ independent of the sample, each term of
@@ -113,10 +108,12 @@ the same samples, it is not a finite-sample feasibility certificate without a
 selection-aware concentration argument or independent validation.
 \Cref{fig:domination}(a) draws the construction: the unbiased surrogate
 crosses the indicator and grants credit to violating samples (the
-optimism Chapter~4 measured), while the biased surrogate sits entirely
+optimism Chapter~4 measures), while the biased surrogate sits entirely
 beneath it, discounting boundary samples and crediting violations
 nothing at all. Smoothness has not been spent to buy safety; the biased
-surrogate is exactly as differentiable as the unbiased one, and every
+surrogate keeps the closed-form constraint and analytic gradient of the
+unbiased one (with the Epanechnikov kernel it is continuously
+differentiable rather than infinitely smooth), and every
 formula of Chapter~4, the closed-form constraint, the analytic gradient,
 the constraint count independent of $N$ (while evaluation cost is $O(N)$), survives with $-g(x,\xi_j)$ replaced
 by $-g(x,\xi_j) - b(h)$. In the language of the two error sources
@@ -131,23 +128,18 @@ small.
   \caption{The biasing construction. (a) Per-sample contributions to the
   probability estimate, in units of the bandwidth. The unbiased Gaussian
   surrogate crosses the indicator and credits violating residuals
-  (shaded right), the optimism measured in Chapter~4; the biased
-  Epanechnikov surrogate with $b = h$ sits entirely beneath the
-  indicator, so every per-sample error points to the safe side (shaded
-  left). (b) Why the Gaussian kernel cannot be made exactly safe: its
+  (shaded right); the biased Epanechnikov surrogate with $b = h$ lies
+  entirely beneath it, so every per-sample error points to the safe side
+  (shaded left). (b) The Gaussian kernel cannot be made exactly safe: its
   maximal per-sample optimism $\Phi(-b/h)$ is positive for every finite
-  bias, decaying but never vanishing; $b = 3h$ leaves a residual
-  optimism of $0.13\%$ per sample.}
+  bias; $b = 3h$ leaves $0.13\%$ per sample.}
   \label{fig:domination}
 \end{figure}
 
 \subsection{Specific Biased Kernels}
 \label{sec:biasedkernels}
 
-\subsubsection{Exact one-sided kernels}
-\label{sec:exactbiasedkernels}
-
-Condition \cref{eq:domination} is a constraint on kernel tails, and the
+Condition~\eqref{eq:domination} is a constraint on kernel tails, and the
 three kernels of Chapter~3 meet it in three instructively different
 ways. The \emph{split-Bernstein kernel}, a piecewise-polynomial
 construction originating in approximation theory and adapted to chance
@@ -164,9 +156,6 @@ landing experiments of \citet{keil2021} this kernel achieves the lowest
 average optimal cost among the biased family, the statistical efficiency
 of Chapter~3 carrying over into the optimization.
 
-\subsubsection{Approximate conservatism with Gaussian tails}
-\label{sec:approxgaussian}
-
 The \emph{Gaussian kernel} is the cautionary member, and its limitation
 here is structural rather than incidental: because its tails are
 strictly positive everywhere, no finite bias can make the surrogate
@@ -178,22 +167,18 @@ $\Phi(-3) \approx 0.13\%$, covering $99.87\%$ of the tail and rendering
 the kernel \emph{approximately} conservative. A truncated or compactly supported Gaussian-like kernel could remove the positive tail and close this exact-safety gap, but truncation changes normalization and boundary smoothness, so its one-sided inequality and optimization behavior would require a separate analysis; such a kernel is left for future work. The Gaussian's
 compensating virtues are real, infinite smoothness and the fastest
 solver runtimes in the family, and the resulting division of labor is
-the one this thesis adopts: Gaussian kernels where speed and smoothness
-dominate, exact biased kernels where the guarantee does, and the
-continuation strategy of \cref{sec:continuation} to move between them
-within a single solve.
+the one this thesis adopts in its continuation stages: Gaussian kernels
+where speed and smoothness dominate, the shifted Epanechnikov kernel
+where the fixed-decision envelope matters, and warm-started stages
+(\cref{sec:continuation}) to move between them.
 
 \subsection{Stochastic Optimization Reformulated via Biased KDE}
 \label{sec:biasedreform}
 
-\subsubsection{Reformulation workflow}
-\label{sec:biasedworkflow}
-
-The full conservative pipeline assembles the chapters of Part~3 into
-five steps, stated once here as the procedure the experimental chapters
+The full conservative pipeline assembles the constructions of Chapter~4 and of this chapter into
+five steps, stated as the procedure the experimental chapters
 implement. First, generate $N$ samples $\xi_1,\dots,\xi_N$ by
-simulation, Markov chain Monte Carlo, or historical data, exactly as in
-Chapter~2. Second, for each candidate decision $x$, form the residuals
+simulation, Markov chain Monte Carlo, or historical data. Second, for each candidate decision $x$, form the residuals
 $y_j(x) = g(x,\xi_j)$ of Chapter~4. Third, evaluate the biased
 constraint function $\hat{p}_h^{\,b}(x)$ of \cref{eq:biasedcc} with a
 kernel and bias from \cref{sec:biasedkernels}. Fourth, enforce
@@ -203,21 +188,17 @@ construction provides. The program retains every structural property of
 Chapter~4: one smooth inequality whose row count is independent of $N$,
 with evaluation and gradient cost proportional to $N$.
 
-\subsubsection{Observed safety--cost trade-off}
-\label{sec:safetycosttradeoff}
-
-What the bias changes is the trade, and \cref{fig:safetycost} prices it
+The bias changes the balance between safety and cost, and \cref{fig:safetycost} quantifies it
 on a standalone lognormal scalar diagnostic where the truth is computable. The comparison follows the question posed at the end of Chapter~4: the unbiased reformulation is smooth and less conservative, while the
 biased reformulation is more conservative and has the fixed-decision
-pointwise envelope described above; neither statement alone is a
-selection-aware finite-sample certificate for an optimized decision.
-The numbers make the asymmetry of the trade explicit. Across sample
-sizes, the unbiased certificate fails in roughly $34$ to $43\%$ of
+pointwise envelope described above.
+The numbers make the asymmetry explicit. Across sample
+sizes, the unbiased certificate fails in roughly $34$--$43\%$ of
 trials over the tested range, with no monotone improvement across sample sizes; the biased certificate fails in $14\%$ of trials at
-$N = 50$, falls to $5\%$ by $N = 200$, and is below $1\%$ from
+$N = 50$, falls to $5\%$ by $N = 200$, and is at most $1\%$ from
 $N = 500$. These observed failures are compatible with sampling error,
 but the experiment does not provide a selection-aware finite-sample
-guarantee. The premium paid for this is $2.6$ to $4\%$ of
+guarantee. The premium paid for this is $2.6$--$4\%$ of
 objective value, shrinking as $N$ grows. The results quantify a bounded objective premium in this experiment and a
 lower observed failure rate for the biased surrogate. They do not establish
 that the ranking holds for other distributions or data-dependent decisions.
@@ -225,48 +206,41 @@ that the ranking holds for other distributions or data-dependent decisions.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{kap05/figures/fig_safetycost.pdf}
-  \caption{The price and the purchase of conservatism, on a standalone
-  lognormal scalar diagnostic ($\varepsilon = 0.05$, $800$ trials per sample size, bands are
-  $10$th-to-$90$th percentiles). (a) The unbiased certificate straddles
-  the target from below on a large fraction of trials at every $N$; the
-  biased certificate (Epanechnikov, $b = h$) lands above it by a margin
-  that shrinks as the estimator sharpens. (b) Certificate failure rates:
-  the tested unbiased rates show no monotone improvement across sample sizes; the
-  biased rate decreases in this diagnostic, falling below $1\%$ from
-  $N = 500$; this empirical trend is not a finite-sample guarantee. The
-  average objective premium paid for safety is
-  $2.6$ to $4\%$, decreasing in $N$.}
+  \caption{Cost and benefit of conservatism on a standalone lognormal
+  scalar diagnostic (risk level $\varepsilon = 0.05$, $800$ trials per
+  sample size; bands are $10$th-to-$90$th percentiles). (a) The unbiased
+  certificate falls below the target on a large fraction of trials at
+  every $N$; the biased certificate (Epanechnikov, $b = h$) lies above
+  it by a margin that shrinks as the estimator sharpens. (b) Certificate
+  failure rates: the unbiased rates show no monotone improvement, whereas
+  the biased rate falls to at most $1\%$ from $N = 500$ (an empirical
+  trend, not a finite-sample guarantee). The average objective premium
+  is $2.6$--$4\%$, decreasing in $N$.}
   \label{fig:safetycost}
 \end{figure}
 
 \subsection{Joint Chance Constraints: Three Approaches}
 \label{sec:jointthree}
 
-\subsubsection{Boole risk allocation}
-\label{sec:booleallocation}
-
 Everything so far concerns a scalar residual. The joint constraint of
-Chapters~1 through~4,
+Chapters~1--3,
 $\Prob(g_r(x,\xi) \leq 0,\, r = 1,\dots,m) \geq 1-\varepsilon$, asks
 about $m$ requirements at once, and the biased framework extends to it
-along three routes whose trade-offs this subsection fixes, because the
+along three routes whose trade-offs this section fixes, because the
 choice among them is a design decision the experimental chapters revisit.
 
-\emph{Approach A: Boole's inequality with risk allocation.} The union
+\paragraph*{Approach A: Boole's inequality with risk allocation.} The union
 bound $\Prob(\bigcup_r \{g_r > 0\}) \leq \sum_r \Prob(g_r > 0)$ yields a
-sufficient condition: enforce each component at level $\varepsilon_r$
+sufficient condition: enforce each component at risk level $\varepsilon_r$
 with $\sum_r \varepsilon_r \leq \varepsilon$, applying the
 one-dimensional biased KDE of \cref{sec:biasedreform} to each residual
 separately \citep{prekopa1995,keil2021}. The route is simple, fully
 tractable, and conservative twice over, once through the bias and once
 through the union bound; its conservatism grows with $m$ and is most
 costly exactly when the component violations are strongly correlated,
-the case the union bound prices worst.
+the case in which the union bound is least tight.
 
-\subsubsection{Multivariate residual KDE}
-\label{sec:multivariatekde}
-
-\emph{Approach B: multivariate KDE.} Estimate the joint density of the
+\paragraph*{Approach B: Multivariate KDE.} Estimate the joint density of the
 residual vector $(g_1(x,\xi),\dots,g_m(x,\xi))$ with a multivariate
 kernel and bandwidth matrix $H$, and integrate over the safe orthant
 $(-\infty,0]^m$ \citep{wu2021,wu2023}. The route is exact in the sense
@@ -276,10 +250,7 @@ curse of dimensionality of Chapter~3 now acts in the constraint
 dimension $m$,
 and the sample sizes it demands grow exponentially.
 
-\subsubsection{Exact scalar violation statistic}
-\label{sec:scalarviolation}
-
-\emph{Approach C: the scalar violation statistic.} The recommended
+\paragraph*{Approach C: The scalar violation statistic.} The recommended
 extension of this thesis collapses the joint constraint exactly. For
 positive weights $w_r$, define
 \begin{equation}
@@ -297,16 +268,13 @@ and the joint chance constraint is a scalar chance constraint on
 $s$. A one-dimensional biased KDE suffices; no Boole decomposition, no
 multivariate estimation, no curse of dimensionality. The constraint map
 itself has once again performed the dimension reduction, now in $m$ as
-well as in $d$. The single catch is the one Chapter~3 anticipated: the
+well as in $d$. The single difficulty is the one Chapter~3 anticipates: the
 max in \cref{eq:scalarstat} is nonsmooth, and a nonsmooth residual would
-re-break exactly the differentiability that Chapter~4 worked to
-establish. Removing that catch is the purpose of the next subsection.
+re-break exactly the differentiability that Chapter~4 works to
+establish. Removing that catch is the purpose of the next section.
 
 \subsection{Log-Sum-Exp Smoothing of the Scalar Violation Statistic}
 \label{sec:lse}
-
-\subsubsection{Safe-side max approximation}
-\label{sec:lsesafebound}
 
 The max is smoothed by the log-sum-exp surrogate with temperature
 $\tau > 0$,
@@ -324,7 +292,7 @@ which satisfies the two-sided bound
   \label{eq:lsebounds}
 \end{equation}
 \citep{boyd2004}. The direction of the bound is the key property of the construction,
-and it should be read in the spirit of
+and it parallels
 \cref{eq:domination}: the surrogate dominates the true statistic, so
 enforcing $\Prob(s_\tau \leq 0) \geq 1-\varepsilon$ \emph{implies} the
 true joint constraint, and the smoothing error, like the kernel bias, is
@@ -332,11 +300,8 @@ conservative by construction. The temperature plays for the max exactly
 the role the bandwidth plays for the indicator: a smoothing parameter
 whose cost is a controlled, safe-side margin of at most
 $\tau \log m$. \Cref{fig:lse}(a) shows the geometry on a two-constraint
-slice, $s_\tau$ riding above the kink and collapsing onto it as $\tau$
+slice, $s_\tau$ lying above the kink and collapsing onto it as $\tau$
 shrinks.
-
-\subsubsection{Softmax gradient and joint reformulation}
-\label{sec:lsegradient}
 
 The gradient completes the smoothness argument. Differentiating
 \cref{eq:lse} gives
@@ -350,7 +315,7 @@ The gradient completes the smoothness argument. Differentiating
   \label{eq:lsegrad}
 \end{equation}
 a softmax-weighted blend of the component gradients, smooth in $x$ and
-analytically computable. \Cref{fig:lse}(b) shows the weights handing
+analytically computable. \Cref{fig:lse}(b) shows the weights transferring
 influence from one constraint to the other across the switching point,
 continuously, where the raw max would switch abruptly and
 nondifferentiably. Composing the pieces yields the full biased-KDE
@@ -361,7 +326,7 @@ reformulation for joint constraints,
   \;\geq\; 1-\varepsilon ,
   \label{eq:jointreform}
 \end{equation}
-and \cref{eq:jointreform} is an implemented extension and diagnostic, a claim supported by what the formulation absorbs: a
+and \cref{eq:jointreform} is a proposed extension, motivated by what the formulation absorbs: a
 joint,
 non-Gaussian, possibly high-dimensional chance constraint has been
 reduced to a single smooth one-dimensional deterministic inequality,
@@ -376,7 +341,7 @@ interaction of these layers, including how conservatism compounds across $h$ and
   $s = \max(g_1, g_2)$ everywhere, with gap at most $\tau \log m$
   concentrated at the kink; as $\tau$ shrinks the surrogate collapses
   onto the max, so the smoothing error is a tunable, safe-side margin.
-  (b) The softmax weights of the gradient formula hand influence from
+  (b) The softmax weights of the gradient formula transfer influence from
   one constraint to the other continuously across the switching point,
   giving the solver a smooth blend where the raw max would give a
   nondifferentiable jump.}
@@ -386,31 +351,32 @@ interaction of these layers, including how conservatism compounds across $h$ and
 \subsection{Bandwidth Continuation and Kernel Switching}
 \label{sec:continuation}
 
-\subsubsection{Continuation schedule}
-\label{sec:continuationschedule}
-
 The constructions of this chapter create a practical tension that one
 further idea resolves. Small bandwidths and exactly-safe kernels are
 where the guarantees live, but they are also where the optimization is
 hardest: a sharply smoothed constraint approaches the piecewise-constant empirical estimator of
 Chapter~2, and a solver started cold against it inherits a rugged,
-nearly nonsmooth landscape. The warm-start strategy of
+nearly nonsmooth problem. The warm-start strategy of
 \citet{keil2021warm} converts this tension into a schedule.
 \Cref{fig:continuation} draws it. Begin with a large bandwidth, where
-the constraint is heavily smoothed, the landscape benign, and the
+the constraint is heavily smoothed, the problem benign, and the
 Gaussian kernel's speed available; solve, and pass the solution forward
 as the initial point for a smaller bandwidth; repeat, increasing the
 sample size as the bandwidth shrinks so that statistical resolution
 keeps pace with geometric resolution; and near convergence, switch to the locally implemented shifted
 Epanechnikov surrogate. The split-Bernstein switch shown in the cited workflow
 is a literature procedure and is not executed by the local runner.
+Locally, the lunar benchmark switches estimators across warm-started
+stages at a fixed bandwidth; the joint bandwidth and sample-size
+sequence is run only for the static and dispatch benchmarks of
+Chapter~9.
 
-\begin{figure}[t]
+\begin{figure}[!htb]
   \centering
   \includegraphics[width=0.82\textwidth]{kap05/figures/fig_continuation.pdf}
   \caption{The bandwidth-continuation and kernel-switching schedule of
   \citet{keil2021warm}. Early stages use a large bandwidth and the fast
-  Gaussian kernel, producing a benign landscape and a cheap solution;
+  Gaussian kernel, producing a benign problem and a cheap solution;
   each stage's solution warm-starts the next as the bandwidth shrinks
   and the sample size grows; the cited final stage switches to the split-Bernstein kernel; that
   literature step is not executed by the local runner. The homotopy stabilizes the solver and
@@ -419,19 +385,17 @@ is a literature procedure and is not executed by the local runner.
   \label{fig:continuation}
 \end{figure}
 
-\subsubsection{Scope of the solver claim}
-\label{sec:continuationscope}
-
 The schedule is a homotopy in the proper sense: a continuous deformation
 from an easy problem to the target problem along which the solution is
 tracked rather than rediscovered, and its effect in the experiments of
 \citet{keil2021warm} is precisely the one homotopies exist to deliver,
 stabilized convergence and substantially reduced solve times relative to
-cold starts at the final bandwidth. With it, Part~3 is complete as a
-method: a smooth, one-dimensional reformulation with constraint count
+cold starts at the final bandwidth. With it, the method of Chapters~4
+and~5 is complete: a smooth, one-dimensional reformulation with constraint count
 independent of $N$ for individual and joint chance constraints, equipped with
 a practical solution strategy. What the method still lacks is a formal
 guarantee that its answers approximate \emph{the true problem}, in the
 sense that as data accumulates the reformulated solutions converge to
-the true ones. The convergence theory of \citet{schuster2025}, and connecting it to the
-constructions of this chapter is the work the next chapter takes up.
+the true ones. The convergence theory of \citet{schuster2025} supplies
+that guarantee for the unbiased estimator; whether it extends to the
+constructions of this chapter is the question the next chapter takes up.

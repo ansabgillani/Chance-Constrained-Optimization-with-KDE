@@ -1,37 +1,34 @@
 \section{Implementation and Validation Protocol}
 \label{ch:implementation}
 
-The implementation is an evidence chain rather than a collection of independent scripts. A numerical value is admissible for interpretation only when its uncertainty law, residual convention, estimator, bandwidth, sample split, solver status, and validation scope are known. This requirement is central for the present thesis because the theory and the two anchor papers make different claims. Schuster's results concern sequences of KDE-approximated optimization problems under convergence assumptions. Keil et al. construct a biased kernel whose integrated function dominates the violation indicator, and combine it with MCMC sampling and optimal-control continuation. The local code is a small, fully local analogue. Its purpose is to expose which parts of those arguments survive a transparent implementation and which parts still require a different numerical experiment.
+The implementation is an evidence chain rather than a collection of independent scripts. A numerical value is admissible for interpretation only when its uncertainty law, residual convention, estimator, bandwidth, sample split, solver status, and validation scope are known. This requirement is central for the present thesis because the theory and the two anchor papers make different claims. The results of \citet{schuster2025} concern sequences of KDE-approximated optimization problems under convergence assumptions. \citet{keil2020,keil2021} construct a biased kernel whose integrated function dominates the violation indicator, and combine it with MCMC sampling and optimal-control continuation. The local code is a small, fully local analogue. Its purpose is to expose which parts of those arguments survive a transparent implementation and which parts still require a different numerical experiment.
 
-\subsection{Pipeline and claim contract}
-\subsubsection{Data flow and result schema}
+\subsection{Pipeline and Claim Contract}
+\label{sec:claim-contract}
 
 The pipeline is
 \begin{center}
-training samples $\rightarrow$ residual map $\rightarrow$ KDE or baseline constraint
-$\rightarrow$ NLP or collocation $\rightarrow$ independent validation $\rightarrow$ saved evidence.
+training samples $\rightarrow$ residual map $\rightarrow$ KDE or baseline constraint $\rightarrow$\\
+NLP or collocation $\rightarrow$ independent validation $\rightarrow$ saved evidence.
 \end{center}
 Each arrow is a possible failure point. A sampling error changes the empirical residual law. A sign error changes safe probability into violation probability. A bandwidth error changes both the statistical approximation and the geometry seen by the optimizer. A solver can return a finite vector with a failure status. Finally, an independent test frequency can be calculated correctly for an invalid or failed decision. The implementation therefore reports these layers separately rather than collapsing them into one safety label.
 
-The result schema records benchmark, method, distribution, seed, training and test sizes, target risk, bandwidth, objective, training violation, held-out violation, estimated violation, gap, runtime, solver message, and success status. The paper-aligned runs additionally record the bandwidth rule, bias ratio $B(h)/h$, sample-size schedule, continuation attempts, and whether samples are IID synthetic or MCMC. These fields make it possible to distinguish a Schuster-style Gaussian scaling experiment from a Keil-style biased-kernel experiment without changing the residual code.
+The result schema records benchmark, method, distribution, seed, training and test sizes, target risk level, bandwidth, objective, training violation, held-out violation, estimated violation, gap, runtime, solver message, and success status. The paper-aligned runs additionally record the bandwidth rule, bias ratio $b(h)/h$, sample-size schedule, continuation attempts, and whether samples are IID synthetic or MCMC. These fields make it possible to distinguish a paper-aligned unbiased KDE experiment from a paper-aligned biased KDE experiment without changing the residual code.
 
-\subsubsection{Independent validation quantities}
-
-For a decision $x^*$ and independent test observations $\xi_r^{\rm test}$, the main validation statistic is
+For a decision $\hat x$ and independent test observations $\xi_k^{\rm test}$, the main validation statistic is
 \begin{equation}
-  \widehat v_{\rm test}(x^*)=\frac{1}{M}\sum_{r=1}^M
-  \mathbf 1\{g(x^*,\xi_r^{\rm test})>0\}.
+  \hat v_{\rm test}(\hat x)=\frac{1}{N_{\mathrm{test}}}\sum_{k=1}^{N_{\mathrm{test}}}
+  \mathbf 1\{g(\hat x,\xi_k^{\rm test})>0\}.
   \label{eq:test-violation}
 \end{equation}
 The reported gap is
 \begin{equation}
-  \operatorname{gap}=\varepsilon-\widehat v_{\rm test}(x^*).
+  \operatorname{gap}=\varepsilon-\hat v_{\rm test}(\hat x).
   \label{eq:gap}
 \end{equation}
-A positive gap is an observation on one independent test sample. It is not a confidence statement about the unknown probability and does not certify a failed optimization stage. For the paper-aligned runs, the test sample is fixed across the nested training sizes, so changes in $\widehat v_{\rm test}$ can be interpreted as changes in the fitted decision rather than changes in the test population.
+A positive gap is an observation on one independent test sample. It is not a confidence statement about the unknown probability and does not certify a failed optimization stage. For the paper-aligned runs, the test sample is fixed across the nested training sizes, so changes in $\hat v_{\rm test}$ can be interpreted as changes in the fitted decision rather than changes in the test population.
 
-\subsection{Data generation and residual interfaces}
-\subsubsection{Uncertainty, residual, and joint-statistic modules}
+\subsection{Data Generation and Residual Interfaces}
 
 The uncertainty module creates seeded Gaussian, bimodal, skewed, heavy-tailed, and renewable-error samples. The residual is evaluated only after a candidate decision is supplied, so the KDE is an estimator of the residual distribution induced by that decision, not of the uncertainty in isolation. Scalar residuals use the integrated Gaussian or Epanechnikov kernel. Vector residuals are reduced by an explicitly named joint statistic; the current joint comparison uses Boolean maximum events and log-sum-exp, not a multivariate negative-orthant KDE.
 
@@ -47,10 +44,10 @@ does not provide an independent all-time path test. The implementation
 therefore records terminal frequency as terminal evidence and does not call it
 a path-safety result.
 
-\subsection{Validation layers and reproducibility limits}
-\subsubsection{Algebraic, distributional, and numerical checks}
+\subsection{Validation Layers and Reproducibility Limits}
+\label{sec:validation-layers}
 
-The first layer consists of algebraic and derivative checks. Gaussian and Epanechnikov kernels integrate to one, their integrated limits are correct, and the $B(h)=h$ Epanechnikov contribution is no larger than the safe indicator for positive residuals. Finite-difference checks then test the smooth constraint interface used by SLSQP. These checks catch normalization, sign, support, and gradient errors before statistical interpretation begins.
+The first layer consists of algebraic and derivative checks. Gaussian and Epanechnikov kernels integrate to one, their integrated limits are correct, and the $b(h)=h$ Epanechnikov contribution is no larger than the safe indicator for positive residuals. Finite-difference checks then test the smooth constraint interface used by SLSQP. These checks catch normalization, sign, support, and gradient errors before statistical interpretation begins.
 
 The second layer uses independent probability calculations. The Gaussian static row admits a noncentral-$\chi^2$ reference, and the dispatch mixture has a closed-form CDF at the balance threshold. Agreement with held-out Monte Carlo answers a distributional check; it says nothing about the skewed or heavy-tailed rows or optimizer convergence. The third layer is independent validation: training samples enter the NLP, while a fixed-seed test set is used only after the decision is returned. Binomial intervals quantify test-sample noise conditional on that decision, not adaptive selection or a scenario guarantee.
 

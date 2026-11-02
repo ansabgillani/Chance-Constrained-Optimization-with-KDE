@@ -4,6 +4,8 @@
 Engineering decisions must satisfy constraints under conditions that are only partly known when the decision is made. A dispatch schedule must cover uncertain net demand, and a descent trajectory must satisfy terminal conditions despite disturbances. Optimizing against a nominal forecast does not quantify the probability of failure, while protection against every admissible disturbance can demand substantial resources. Chance constraints express the required reliability directly. This thesis studies how kernel density estimation (KDE) of constraint residuals turns that probabilistic requirement into a differentiable nonlinear constraint, and what statistical and numerical qualifications accompany the resulting decisions.
 
 \subsection{Where Deterministic Optimization Falls Short}\label{sec:deterministic}
+Deterministic optimization replaces the uncertain input by a single representative value. This section first shows why that substitution provides no reliability level, then quantifies the consequence on a seeded dispatch example, and finally outlines the application areas in which the same mechanism appears.
+
 \subsubsection{The mean-value approach and the flaw of averages}\label{ssec:meanvalue}
 Let $x\in X\subseteq\mathbb R^n$ denote the decision, $f:X\to\mathbb R$ its objective, and $\xi\in\mathbb R^d$ a random input. The scalar residual $g(x,\xi)$ is defined so that $g(x,\xi)\le0$ means the requirement is satisfied. A nominal formulation replaces $\xi$ by a fixed value $\bar\xi$, often its mean when that mean exists:
 \begin{equation}
@@ -21,9 +23,9 @@ Consider a single-bus system in which capacity $x$ must cover uncertain net dema
   \qquad g(x,\xi)=\xi-x.
   \label{eq:dispatch}
 \end{equation}
-For illustration, let $\log\xi\sim\mathcal N(\log100,0.18^2)$, with demand measured in MW. The repository figure generator draws $200{,}000$ samples with random seed~7. Its sample mean is approximately $101.65$~MW; choosing that capacity leaves approximately $46.34\%$ of the generated demands uncovered. The empirical $95\%$ quantile is approximately $134.41$~MW. These are reproducible values from a seeded synthetic illustration, rather than measurements from an operating power system or a separate experimental dataset.
+For illustration, let $\log\xi\sim\mathcal N(\log100,0.18^2)$, with demand measured in MW. The repository figure generator draws $200{,}000$ samples with random seed~7. Its sample mean is approximately $101.65$~MW; choosing that capacity leaves approximately $46.34\%$ of the generated demands uncovered. The empirical $95\%$ quantile is approximately $134.41$~MW. These are reproducible values from a seeded synthetic illustration, rather than measurements from an operating power system or a separate experimental dataset. Figure~\ref{fig:meanvalue}(a) marks both capacities against the demand distribution, and panel~(b) traces the quantile capacity as the accepted shortfall varies.
 
-For this monotone residual and positive cost, the chance-constrained optimum is the demand quantile $x^\star=F_\xi^{-1}(1-\varepsilon)$. Thus reliability has an explicit capacity cost. The mean and median differ for the skewed lognormal law: the mean-value plan lies at its own empirical shortfall probability, not at $\varepsilon=0.5$. As $\varepsilon$ approaches zero, the population quantile and required capacity diverge because this distribution has unbounded upper support.
+For this monotone residual and positive cost, the chance-constrained optimum is the demand quantile $x^*=F_\xi^{-1}(1-\varepsilon)$. Thus reliability has an explicit capacity cost. The mean and median differ for the skewed lognormal law: the mean-value plan lies at its own empirical shortfall probability, not at $\varepsilon=0.5$. As $\varepsilon$ approaches zero, the population quantile and required capacity diverge because this distribution has unbounded upper support.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{fig_meanvalue.pdf}
@@ -32,9 +34,11 @@ For this monotone residual and positive cost, the chance-constrained optimum is 
 \end{figure}
 
 \subsubsection{Application contexts}\label{ssec:domains}
-The residual formulation connects several application areas. In lunar landing, uncertain dynamics must be reconciled with terminal and path requirements~\citep{keil2021}. In renewable dispatch, uncertain demand and generation enter balance and network constraints~\citep{bienstock2014}. Process planning couples uncertain inputs to production and operating limits~\citep{calfa2015}. Portfolio allocation regulates losses whose distribution can exhibit heavy tails~\citep{cont2001,rockafellar2000}. Each setting requires a decision, a definition of violation, and a distribution against which reliability is assessed. Their disturbance laws and consequences of failure remain application-specific. Chapters~7 and~9 use synthetic dispatch and lunar models to examine the computational mechanisms; process and portfolio applications supply broader motivation, not additional validated case studies.
+The residual formulation connects several application areas. In lunar landing, uncertain dynamics must be reconciled with terminal and path requirements~\citep{keil2021}. In renewable dispatch, uncertain demand and generation enter balance and network constraints~\citep{bienstock2014}. Process planning couples uncertain inputs to production and operating limits~\citep{calfa2015}. Portfolio allocation regulates losses whose distribution can exhibit heavy tails~\citep{cont2001,rockafellar2000}. Each setting requires a decision, a definition of violation, and a distribution against which reliability is assessed. Their disturbance laws and consequences of failure remain application-specific. Chapters~7 and~9 use synthetic static, dispatch, and lunar models to examine the computational mechanisms; process and portfolio applications supply broader motivation, not additional validated case studies.
 
 \subsection{Two Extremes and the Gap Between Them}\label{sec:extremes}
+Between ignoring uncertainty and protecting against every admissible disturbance lies a range of modeling choices. This section first characterizes worst-case robust optimization and the role of its uncertainty set, and then introduces chance constraints as a direct specification of the required reliability.
+
 \subsubsection{Ignoring uncertainty and worst-case robustness}\label{ssec:extremes}
 Worst-case robust optimization enforces the constraint throughout a prescribed uncertainty set $\Xi$:
 \begin{equation}
@@ -46,11 +50,11 @@ This is appropriate when the set captures the disturbances that must be tolerate
 \subsubsection{Chance constraints as a reliability specification}\label{ssec:middleground}
 A chance constraint requires
 \begin{equation}
-  \Prob\{g(x,\xi)\le0\}\ge1-\varepsilon,
+  \Prob(g(x,\xi)\le0)\ge1-\varepsilon,
   \qquad\varepsilon\in(0,1),
   \label{eq:ccIntro}
 \end{equation}
-where $\varepsilon$ is the allowed violation probability. Smaller values yield nested, more restrictive feasible sets and cannot improve the optimal objective in a minimization problem with otherwise unchanged data. Unlike an expected penalty, the constraint controls failure frequency directly; it does not control the magnitude of a violation once one occurs. That distinction matters when choosing between probability constraints and tail-risk measures~\citep{shapiro2014,rockafellar2000}.
+where $\varepsilon$ is the risk level, the allowed violation probability. Smaller values yield nested, more restrictive feasible sets and cannot improve the optimal objective in a minimization problem with otherwise unchanged data. Unlike an expected penalty, the constraint controls failure frequency directly; it does not control the magnitude of a violation once one occurs. That distinction matters when choosing between probability constraints and tail-risk measures~\citep{shapiro2014,rockafellar2000}.
 
 The limiting zero-risk condition is almost-sure feasibility. It implies protection at every support point when the residual is continuous in the uncertainty; bounded support and further feasibility and regularity conditions are needed to obtain a finite robust limit of the decisions. For the unbounded dispatch example, no finite capacity achieves zero risk. Figure~\ref{fig:spectrum} is therefore a schematic comparison, with its high-reliability endpoint representing a selected bounded uncertainty set. The target setting of this thesis is a specified, nonzero risk budget under data-described uncertainty, potentially outside a convenient parametric family.
 \begin{figure}[t]
@@ -61,51 +65,57 @@ The limiting zero-risk condition is almost-sure feasibility. It implies protecti
 \end{figure}
 
 \subsection{What Chance Constraints Are and Why They Are Hard}\label{sec:hard}
+This section makes the chance constraint precise and explains why it is difficult to handle numerically. It first defines individual and joint chance constraints and the corresponding optimization problem, and then identifies three structural sources of difficulty.
+
 \subsubsection{Individual and joint chance constraints}\label{ssec:definitions}
 For a measurable residual $g$, an individual chance constraint has the form
 \begin{equation}
-  \Prob\{g(x,\xi)\le0\}\ge1-\varepsilon.
+  \Prob(g(x,\xi)\le0)\ge1-\varepsilon.
   \label{eq:icc}
 \end{equation}
 For $m$ simultaneous requirements, the joint form is
 \begin{equation}
-  \Prob\{g_r(x,\xi)\le0,\ r=1,\ldots,m\}\ge1-\varepsilon.
+  \Prob(g_r(x,\xi)\le0,\ r=1,\ldots,m)\ge1-\varepsilon.
   \label{eq:jcc}
 \end{equation}
 Separate componentwise constraints with budget $\varepsilon$ do not generally deliver the same joint reliability. A sufficient construction assigns budgets $\varepsilon_r$ satisfying $\sum_{r=1}^m\varepsilon_r\le\varepsilon$ and enforces each component at level $1-\varepsilon_r$. Boole's inequality establishes this allocation without an independence assumption, but overlapping violation events can make it conservative~\citep{prekopa1995}. The individual chance-constrained program is
 \begin{equation}
   \minimize_{x\in X}f(x)
-  \quad\text{subject to }\Prob\{g(x,\xi)\le0\}\ge1-\varepsilon.
+  \quad\text{subject to }\Prob(g(x,\xi)\le0)\ge1-\varepsilon.
   \label{eq:ccp}
 \end{equation}
 
 \subsubsection{Three structural sources of difficulty}\label{ssec:difficulties}
-\paragraph{1. Non-convex feasible geometry.}
-Even affine scenario constraints can produce a non-convex probabilistic feasible set. With two equally likely scenarios and $\varepsilon=0.5$, satisfying either scenario is sufficient, so the feasible set is the union of their half-spaces. Such a union need not be convex. Convexity is available under additional structure, including suitable joint convexity of the deterministic feasible set and a log-concave uncertainty law~\citep{prekopa1995}. A general nonlinear residual need not satisfy these conditions.
+Three properties of chance-constrained programs complicate their numerical treatment; they are discussed in turn.
 
-\paragraph{2. Probability evaluation over a moving region.}
-Define $S(x)=\{\xi:g(x,\xi)\le0\}$ and the safe probability $p(x)=\Prob\{\xi\in S(x)\}$. If the uncertainty admits a density $\rho_\xi$, then
+\paragraph*{Nonconvex feasible geometry.}
+Even affine scenario constraints can produce a nonconvex probabilistic feasible set. With two equally likely scenarios and $\varepsilon=0.5$, satisfying either scenario is sufficient, so the feasible set is the union of their half-spaces. Such a union need not be convex. Convexity is available under additional structure, including suitable joint convexity of the deterministic feasible set and a log-concave uncertainty law~\citep{prekopa1995}. A general nonlinear residual need not satisfy these conditions.
+
+\paragraph*{Probability evaluation over a moving region.}
+Define $S(x)=\{\xi:g(x,\xi)\le0\}$ and the safe probability $p(x)=\Prob(\xi\in S(x))$. If the uncertainty admits a density $\rho_\xi$, then
 \begin{equation}
   p(x)=\int_{S(x)}\rho_\xi(u)\,du.
   \label{eq:probability-integral-intro}
 \end{equation}
 The region changes with the decision, and the density may itself be unknown. Evaluating this integral repeatedly can be demanding even when the density is available, especially in high dimension. When only samples are available, integration and distribution estimation become coupled parts of the optimization problem~\citep{shapiro2014}.
 
-\paragraph{3. Discontinuous empirical indicators.}
-Given $N$ independent, identically distributed samples $\xi_1,\ldots,\xi_N$, the direct sample estimate is
+\paragraph*{Discontinuous empirical indicators.}
+Given $N$ independent, identically distributed (IID) samples $\xi_1,\ldots,\xi_N$, the direct sample estimate is
 \begin{equation}
-  \hat p_N(x)=\frac1N\sum_{j=1}^N\ind\{g(x,\xi_j)\le0\}.
+  \bar p_N(x)=\frac1N\sum_{j=1}^N\ind\{g(x,\xi_j)\le0\}.
   \label{eq:empirical-indicator-intro}
 \end{equation}
 For a fixed sample, this estimate is constant wherever no residual crosses zero and jumps at crossings. The underlying probability can be smooth even though its empirical approximation is discontinuous. Differentiating the indicator average therefore supplies no useful local information between crossings to a gradient-based solver. Smoothing addresses this computational obstacle, but it also changes the estimated feasible boundary. Figure~\ref{fig:hardness} illustrates the first and third difficulties; the residual transformation below addresses the evaluation structure of the second.
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.9\textwidth]{fig_hardness.pdf}
-  \caption{Two structural obstacles. (a) A union of scenario half-spaces gives a non-convex feasible set. (b) A sample indicator and smooth approximations illustrate the transition introduced by smoothing. Smoothing an indicator does not generally convexify the optimization problem.}
+  \caption{Two structural obstacles. (a) A union of scenario half-spaces gives a nonconvex feasible set. (b) A sample indicator and smooth approximations illustrate the transition introduced by smoothing. Smoothing an indicator does not generally convexify the optimization problem.}
   \label{fig:hardness}
 \end{figure}
 
 \subsection{Distributional Uncertainty and the Residual-Space Shift}\label{sec:nonparametric}
+Even when the chance constraint is well defined, the probability law against which it is evaluated is often known only through data. This section first explains why a fitted parametric law can misrepresent the relevant tail, then introduces the residual-space estimate on which the thesis builds, and finally names the open questions concerning bandwidth, one-sided bias, and joint events that the later chapters address.
+
 \subsubsection{Why a parametric law can fail}\label{ssec:parametric}
 A parametric law can provide an efficient and interpretable probability model when its assumptions are supported. Reliability calculations, however, depend on the probability mass near and beyond the active threshold. Matching a mean and variance does not establish an accurate tail: skewness, heavy tails, and multiple modes can shift that mass substantially. Misspecification can either understate risk or impose unnecessary conservatism.
 
@@ -120,8 +130,8 @@ Figure~\ref{fig:mismatch} isolates this mechanism using synthetic laws. In its c
 \subsubsection{Estimating residuals rather than uncertainty coordinates}\label{sec:residual}
 For a fixed decision $x$, define $Y(x)=g(x,\xi)$ and its cumulative distribution function $F_{Y(x)}$. The identity
 \begin{equation}
-  F_{Y(x)}(0)=\Prob\{Y(x)\le0\}
-  =\Prob\{g(x,\xi)\le0\}=p(x)
+  F_{Y(x)}(0)=\Prob(Y(x)\le0)
+  =\Prob(g(x,\xi)\le0)=p(x)
   \label{eq:residual-cdf-intro}
 \end{equation}
 expresses the original safety event without approximation. Suppose $Y(x)$ admits a density. For residual samples $y_j(x)=g(x,\xi_j)$, bandwidth $h>0$, and a nonnegative kernel $K$ integrating to one, its KDE and integrated safe probability are
@@ -131,7 +141,7 @@ expresses the original safety event without approximation. Suppose $Y(x)$ admits
   \hat p_h(x)=\int_{-\infty}^0\hat\rho_h(y;x)\,dy.
   \label{eq:kde}
 \end{equation}
-This is the residual-based construction developed in kernel-smoothed chance-constrained optimization~\citep{calfa2015,schuster2025}.
+This is the residual-based construction developed in kernel-smoothed chance-constrained optimization~\citep{calfa2015,schuster2025}. Figure~\ref{fig:residual} illustrates it at a fixed decision.
 
 Three benefits follow. First, the estimated variable is scalar for an individual constraint, regardless of the dimension of $\xi$. Second, the integration region is the fixed half-line $(-\infty,0]$; decision dependence enters through the residual samples. Third, integration yields a finite sum of kernel CDF evaluations that is differentiable in $x$ when the integrated kernel and residual maps have the required smoothness. Chapter~4 derives that sum and its gradient. These benefits concern probability evaluation and solver access; they neither eliminate rare-event sampling requirements nor ensure global convexity.
 \begin{figure}[t]
@@ -147,17 +157,19 @@ Bandwidth determines both statistical smoothing and the constraint geometry pres
 For a joint event, $\max_r g_r(x,\xi)\le0$ is exactly equivalent to satisfying every component. The maximum preserves a scalar statistic but can be nonsmooth in the decision. Chapter~5 studies log-sum-exp smoothing alongside alternative joint constructions, making the additional approximation explicit.
 
 \subsection{Scope and Positioning}\label{sec:scope}
+The final section of this chapter places the thesis relative to its anchor literature and fixes its scope. It then states the four research questions and the chapter map that organize the remainder of the work.
+
 \subsubsection{Positioning relative to anchor work}\label{ssec:positioning}
 The thesis connects smooth residual reformulation~\citep{calfa2015}, safety-oriented biased-kernel constructions~\citep{keil2021}, and optimizer-level convergence under explicit assumptions~\citep{schuster2025}. It develops the formulation in Chapter~4, analyzes the local one-sided and joint constructions in Chapter~5, and interprets the convergence conditions in Chapter~6. Chapters~7--9 connect these statements to an implementation and a reproducible validation protocol.
 
-The contribution is an applied optimization analysis and implementation, not a new theorem in KDE theory. The local shifted-Epanechnikov construction is distinguished from Keil's Split--Bernstein kernel and optimal-control workflow. No closed-loop stability or recursive-feasibility result is established, and the synthetic lunar transcription does not by itself certify continuous-time path safety. Statistical statements concern the sampling law; transfer to a changed deployment distribution is outside scope. In particular, asymptotic convergence and empirical test frequencies are not distribution-free finite-sample guarantees for a decision optimized on the training sample.
+The contribution is an applied optimization analysis and implementation, not a new theorem in KDE theory. The local biased KDE, a shifted Epanechnikov construction, is distinguished from the Split--Bernstein kernel of Keil et al. and optimal-control workflow. No closed-loop stability or recursive-feasibility result is established, and the synthetic lunar transcription does not by itself certify continuous-time path safety. Statistical statements concern the sampling law; transfer to a changed deployment distribution is outside scope. In particular, asymptotic convergence and empirical test frequencies are not distribution-free finite-sample guarantees for a decision optimized on the training sample.
 
 \subsubsection{Research questions and chapter map}\label{ssec:rqs}
 Four research questions organize the analysis:
 \begin{enumerate}
   \item \textbf{RQ1: Formulation.} How does residual-space KDE produce a differentiable chance-constraint approximation, and which assumptions justify its estimator, conservative bounds, and optimization limits? Chapters~4--6 provide the mathematical analysis.
-  \item \textbf{RQ2: Numerical comparison.} How do nominal, scenario, parametric-reference, and KDE decisions compare in violation probability, objective value, conservatism, and computational behavior where the benchmark supports those measurements? Chapters~8--9 define and report the comparisons.
-  \item \textbf{RQ3: Bandwidth and smoothing.} How do bandwidth, one-sided bias, and sample size affect estimated feasibility, held-out violations, and solver behavior? Chapters~5--6 establish the mechanisms, and Chapter~9 reports the diagnostics.
-  \item \textbf{RQ4: Joint extension.} How do scalar joint-event statistics and log-sum-exp smoothing compare with alternative constructions, and what conservatism or numerical limitations do they introduce? Chapter~5 develops the extension and Chapter~9 evaluates it.
+  \item \textbf{RQ2: Numerical comparison.} How do nominal, scenario, parametric-reference, and KDE decisions compare in violation probability, objective value, conservatism, and solver status where the benchmark supports those measurements? Chapters~8--9 define and report the comparisons.
+  \item \textbf{RQ3: Bandwidth and smoothing.} How do bandwidth, one-sided bias, and sample size affect estimated feasibility, held-out violations, and solver behavior? Chapters~3--6 establish the mechanisms, and Chapter~9 reports the diagnostics.
+  \item \textbf{RQ4: Joint extension.} How do scalar joint-event statistics and log-sum-exp smoothing compare with alternative constructions, and what conservatism or numerical limitations do they introduce? Chapter~5 develops the extension, and Chapter~9 reports a statistic-level diagnostic of it.
 \end{enumerate}
 Chapter~2 supplies the stochastic-optimization survey; Chapter~3 supplies the KDE foundations. Chapter~7 specifies the optimal-control transcription and its audit; Chapters~10--11 interpret the evidence, identify unresolved limitations, and state the supported conclusions.

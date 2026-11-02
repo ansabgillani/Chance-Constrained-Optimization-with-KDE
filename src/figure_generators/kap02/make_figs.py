@@ -1,149 +1,119 @@
 #!/usr/bin/env python3
 """
-make_chapter2_figures.py
-========================
-Generates survey figures for Chapter 2 and KDE background figures for Chapter 3
-"Chance-Constrained Optimization with Kernel Density Estimation".
+Figures for Chapter 2 (survey) and Chapter 3 (KDE background).
 
-Usage (from any directory):
-    pip install numpy scipy matplotlib
-    python make_chapter2_figures.py
+Usage:  python make_figs.py   (writes PDFs to ./figures/)
 
-Outputs the generated PDFs and matching PNG previews in ./figures/.
+fig_taxonomy, fig_levelsets, fig_staircase  -> kap02/figures
+fig_kernels, fig_bandwidth, fig_curse, fig_litmap -> kap03/figures
+fig_methods and fig_scenariogrowth are kept for regeneration but are not
+part of the default run.
 
-Figures produced
-----------------
-fig_taxonomy     -- four-paradigm conceptual map
-fig_levelsets    -- Prekopa log-concavity and its boundary (composite and panels)
-fig_methods      -- survey experiment: achieved reliability vs N
-fig_kernels      -- KDE background (Chapter 3; retained for regeneration)
-fig_bandwidth    -- KDE background bandwidth trade-off (Chapter 3)
-fig_curse        -- KDE background curse of dimensionality (Chapter 3)
-fig_litmap       -- KDE chance-constraint literature timeline (Chapter 3)
-
-House style
------------
-- Serif fonts, no top/right spines, dpi=200
-- All in-axes labels use a semi-opaque white backplate (WBOX) so that
-  grid lines, curves, and arrows never strike through text
-- Annotations use short arrows pointing *at* the feature, starting in
-  clear space, so no arrow crosses a label
-- LaTeX is NOT required; mathtext handles all math symbols
+Style comes from thesis_style (Charter, open axes, unframed legends); every
+figure is drawn at the width LaTeX includes it, so 1 pt here is 1 pt on paper.
 """
 
 import os
+import sys
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")        # remove this line if you want an interactive window
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from scipy import stats
 
-# ------------------------------------------------------------------ style
-plt.rcParams.update({
-    "font.size": 9.5,
-    "font.family": "serif",
-    "mathtext.fontset": "dejavuserif",
-    "axes.spines.top": False,
-    "axes.spines.right": False,
-    "figure.dpi": 200,
-    "axes.titlesize": 10,
-    "legend.fontsize": 8.3,
-})
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from thesis_style import apply_style, COLORS, WBOX, width_in
+apply_style()
 
-BLUE   = "#1f4e79"
-RED    = "#b3392e"
-GRAY   = "#7a7a7a"
-GREEN  = "#2e7d4f"
-ORANGE = "#d9842b"
-PURPLE = "#6a4c93"
+BLUE = COLORS["unbiased"]
+GREEN = COLORS["biased"]
+RED = COLORS["violation"]
+GRAY = COLORS["nominal"]
+ORANGE = COLORS["scenario"]
+PURPLE = COLORS["stochastic"]
+TRUTH = COLORS["truth"]
+ANNOT = COLORS["annotation"]
+TXTGRAY = COLORS["muted"]
+BLUE_TINT = "#6f9cc6"      # lighter tint of the unbiased-KDE blue
 
-# White backplate: place this on every label that sits over plotted content
-WBOX = dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.88)
+
+def tint(c, f):
+    """Blend colour c with white; f is the fraction of c kept."""
+    import matplotlib.colors as mc
+    r = np.array(mc.to_rgb(c))
+    return tuple(1 - f * (1 - r))
+
 
 OUT = "figures"
 os.makedirs(OUT, exist_ok=True)
-
-# Fixed seed for reproducibility
 rng = np.random.default_rng(11)
 
 
 def finish(fig, name):
-    """Save PDF (for LaTeX) and PNG (for quick preview) and close."""
-    fig.savefig(os.path.join(OUT, name + ".pdf"), bbox_inches="tight")
-    # fig.savefig(os.path.join(OUT, name + ".png"), dpi=110, bbox_inches="tight")
+    """Save at the exact figure size (printed width = figsize width)."""
+    fig.savefig(os.path.join(OUT, name + ".pdf"), bbox_inches=None)
     plt.close(fig)
     print(f"  wrote {name}")
 
 
 def styled_legend(ax, **kw):
-    """Legend with opaque white background at high z-order."""
-    leg = ax.legend(frameon=True, framealpha=0.9, edgecolor="none",
-                    facecolor="white", **kw)
-    leg.set_zorder(7)
-    return leg
+    return ax.legend(**kw)
 
 
 # ===========================================================================
-# Figure 1  fig_taxonomy
-# Four-paradigm conceptual map.
+# fig_taxonomy: four-paradigm conceptual map (schematic box style)
 # ===========================================================================
 def fig_taxonomy():
-    fig, ax = plt.subplots(figsize=(6.8, 3.6))
+    fig, ax = plt.subplots(figsize=(width_in(0.85), 3.1))
     ax.set_xlim(0, 10)
     ax.set_ylim(-1.0, 10)
     ax.axis("off")
+    arrow = dict(arrowstyle="->", lw=0.8, color=TXTGRAY)
 
-    # axis arrows
-    ax.annotate("", xy=(9.8, 0.6), xytext=(0.4, 0.6),
-                arrowprops=dict(arrowstyle="->", lw=1.2))
-    ax.annotate("", xy=(0.4, 9.8), xytext=(0.4, 0.6),
-                arrowprops=dict(arrowstyle="->", lw=1.2))
-
+    ax.annotate("", xy=(9.8, 0.6), xytext=(0.4, 0.6), arrowprops=arrow)
+    ax.annotate("", xy=(0.4, 9.8), xytext=(0.4, 0.6), arrowprops=arrow)
     ax.text(5.1, -0.75, "distributional information used",
-            ha="center", fontsize=9)
+            ha="center", fontsize=9, color=ANNOT)
     ax.text(-0.05, 9.7, "protection level (conservatism)",
-            rotation=90, va="top", fontsize=9)
+            rotation=90, va="top", fontsize=9, color=ANNOT)
     for xp, lab in [(1.9, "none"), (5.0, "support set only"),
                     (8.25, "full law / samples")]:
-        ax.text(xp, 0.05, lab, ha="center", fontsize=8, color=GRAY)
+        ax.text(xp, 0.05, lab, ha="center", fontsize=8.5, color=TXTGRAY)
 
-    def box(x, y, w, h, color, label, sub, tfrac=0.72, sfrac=0.26):
-        r = mpatches.FancyBboxPatch(
-            (x, y), w, h, boxstyle="round,pad=0.12",
-            fc=color, ec="none", alpha=0.20)
-        ax.add_patch(r)
+    def box(x, y, w, h, color, label, sub, tfrac=0.70, sfrac=0.26,
+            tcolor=None):
+        ax.add_patch(mpatches.FancyBboxPatch(
+            (x, y), w, h, boxstyle="round,pad=0.12,rounding_size=0.25",
+            fc=tint(color, 0.14), ec=color, lw=0.8))
         ax.text(x + w/2, y + h*tfrac, label, ha="center", va="center",
-                fontsize=9.3, color=color, weight="bold", linespacing=1.05)
-        ax.text(x + w/2, y + h*sfrac, sub, ha="center", va="center",
-                fontsize=7.8, color="k", linespacing=1.1)
+                fontsize=9, color=tcolor or color, weight="bold",
+                linespacing=1.05)
+        if sub:
+            ax.text(x + w/2, y + h*sfrac, sub, ha="center", va="center",
+                    fontsize=8.5, color=ANNOT, linespacing=1.1)
 
-    box(0.8, 1.2, 2.3, 2.0, RED,    "Deterministic",
-        "mean values,\nno guarantee")
-    box(3.8, 7.2, 2.5, 2.0, GRAY,   "Robust",
+    box(0.8, 1.2, 2.3, 2.0, GRAY, "Deterministic",
+        "mean values,\nno guarantee", tcolor=TXTGRAY)
+    box(3.8, 7.2, 2.5, 2.0, ORANGE, "Robust",
         "all of $\\Xi$,\nworst case")
-    box(7.0, 1.6, 2.6, 2.0, ORANGE, "Stochastic\nprogramming",
+    box(7.0, 1.6, 2.6, 2.0, PURPLE, "Stochastic\nprogramming",
         "expected cost\n(+ recourse)", tfrac=0.76, sfrac=0.24)
-
-    # chance-constrained: tall box with double-headed arrow on the left
-    r = mpatches.FancyBboxPatch(
-        (7.0, 4.4), 2.6, 4.4, boxstyle="round,pad=0.12",
-        fc=GREEN, ec=GREEN, alpha=0.20, lw=1.0)
-    ax.add_patch(r)
-    ax.text(8.55, 8.05, "Chance-\nconstrained", ha="center", va="center",
-            fontsize=9.3, color=GREEN, weight="bold", linespacing=1.05)
+    box(7.0, 4.4, 2.6, 4.4, COLORS["chance"], "Chance-\nconstrained", "",
+        tfrac=0.84)
     ax.annotate("", xy=(7.45, 8.55), xytext=(7.45, 4.65),
-                arrowprops=dict(arrowstyle="<->", lw=1.1, color=GREEN))
+                arrowprops=dict(arrowstyle="<->", lw=0.8, color=BLUE))
     ax.text(8.6, 6.0, "reliability dial\n$1-\\varepsilon$",
-            ha="center", va="center", fontsize=7.8, linespacing=1.15)
+            ha="center", va="center", fontsize=8.5, color=ANNOT,
+            linespacing=1.15)
 
-    fig.tight_layout()
+    fig.tight_layout(pad=0.3)
     finish(fig, "fig_taxonomy")
 
 
 # ===========================================================================
-# Figure 2  fig_levelsets
-# Prekopa's theorem and the boundary of log-concavity.
+# fig_levelsets: Prekopa's theorem and the boundary of log-concavity
+# One two-panel figure at full text width.
 # ===========================================================================
 def fig_levelsets():
     g = np.linspace(-0.6, 1.6, 240)
@@ -155,46 +125,301 @@ def fig_levelsets():
         return stats.norm.cdf((1 - (mu[0]*X1 + mu[1]*X2)) / s)
 
     def draw_panel(ax, mixture=False):
-        """Draw one level-set panel on ``ax``."""
         if mixture:
             PA = p_gauss(np.array([1.9, 0.1]), np.array([[0.05, 0], [0, 0.05]]))
             PB = p_gauss(np.array([0.1, 1.9]), np.array([[0.05, 0], [0, 0.05]]))
             P = 0.5 * PA + 0.5 * PB
-            colour, level, alpha = RED, 0.55, 0.25
-            label_x, label_y = -0.42, -0.30
-            title = "Two-component Gaussian mixture $\\xi$: non-convex level set"
+            level, label_x, label_y = 0.55, -0.42, -0.30
+            title = "(b) Two-component mixture"
         else:
             P = p_gauss(np.array([0.8, 0.8]),
                         np.array([[0.16, 0.0], [0.0, 0.16]]))
-            colour, level, alpha = GREEN, 0.9, 0.30
-            label_x, label_y = -0.30, 0.05
-            title = "Gaussian $\\xi$: convex level set"
-
-        ax.contourf(X1, X2, P, levels=[level, 1.001],
-                    colors=[colour], alpha=alpha)
-        ax.contour(X1, X2, P, levels=[level], colors=[colour], linewidths=1.6)
+            level, label_x, label_y = 0.9, -0.30, 0.05
+            title = "(a) Gaussian law"
+        c = COLORS["safe"]
+        ax.contourf(X1, X2, P, levels=[level, 1.001], colors=[c], alpha=0.25)
+        ax.contour(X1, X2, P, levels=[level], colors=[c], linewidths=1.6)
         ax.text(label_x, label_y, rf"$\{{x: p(x)\geq {level:g}\}}$",
-                fontsize=9, color=colour, bbox=WBOX, zorder=7)
+                fontsize=8.5, color=c, bbox=WBOX, zorder=7)
         ax.set_title(title)
+        ticks = [-0.5, 0, 0.5, 1, 1.5]
+        ax.set_xticks(ticks)
+        ax.set_yticks(ticks)
         ax.set_xlabel("$x_1$")
         ax.set_ylabel("$x_2$")
         ax.set_xlim(g[0], g[-1])
         ax.set_ylim(g[0], g[-1])
+        ax.set_aspect("equal")
 
-    # Preserve the original composite asset for backwards compatibility.
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.1))
+    fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.85))
     draw_panel(axes[0], mixture=False)
     draw_panel(axes[1], mixture=True)
-    fig.tight_layout()
+    fig.tight_layout(pad=0.3, w_pad=1.5)
     finish(fig, "fig_levelsets")
 
-    # Standalone panels are used by the paper's ``subfigure`` environment.
-    for name, mixture in (("fig_levelsets_gaussian", False),
-                          ("fig_levelsets_mixture", True)):
-        panel_fig, panel_ax = plt.subplots(figsize=(3.45, 3.1))
-        draw_panel(panel_ax, mixture=mixture)
-        panel_fig.tight_layout()
-        finish(panel_fig, name)
+
+
+
+# ===========================================================================
+# fig_kernels: kernel functions and their integrals vs the indicator
+# ===========================================================================
+def fig_kernels():
+    u = np.linspace(-2.2, 2.2, 600)
+    shift = 1.0
+
+    gauss = stats.norm.pdf(u)
+    epan = np.where(np.abs(u) <= 1, 0.75*(1 - u**2), 0)
+    epan_b = np.where(np.abs(u - shift) <= 1, 0.75*(1 - (u - shift)**2), 0)
+
+    fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.8))
+
+    ax = axes[0]
+    ax.plot(u, gauss, color=BLUE, label="Gaussian")
+    ax.plot(u, epan, color=BLUE_TINT, ls="--", label="Epanechnikov")
+    ax.plot(u, epan_b, color=GREEN, label="biased (shifted support)")
+    ax.set_xlabel("$u$")
+    ax.set_ylabel("$K(u)$")
+    ax.set_title("(a) Kernel functions")
+    ax.set_ylim(0, 1.3)
+    ax.legend(loc="upper left")
+
+    ax = axes[1]
+    cg = stats.norm.cdf(u)
+    ce = np.where(u < -1, 0, np.where(u > 1, 1, 0.25*(2 + 3*u - u**3)))
+    ub = u - shift
+    cb = np.where(ub < -1, 0, np.where(ub > 1, 1, 0.25*(2 + 3*ub - ub**3)))
+    ax.step([-2.2, 0, 0, 2.2], [0, 0, 1, 1], where="post", color=TRUTH,
+            lw=1.2, label="indicator $\\mathbf{1}\\{u\\geq 0\\}$")
+    ax.plot(u, cg, color=BLUE, label="Gaussian")
+    ax.plot(u, ce, color=BLUE_TINT, ls="--", label="Epanechnikov")
+    ax.plot(u, cb, color=GREEN, label="biased")
+    ax.fill_between(u, cb, np.where(u >= 0, 1, 0),
+                    where=(cb <= np.where(u >= 0, 1, 0)) & (u > -1.7),
+                    color=GREEN, alpha=0.10, lw=0)
+    ax.set_xlabel("$u$")
+    ax.set_ylabel("$F_K(u)$")
+    ax.set_title("(b) Integrated kernels vs indicator")
+    ax.set_ylim(-0.05, 1.75)
+    ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    ax.legend(loc="upper left")
+
+    fig.tight_layout(pad=0.3)
+    finish(fig, "fig_kernels")
+
+
+# ===========================================================================
+# fig_bandwidth: bias-variance trade-off for kernel density estimation
+# ===========================================================================
+def fig_bandwidth():
+    def truth(y):
+        return (0.65*stats.norm.pdf(y, -0.9, 0.35)
+                + 0.35*stats.norm.pdf(y, 0.7, 0.5))
+
+    def sample_truth(N, seed):
+        r = np.random.default_rng(seed)
+        n1 = r.binomial(N, 0.65)
+        return np.concatenate([r.normal(-0.9, 0.35, n1),
+                               r.normal(0.7, 0.5, N - n1)])
+
+    ygrid = np.linspace(-2.8, 2.8, 500)
+    N = 200
+    samp = sample_truth(N, 5)
+
+    fig, axes = plt.subplots(1, 2, figsize=(width_in(0.82), 2.75),
+                             gridspec_kw=dict(width_ratios=[1.3, 1]))
+
+    ax = axes[0]
+    ax.plot(ygrid, truth(ygrid), color=TRUTH, ls="--", lw=1.3,
+            label="true density")
+    for h, c, ls, lw, lab in [
+            (0.05, tint(BLUE, 0.45), "-", 1.2, "$h=0.05$ (undersmoothed)"),
+            (0.25, BLUE, "-", 1.8, "$h=0.25$ (near optimal)"),
+            (0.90, tint(BLUE, 0.7), (0, (4, 1.5, 1, 1.5)), 1.6,
+             "$h=0.90$ (oversmoothed)")]:
+        kde = (stats.norm.pdf((ygrid[:, None] - samp[None, :])/h)
+               .mean(axis=1) / h)
+        ax.plot(ygrid, kde, color=c, ls=ls, lw=lw, label=lab)
+    ax.set_xlabel("$y$")
+    ax.set_ylabel("density")
+    ax.set_ylim(0, 2.0)
+    ax.set_yticks([0, 0.4, 0.8])
+    ax.set_title(f"(a) Three bandwidths, $N={N}$")
+    ax.legend(loc="upper right", handlelength=1.6, labelspacing=0.25)
+
+    hs = np.geomspace(0.03, 1.4, 26)
+    T = 120
+    f_true = truth(ygrid)
+    est = np.zeros((T, len(hs), len(ygrid)))
+    for t in range(T):
+        st = sample_truth(N, 100 + t)
+        for k, h in enumerate(hs):
+            est[t, k] = (stats.norm.pdf(
+                (ygrid[:, None] - st[None, :])/h).mean(axis=1) / h)
+
+    mean_est = est.mean(axis=0)
+    bias2 = np.trapezoid((mean_est - f_true[None, :])**2, ygrid, axis=1)
+    var = np.trapezoid(est.var(axis=0), ygrid, axis=1)
+    mise = bias2 + var
+    hstar = hs[np.argmin(mise)]
+
+    ax = axes[1]
+    ax.loglog(hs, bias2, color=GRAY, ls="--", label="squared bias")
+    ax.loglog(hs, var, color=BLUE, ls=":", lw=2.0, label="variance")
+    ax.loglog(hs, mise, color=TRUTH, lw=1.8, label="MISE")
+    ax.axvline(hstar, color=TRUTH, lw=0.8, ls=(0, (1, 2)))
+    ax.text(hstar*1.12, 1.45e-4, "$h^{*}$", color=ANNOT, fontsize=9.5)
+    ax.set_xlabel("bandwidth $h$")
+    ax.set_ylabel("integrated error")
+    ax.set_title("(b) Bias-variance trade-off")
+    ax.set_ylim(top=40)
+    ax.legend(loc="upper right")
+
+    fig.tight_layout(pad=0.3)
+    finish(fig, "fig_bandwidth")
+    print(f"    h* = {hstar:.3f}")
+
+
+# ===========================================================================
+# fig_curse: sample size required vs dimension
+# ===========================================================================
+def fig_curse():
+    d = np.arange(1, 11)
+    N1 = 100.0
+    Nd = N1**((d + 4) / 5)
+
+    fig, ax = plt.subplots(figsize=(width_in(0.8), 2.7))
+    ax.semilogy(d, Nd, "-o", color=BLUE)
+    ax.axhline(1e6, color=GRAY, lw=1.0, ls=":")
+    ax.text(1.0, 1.7e6, "$10^6$ samples", color=TXTGRAY, fontsize=8.5)
+
+    for dd, label, xy_text in [
+            (1, "$d=1$: $N\\approx 10^{2}$", (1.15, 3.5e3)),
+            (5, "$d=5$: $N\\approx 4\\times10^{3}$", (5.6, 1.1e3)),
+            (10, "$d=10$: $N\\approx 4\\times10^{5}$", (4.9, 2.6e5))]:
+        ax.annotate(label, xy=(dd, N1**((dd + 4)/5)), xytext=xy_text,
+                    fontsize=8.5, color=ANNOT, zorder=7,
+                    arrowprops=dict(arrowstyle="->", lw=0.7, shrinkB=3,
+                                    color=TXTGRAY))
+
+    ax.set_xlabel("dimension $d$ of the estimated variable")
+    ax.set_ylabel("samples for fixed accuracy")
+    ax.set_xticks(d)
+    ax.set_ylim(50, 4e6)
+    fig.tight_layout(pad=0.3)
+    finish(fig, "fig_curse")
+
+
+# ===========================================================================
+# fig_litmap: KDE chance-constraint literature timeline
+# ===========================================================================
+def fig_litmap():
+    lanes = {
+        "Process systems": (6.4, TRUTH),
+        "Aerospace":       (4.8, TRUTH),
+        "Energy/networks": (3.2, TRUTH),
+        "Finance":         (1.6, TRUTH),
+        "Theory":          (0.0, TRUTH),
+    }
+
+    # (year, lane, label, above_the_dot?, label_ha, label_anchor_year)
+    papers = [
+        (2015.0, "Process systems", "Calfa et al.",              True,  "center", 2015.0),
+        (2018.0, "Aerospace",       "Caillau et al.",            True,  "right",  2018.4),
+        (2018.5, "Energy/networks", "Gugat,\nSchuster",          False, "right",  2018.9),
+        (2017.8, "Energy/networks", "Ciftci",                    True,  "center", 2017.8),
+        (2019.6, "Energy/networks", "Ciftci\net al.",            False, "center", 2019.6),
+        (2020.0, "Aerospace",       "Keil et al.\n(biased KDE)", False, "center", 2020.0),
+        (2021.3, "Aerospace",       "Keil et al.\n(OCAM)",       True,  "center", 2021.3),
+        (2022.0, "Aerospace",       "Keil, Rao\n(warm start)",   False, "center", 2022.3),
+        (2021.5, "Energy/networks", "Wu et al.",                 False, "right",  2022.0),
+        (2022.4, "Energy/networks", "Schuster et al.",           False, "left",   2022.3),
+        (2022.7, "Finance",         "Liu et al.",                False, "center", 2022.7),
+        (2023.3, "Energy/networks", "Wu, Kargarian",             True,  "right",  2023.8),
+        (2025.4, "Theory",          "Schuster (convergence)",    False, "center", 2025.4),
+        (2026.0, "Energy/networks", "Qi et al.",                 True,  "left",   2025.9),
+    ]
+
+    fig, ax = plt.subplots(figsize=(width_in(0.88), 3.7))
+
+    for name, (y, c) in lanes.items():
+        ax.axhline(y, color=c, lw=0.8, alpha=0.4, zorder=1)
+        ax.annotate(name, xy=(2014.0, y), xytext=(0, -4),
+                    textcoords="offset points", va="top",
+                    fontsize=8.5, color=c, zorder=6, bbox=WBOX)
+
+    ax.annotate("", xy=(2025.4, 0.3), xytext=(2025.25, 4.65),
+                arrowprops=dict(arrowstyle="->", lw=0.8, color=TXTGRAY),
+                zorder=2)
+    ax.text(2025.0, 0.45, "engineering practice\nfeeds convergence theory",
+            fontsize=8.5, color=TXTGRAY, ha="right", va="center",
+            zorder=6, bbox=WBOX)
+
+    for yr, lane, lab, above, ha, xl in papers:
+        y, c = lanes[lane]
+        ax.scatter(yr, y, s=46, color=c, zorder=7, ec="white", lw=0.4)
+        ax.annotate(lab, xy=(xl, y), xytext=(0, 5 if above else -5),
+                    textcoords="offset points", ha=ha, fontsize=8.5,
+                    va="bottom" if above else "top",
+                    color=ANNOT, linespacing=1.1, zorder=6, bbox=WBOX)
+
+    ax.set_xlim(2013.9, 2027.4)
+    ax.set_ylim(-0.95, 7.25)
+    ax.set_yticks([])
+    ax.set_xlabel("year")
+    ax.spines["left"].set_visible(False)
+    fig.tight_layout(pad=0.3)
+    finish(fig, "fig_litmap")
+
+
+# ---------------------------------------------------------------------------
+# Survey experiment shared setup (seed 21 preserved so published numbers
+# reproduce exactly).
+# ---------------------------------------------------------------------------
+LAW = stats.lognorm(s=0.18, scale=100)
+EPS = 0.05
+TRUE_Q = LAW.ppf(1 - EPS)
+rng_bb = np.random.default_rng(21)
+
+
+def fig_staircase():
+    xs = np.linspace(88, 162, 1200)
+    true_v = 1 - LAW.cdf(xs)
+
+    fig, axes = plt.subplots(1, 2, figsize=(width_in(0.82), 2.6))
+
+    ax = axes[0]
+    N = 60
+    samp = LAW.rvs(N, random_state=3)
+    vhat = (samp[None, :] > xs[:, None]).mean(axis=1)
+    ax.plot(xs, true_v, color=TRUTH, lw=1.8, label="true $v(x)$")
+    ax.step(xs, vhat, where="post", color=ORANGE, lw=1.4,
+            label=f"$\\hat v_N(x)$, $N={N}$")
+    ax.axhline(EPS, color=TRUTH, ls="--", lw=1.0)
+    ax.text(91, EPS + 0.03, "$\\varepsilon = 0.05$", fontsize=8.5,
+            color=ANNOT, bbox=WBOX, zorder=7)
+    ax.set_xlabel("decision $x$ [MW]")
+    ax.set_ylabel("violation probability")
+    ax.set_title("(a) Empirical estimator")
+    ax.legend(loc="upper right")
+
+    ax = axes[1]
+    for k, (seed, c, lw) in enumerate([(11, tint(ORANGE, 0.55), 1.2),
+                                       (12, ORANGE, 1.2),
+                                       (13, "#8a4e0e", 1.2)]):
+        sk = LAW.rvs(N, random_state=seed)
+        vk = (sk[None, :] > xs[:, None]).mean(axis=1)
+        ax.step(xs, vk, where="post", lw=lw, color=c, label=f"draw {k+1}")
+    ax.plot(xs, true_v, color=TRUTH, lw=1.8, label="true $v(x)$")
+    ax.axhline(EPS, color=TRUTH, ls="--", lw=1.0)
+    ax.set_xlim(120, 155)
+    ax.set_ylim(0, 0.18)
+    ax.set_xlabel("decision $x$ [MW]")
+    ax.set_ylabel("violation probability")
+    ax.set_title("(b) Resampling noise")
+    ax.legend(loc="upper right")
+
+    fig.tight_layout(pad=0.3)
+    finish(fig, "fig_staircase")
 
 
 # ===========================================================================
@@ -257,285 +482,6 @@ def fig_methods():
 
 
 # ===========================================================================
-# Figure 4  fig_kernels
-# Kernel functions and their integrated forms vs the indicator.
-# ===========================================================================
-def fig_kernels():
-    u = np.linspace(-2.2, 2.2, 600)
-    shift = 1.0  # shift full support [-1, 1] to [0, 2] for a one-sided CDF envelope
-
-    gauss  = stats.norm.pdf(u)
-    epan   = np.where(np.abs(u) <= 1, 0.75*(1 - u**2), 0)
-    epan_b = np.where(np.abs(u - shift) <= 1,
-                      0.75*(1 - (u - shift)**2), 0)
-
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
-
-    # panel (a): kernel shapes
-    ax = axes[0]
-    ax.plot(u, gauss,  color=BLUE,  lw=1.7, label="Gaussian")
-    ax.plot(u, epan,   color=GREEN, lw=1.7, label="Epanechnikov")
-    ax.plot(u, epan_b, color=RED,   lw=1.7, ls="--",
-            label="biased (shifted support)")
-    ax.set_xlabel("$u$")
-    ax.set_ylabel("$K(u)$")
-    ax.set_title("(a) Kernel functions")
-    ax.set_ylim(0, 0.97)
-    styled_legend(ax, loc="upper left", fontsize=7.8)
-
-    # panel (b): integrated kernels vs indicator
-    ax = axes[1]
-    cg  = stats.norm.cdf(u)
-    ce  = np.where(u < -1, 0, np.where(u > 1, 1, 0.25*(2 + 3*u - u**3)))
-    ub  = u - shift
-    cb  = np.where(ub < -1, 0, np.where(ub > 1, 1,
-                                         0.25*(2 + 3*ub - ub**3)))
-
-    ax.step([-2.2, 0, 0, 2.2], [0, 0, 1, 1], where="post",
-            color="k", lw=1.2, label="indicator $\\mathbf{1}\\{u\\geq 0\\}$")
-    ax.plot(u, cg, color=BLUE,  lw=1.6, label="Gaussian")
-    ax.plot(u, ce, color=GREEN, lw=1.6, label="Epanechnikov")
-    ax.plot(u, cb, color=RED,   lw=1.6, ls="--", label="biased")
-    ax.fill_between(u, cb, np.where(u >= 0, 1, 0),
-                    where=(cb <= np.where(u >= 0, 1, 0)) & (u > -1.7),
-                    color=RED, alpha=0.08)
-    ax.set_xlabel("$u$")
-    ax.set_ylabel("$\\mathcal{K}(u)$")
-    ax.set_title("(b) Integrated kernels vs the indicator")
-    styled_legend(ax, loc="lower right", fontsize=7.4)
-
-    fig.tight_layout()
-    finish(fig, "fig_kernels")
-
-
-# ===========================================================================
-# Figure 5  fig_bandwidth
-# Bias-variance trade-off for kernel density estimation.
-# ===========================================================================
-def fig_bandwidth():
-    def truth(y):
-        return (0.65*stats.norm.pdf(y, -0.9, 0.35)
-                + 0.35*stats.norm.pdf(y, 0.7, 0.5))
-
-    def sample_truth(N, seed):
-        r = np.random.default_rng(seed)
-        n1 = r.binomial(N, 0.65)
-        return np.concatenate([r.normal(-0.9, 0.35, n1),
-                               r.normal(0.7, 0.5, N - n1)])
-
-    ygrid = np.linspace(-2.8, 2.8, 500)
-    N = 200
-    samp = sample_truth(N, 5)
-
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
-
-    # panel (a): three bandwidths on one sample
-    ax = axes[0]
-    ax.plot(ygrid, truth(ygrid), "k--", lw=1.3, label="true density")
-    for h, c, lab in [(0.05, RED,    "$h=0.05$ (undersmoothed)"),
-                      (0.25, BLUE,   "$h=0.25$ (near optimal)"),
-                      (0.90, ORANGE, "$h=0.90$ (oversmoothed)")]:
-        kde = (stats.norm.pdf((ygrid[:, None] - samp[None, :])/h)
-               .mean(axis=1) / h)
-        ax.plot(ygrid, kde, color=c, lw=1.5, label=lab)
-    ax.set_xlabel("$y$")
-    ax.set_ylabel("density")
-    ax.set_ylim(0, 1.02)
-    ax.set_title(f"(a) One sample ($N={N}$), three bandwidths")
-    styled_legend(ax, loc="upper right", fontsize=7.2)
-
-    # panel (b): MISE decomposition over 120 replications
-    hs = np.geomspace(0.03, 1.4, 26)
-    T  = 120
-    f_true = truth(ygrid)
-    est = np.zeros((T, len(hs), len(ygrid)))
-    for t in range(T):
-        st = sample_truth(N, 100 + t)
-        for k, h in enumerate(hs):
-            est[t, k] = (stats.norm.pdf(
-                (ygrid[:, None] - st[None, :])/h).mean(axis=1) / h)
-
-    mean_est = est.mean(axis=0)
-    bias2 = np.trapezoid((mean_est - f_true[None, :])**2, ygrid, axis=1)
-    var   = np.trapezoid(est.var(axis=0), ygrid, axis=1)
-    mise  = bias2 + var
-    hstar = hs[np.argmin(mise)]
-
-    ax = axes[1]
-    ax.loglog(hs, bias2, color=RED,  lw=1.6, label="squared bias")
-    ax.loglog(hs, var,   color=BLUE, lw=1.6, label="variance")
-    ax.loglog(hs, mise,  color="k",  lw=1.8, label="MISE")
-    ax.axvline(hstar, color=GREEN, lw=1.2, ls="--")
-    ax.text(hstar*1.12, 1.45e-4, "$h^{*}$",
-            color=GREEN, fontsize=10, bbox=WBOX, zorder=7)
-    ax.set_xlabel("bandwidth $h$")
-    ax.set_ylabel("integrated error")
-    ax.set_title(f"(b) Bias-variance trade-off ({T} replications)")
-    styled_legend(ax, loc="center right", fontsize=7.8)
-
-    fig.tight_layout()
-    finish(fig, "fig_bandwidth")
-    print(f"    h* = {hstar:.3f}")
-
-
-# ===========================================================================
-# Figure 6  fig_curse
-# Curse of dimensionality: sample size required vs dimension.
-# ===========================================================================
-def fig_curse():
-    d  = np.arange(1, 11)
-    N1 = 100.0
-    Nd = N1**((d + 4) / 5)          # AMISE rate: N ∝ N_1^{(d+4)/5}
-
-    fig, ax = plt.subplots(figsize=(5.6, 2.9))
-    ax.semilogy(d, Nd, "-o", color=BLUE, ms=4, lw=1.6)
-    ax.axhline(1e6, color=GRAY, lw=1.0, ls=":")
-    ax.text(1.0, 1.7e6, "$10^6$ samples", color=GRAY, fontsize=8.5)
-
-    for dd, label, xy_text in [
-            (1,  "$d=1$: $N\\approx 10^{2}$", (1.55, 9e2)),
-            (5,  "$d=5$: $N\\approx 4\\times10^{3}$", (5.6,  1.1e3)),
-            (10, "$d=10$: $N\\approx 4\\times10^{5}$", (7.4,  5.5e5))]:
-        ax.annotate(label,
-                    xy=(dd, N1**((dd + 4)/5)),
-                    xytext=xy_text,
-                    fontsize=8.3, bbox=WBOX, zorder=7,
-                    arrowprops=dict(arrowstyle="->", lw=0.7, shrinkB=3))
-
-    ax.set_xlabel("dimension $d$ of the estimated variable")
-    ax.set_ylabel("samples for fixed accuracy")
-    ax.set_xticks(d)
-    ax.set_ylim(50, 4e6)
-    fig.tight_layout()
-    finish(fig, "fig_curse")
-
-
-# ===========================================================================
-# Figure 7  fig_litmap
-# KDE chance-constraint literature timeline.
-# Includes Gugat & Schuster (2018) added from the council research briefing.
-# ===========================================================================
-def fig_litmap():
-    lanes = {
-        "Process systems": (6.4, ORANGE),
-        "Aerospace":       (4.8, BLUE),
-        "Energy/networks": (3.2, GREEN),
-        "Finance":         (1.6, PURPLE),
-        "Theory":          (0.0, RED),
-    }
-
-    # (year, lane, label, above_the_dot?)
-    papers = [
-        (2015.0, "Process systems", "Calfa et al.",             True),
-        (2018.0, "Aerospace",       "Caillau et al.",           True),
-        # Gugat & Schuster (2018): energy/networks, below to avoid Caillau
-        (2018.5, "Energy/networks", "Gugat,\nSchuster",        False),
-        (2017.8, "Energy/networks", "Ciftci",                   True),
-        (2019.6, "Energy/networks", "Ciftci et al.",            False),
-        (2020.0, "Aerospace",       "Keil et al.\n(biased KDE)",False),
-        (2021.3, "Aerospace",       "Keil et al.\n(OCAM)",      True),
-        (2022.0, "Aerospace",       "Keil, Rao\n(warm start)",  False),
-        (2021.5, "Energy/networks", "Wu et al.",                True),
-        (2022.4, "Energy/networks", "Schuster et al.",          False),
-        (2022.7, "Finance",         "Liu et al.",               True),
-        (2023.3, "Energy/networks", "Wu, Kargarian",            True),
-        (2025.4, "Theory",          "Schuster (convergence)",   True),
-        (2026.0, "Energy/networks", "Qi et al.",                True),
-    ]
-
-    fig, ax = plt.subplots(figsize=(7.4, 4.0))
-
-    for name, (y, c) in lanes.items():
-        ax.axhline(y, color=c, lw=0.8, alpha=0.4, zorder=1)
-        ax.text(2013.6, y + 0.18, name,
-                fontsize=8.8, color=c, weight="bold",
-                zorder=6, bbox=WBOX)
-
-    # narrative arrow (drawn before labels so labels sit on top)
-    ax.annotate("", xy=(2025.0, 0.18), xytext=(2022.75, 4.62),
-                arrowprops=dict(arrowstyle="->", lw=1.0, color=GRAY,
-                                connectionstyle="arc3,rad=-0.22"),
-                zorder=2)
-    ax.text(2024.85, 2.35,
-            "engineering practice\nfeeds convergence theory",
-            fontsize=7.5, color=GRAY, ha="center", style="italic",
-            zorder=6, bbox=WBOX)
-
-    for yr, lane, lab, above in papers:
-        y, c = lanes[lane]
-        ax.scatter(yr, y, s=46, color=c, zorder=7, ec="white", lw=0.4)
-        off = 0.36 if above else -0.36
-        va  = "bottom" if above else "top"
-        ax.text(yr, y + off, lab, ha="center", fontsize=7.0, va=va,
-                color="k", linespacing=1.1, zorder=6, bbox=WBOX)
-
-    ax.set_xlim(2013.0, 2027.4)
-    ax.set_ylim(-1.3, 7.6)
-    ax.set_yticks([])
-    ax.set_xlabel("year")
-    ax.spines["left"].set_visible(False)
-    fig.tight_layout()
-    finish(fig, "fig_litmap")
-
-
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# Figures retained for the survey record; the unbiased-KDE figures are generated by the Chapter 4 script.
-# Code reused from the pre-split residual-method history script (seed 21 preserved
-# so the published numbers reproduce exactly).
-# ---------------------------------------------------------------------------
-LAW = stats.lognorm(s=0.18, scale=100)
-EPS = 0.05
-TRUE_Q = LAW.ppf(1 - EPS)
-rng_bb = np.random.default_rng(21)
-
-def fig_staircase():
-    xs = np.linspace(88, 162, 1200)
-    true_v = 1 - LAW.cdf(xs)
-
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.9))
-
-    # (a) one draw: piecewise-constant estimator vs truth
-    ax = axes[0]
-    N = 60
-    samp = LAW.rvs(N, random_state=3)
-    vhat = (samp[None, :] > xs[:, None]).mean(axis=1)
-
-    ax.plot(xs, true_v, color=GREEN, lw=1.8, label="true $v(x)$")
-    ax.step(xs, vhat, where="post", color=RED, lw=1.4,
-            label=f"$\\hat v_N(x)$, $N={N}$")
-    ax.axhline(EPS, color="k", ls="--", lw=1.0)
-    ax.text(91, EPS + 0.012, "$\\varepsilon = 0.05$",
-            fontsize=8.5, bbox=WBOX, zorder=7)
-    ax.set_xlabel("decision $x$ [MW]")
-    ax.set_ylabel("violation probability")
-    ax.set_title("(a) Piecewise-constant empirical estimator")
-    styled_legend(ax, loc="upper right", fontsize=8)
-
-    # (b) three draws near the boundary
-    ax = axes[1]
-    for k, seed in enumerate([11, 12, 13]):
-        sk = LAW.rvs(N, random_state=seed)
-        vk = (sk[None, :] > xs[:, None]).mean(axis=1)
-        ax.step(xs, vk, where="post", lw=1.1,
-                color=[RED, ORANGE, PURPLE][k], alpha=0.85,
-                label=f"draw {k+1}")
-    ax.plot(xs, true_v, color=GREEN, lw=1.8, label="true $v(x)$")
-    ax.axhline(EPS, color="k", ls="--", lw=1.0)
-    ax.set_xlim(120, 155)
-    ax.set_ylim(0, 0.18)
-    ax.set_xlabel("decision $x$ [MW]")
-    ax.set_ylabel("violation probability")
-    ax.set_title("(b) Resampling noise near the boundary")
-    styled_legend(ax, loc="upper right", fontsize=7.6)
-
-    fig.tight_layout()
-    finish(fig, "fig_staircase")
-
-
-# ===========================================================================
 # Figure 2  fig_scenariogrowth  (survey comparison)
 # Scenario conservatism grows with N; SAA empirical quantile stays on target.
 
@@ -578,20 +524,15 @@ def fig_scenariogrowth():
           f"SAA: {saa_mean[-1]:.1f}, true q: {TRUE_Q:.1f}")
 
 
-# ===========================================================================
-# Figure 3  fig_pipeline  (generated by the Chapter 4 script)
-# Computational loop of the KDE reformulation.
 
 
 if __name__ == "__main__":
-    print("Generating Chapter 2 figures ...")
+    print("Generating Chapter 2/3 figures ...")
     fig_taxonomy()
     fig_levelsets()
-    fig_methods()      # ~30 s for 400 trials × 5 sample sizes
+    fig_staircase()
     fig_kernels()
-    fig_bandwidth()    # ~20 s for 120 replications
+    fig_bandwidth()
     fig_curse()
     fig_litmap()
-    fig_staircase()
-    fig_scenariogrowth()   # ~30 s
-    print(f"\nAll figures written to ./{OUT}/ (PDF + PNG).")
+    print(f"\nAll figures written to ./{OUT}/.")
