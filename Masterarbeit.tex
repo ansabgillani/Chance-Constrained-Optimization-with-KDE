@@ -3,16 +3,24 @@
 \usepackage{amsmath,amssymb,amsthm,bm}     % ams stuff should be before font loading
 \usepackage{lmodern}
 \usepackage[T1]{fontenc}        % should be after font loading
-\usepackage[english]{babel}
-\usepackage[numbers,round,authoryear]{natbib}    % bibtex package
+\usepackage[ngerman,english]{babel}
+\usepackage[round,authoryear]{natbib}    % bibtex package
+\setlength{\bibsep}{2pt plus 1pt}
 %\usepackage{typearea}           % custom type area
 %   \areaset[0mm]{135mm}{210mm}  % typearea configuration
 %   \topmargin5mm                % typearea configuration
 \usepackage{graphicx}
-\usepackage{url}
+\usepackage[hyphens]{url}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{setspace}
 \usepackage{booktabs}
+\usepackage{siunitx}
+\sisetup{group-digits=false}
+\frenchspacing
+\usepackage[titles]{tocloft}
+\setlength{\cftsecnumwidth}{2em}
+\setlength{\cftsubsecnumwidth}{3em}
+\setlength{\cftsubsubsecindent}{4.5em}
  
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Prob}{\mathbb{P}}
@@ -23,6 +31,8 @@
  
 \onehalfspacing
 \setlength{\emergencystretch}{3em}
+\widowpenalty=10000
+\clubpenalty=10000
 
 
 
@@ -59,10 +69,16 @@
 \fi
 
 \usepackage[capitalise]{cleveref}
+\crefname{figure}{Figure}{Figures}
+\Crefname{figure}{Figure}{Figures}
+\crefname{equation}{Eq.}{Eqs.}
+\Crefname{equation}{Eq.}{Eqs.}
 \usepackage{caption}
 \usepackage{subcaption}
 \captionsetup{font=small,labelfont=bf,width=0.92\textwidth}
 \usepackage{fancyhdr}
+\usepackage{etoolbox}
+\pretocmd{\section}{\thispagestyle{plain}}{}{}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{assumption}{Assumption}
@@ -98,18 +114,18 @@
       %\vspace*{1cm}
     \huge \textbf{Chance Constrained Optimization with Kernel Density Estimation}
     \vspace{2cm}
-    \LARGE\textbf{Master-Thesis}\\[5mm]
+    \LARGE\textbf{Master's Thesis}\\[5mm]
     \Large for the degree of\\[5mm]
     \textbf{Master of Science (M.Sc.) \\[5mm]
     Data Science\\[5mm]
     }
-    in the Technical Faculty at\\ Friedrich-Alexander-Universität
+    in the Faculty of Sciences at\\ Friedrich-Alexander-Universität
     Erlangen-Nürnberg\\[1cm]
-    vorgelegt am \today \\[3mm]
-    from \textbf{Syed Ansab Waqar Gillani}
+    submitted on \today \\[3mm]
+    by \textbf{Syed Ansab Waqar Gillani}
     \vfill
     \normalsize
-    Betreuer/in: Prof. Dr. Michael Schuster
+    Supervisor: Prof. Dr. Michael Schuster
     \\[2em]
     \includegraphics[width=0.5\textwidth]{logo/fau-nat-digital}
     \end{center}
@@ -156,8 +172,9 @@
 % English author--year citations: "et al." and "and".
 \bibliographystyle{plainnat}
 
-\bibliography{bibliography}
+\phantomsection
 \addcontentsline{toc}{section}{References}
+\bibliography{bibliography}
 
 % Erklärung 
 
@@ -165,6 +182,7 @@
 
 
 
+\begin{otherlanguage}{ngerman}
 \begin{center}\textbf{\large Erklärung}\end{center}
 
 \noindent
@@ -177,6 +195,11 @@ gleicher oder ähnlicher Form noch keiner Prüfungsbehörde vorgelegt wurde.
 \vspace{4\baselineskip}
 
 \noindent
-Nürnberg, den \today \hspace*{2cm} Hierher die Unterschrift
+Nürnberg, den \today \hfill
+\begin{tabular}[t]{@{}c@{}}
+  \rule{6cm}{0.4pt}\\
+  Syed Ansab Waqar Gillani
+\end{tabular}
+\end{otherlanguage}
 
 \end{document}

@@ -1,10 +1,10 @@
 \section{Convergence Theory}
 \label{ch:convergence}
 
-Part~3 has so far been constructive. Chapter~4 built a smooth surrogate
-for the chance constraint, Chapter~5 redesigned it to err only on the
-safe side, and both chapters validated their constructions empirically
-on problems whose answers are known. What neither chapter could supply
+Chapters~4 and~5 have so far been constructive. Chapter~4 builds a smooth surrogate
+for the chance constraint, Chapter~5 redesigns it to err only on the
+safe side, and both chapters illustrate their constructions on standalone
+diagnostics with known answers. What neither chapter supplies
 is the statement that elevates a construction to a method: the guarantee
 that solving the approximated problem is, in the limit of data, the same
 as solving the true one. That statement exists. The convergence theory
@@ -27,6 +27,11 @@ an open problem in the field
 \subsection{The Gap the Theory Fills}
 \label{sec:gap}
 
+This section explains why the constructions of Chapters~4 and~5 still
+need an optimizer-level theory. It first separates safety at fixed
+decisions from correctness of the computed optimizer, and then outlines
+the chain of three theorems that the rest of the chapter develops.
+
 \subsubsection{From estimator consistency to optimizer consistency}
 \label{sec:estimatoroptimizergap}
 
@@ -38,8 +43,9 @@ matters at finite $N$: the envelope concerns individual fixed decisions,
 whereas convergence concerns the optimizer and the feasible-set geometry.
 A method could be safe at every $N$ and still be solving, indefinitely,
 a problem whose minimizer differs substantially from the minimizer of
-the true problem. Safety and correctness are different properties, and Part~3 has
-so far delivered only the first.
+the true problem. Safety and correctness are different properties, and
+Chapter~5 has so far addressed only the first, in the form of a
+fixed-decision envelope.
 
 \subsubsection{The three-theorem chain}
 \label{sec:theoremchain}
@@ -48,11 +54,11 @@ The deeper question is therefore the one this chapter answers: as the
 sample size $N$ grows, do solutions of the KDE-approximated problem
 converge to solutions of the true chance-constrained problem?
 \citet{schuster2025} provides the first rigorous answer, and the key
-insight that organizes the entire theory deserves to be stated before
-any theorem is: \emph{density-estimator convergence does not
+insight that organizes the entire theory is stated before
+any theorem: \emph{density-estimator convergence does not
 automatically imply optimizer convergence}. That the kernel estimate
 converges to the true density has been known since \citet{parzen1962},
-and Chapter~2 reviewed the classical theory in full; but an optimization
+and Chapter~3 reviews the classical theory in full; but an optimization
 problem is not a density. Its solution is determined by the interaction
 of an objective with the \emph{boundary} of a feasible set, and a
 sequence of converging constraint functions can, in principle, produce
@@ -63,7 +69,7 @@ needed to transfer convergence of the constraint approximation to
 convergence of the solution, and constructing that argument, in three
 theorems of increasing reach, is exactly what \citet{schuster2025} does.
 \Cref{fig:chain} displays the architecture the rest of this chapter
-walks through: a statistical foundation inherited from classical KDE
+presents: a statistical foundation inherited from classical KDE
 theory, two analytical engines, and the three theorems they power.
 
 \begin{figure}[t]
@@ -74,24 +80,20 @@ theory, two analytical engines, and the three theorems they power.
   classical: $L^1$ consistency of the kernel estimator, upgraded to
   probability convergence by Scheff\'e's lemma and to almost-sure
   uniform convergence on the feasible set under the conditions surveyed
-  by \citet{wied2012}. Two analytical engines (middle row) convert
-  statistical convergence into optimization statements: a
-  convexity-of-epigraph argument with a strict feasibility margin, and
-  the optimization-convergence theorem of \citet{alvarezmena2005}
-  verified through three lemmas. The three theorems (top row) divide the
-  labor: exactness where the constraint is passive, optimality of limits,
-  and existence of convergent solution sequences.}
+  by \citet{wied2012}. Two analytical engines (middle row) convert this
+  into optimization statements: a convexity-of-epigraph argument with a
+  strict feasibility margin, and the theorem of \citet{alvarezmena2005}
+  verified through three lemmas. The three theorems (top row) establish
+  exactness where the constraint is passive, optimality of limits, and
+  existence of convergent solution sequences.}
   \label{fig:chain}
 \end{figure}
 
 \subsection{Setup and Assumptions}
 \label{sec:setupassump}
 
-\subsubsection{Decision space and pushforward law}
-\label{sec:theorysetting}
-
-The theory is formulated at a level of generality worth pausing on,
-because it is part of the result. The decision space is not assumed
+The theory is formulated at a level of generality that is itself part of
+the result. The decision space is not assumed
 finite-dimensional: \citet{schuster2025} works in a Banach space, which
 is precisely the generality required for the optimal control ambitions
 of this thesis, where decisions are trajectories before they are
@@ -101,31 +103,28 @@ discretized. The standing assumptions are collected once.
 \label{ass:setting}
 $V$ is a Banach space and $X \subseteq V$ is closed and nonempty. The
 objective $f$ is continuous, convex, and monotonically increasing. The random parameter $\xi$ has an absolutely continuous distribution,
-and we additionally assume that for every $x \in X$ the pushforward
+and, additionally, for every $x \in X$ the pushforward
 distribution of the residual vector $g(x,\xi) \in \R^m$ is absolutely
 continuous with density $\rho_{g(x)}$. This excludes degenerate or
-singular residual maps. We also assume that $(P_\infty)$ and the KDE
-problems considered below have solutions; the existence theorem adds its
+singular residual maps. Moreover, $(P_\infty)$ and the KDE
+problems considered below are assumed to have solutions; the existence theorem adds its
 sharp-minimum condition when a convergent solution sequence is required.
 \end{assumption}
 
-\subsubsection{Population and sample problems}
-\label{sec:populationandempirical}
-
 Under \cref{ass:setting} the chance constraint is the statement that the
-pushforward density places mass at least $\alpha = 1-\varepsilon$ on the
+pushforward density places mass at least $\alpha = 1-\varepsilon$, with risk level $\varepsilon$, on the
 safe orthant,
 \begin{equation}
   \Prob\bigl(g(x,\xi) \leq 0\bigr)
   \;=\; \int_{(-\infty,0]^m} \rho_{g(x)}(z)\, dz \;\geq\; \alpha ,
   \label{eq:pushforward}
 \end{equation}
-which the reader will recognize as the residual-space identity of
+which is the residual-space identity of
 Chapter~4, here in its general $m$-dimensional form: the theory covers
 joint constraints through the multivariate residual, and the scalar case
 $m = 1$ of Chapters~4 and~5 is the special case used throughout this
 thesis. The approximation replaces $\rho_{g(x)}$ by its kernel estimate
-built from the residual samples $Y_i(x) = g(x,\xi_i)$, exactly the
+built from the residual samples $y_j(x) = g(x,\xi_j)$, exactly the
 estimator of Chapter~4, and the pair of problems whose relationship the
 theory governs is
 \begin{align}
@@ -140,6 +139,10 @@ theory governs is
   \hat{P}_N\bigl(g(x,\xi) \leq 0\bigr) \geq \alpha .
   \label{eq:pn}
 \end{align}
+Here $\hat{P}_N\bigl(g(x,\xi)\le 0\bigr)$ is the probability that this
+kernel estimate, built from $N$ samples with bandwidth $h_N$, assigns to
+the safe orthant; for $m=1$ it is the estimate $\hat{p}_{h_N}(x)$ of
+Chapter~4, written $\hat{p}_N$ for short.
 Every theorem below is a statement about how the solutions of $(P_N)$
 relate to those of $(P_\infty)$, almost surely with respect to the
 sampling of $\xi_1, \xi_2, \dots$, and the three theorems are numbered
@@ -148,9 +151,6 @@ Theorems~3.1, 3.2, and~3.3 of \citet{schuster2025} respectively.
 
 \subsection{The Passive Constraint Case}
 \label{sec:thm1}
-
-\subsubsection{Statement and geometric hypotheses}
-\label{sec:passivestatement}
 
 The first theorem settles the regime in which the chance constraint, at
 the optimum, is not doing any work.
@@ -164,10 +164,21 @@ used in the cited theorem. Then there exists $N^*$
 such that $x^*$ also solves $(P_N)$ for all $N \geq N^*$, almost surely.
 \end{theorem}
 
-\subsubsection{Proof architecture and scope}
-\label{sec:passiveproof}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.86\textwidth]{kap06/figures/fig_passive.pdf}
+  \caption{The mechanism of \cref{thm:passive}, illustrated on a
+  standalone lognormal scalar probability curve. At a solution $x^*$ where the chance
+  constraint is strictly inactive, the feasibility margin
+  $\gamma = \Prob(g(x^*,\xi) \leq 0) - \alpha$ is a fixed positive
+  buffer. The KDE error is a tube around the true probability that
+  shrinks almost surely as $N$ grows; once
+  $\sup_x |\hat{p}_N - p| < \gamma$, the point $x^*$ is feasible for
+  every approximated problem and, by the epigraph argument, solves it.}
+  \label{fig:passive}
+\end{figure}
 
-\emph{Proof architecture.} The argument runs along the bottom-left of
+\paragraph*{Proof architecture.} The argument runs along the bottom-left of
 \cref{fig:chain}. The $L^1$ consistency of the kernel estimator
 \citep{parzen1962,devroye1985} controls the integrated error of the
 density estimate; Scheff\'e's lemma \citep{scheffe1947} converts $L^1$
@@ -180,8 +191,8 @@ convexity-of-epigraph argument in the cited theorem then transfers the
 optimality property; it does not rely on the approximate feasible sets being
 nested.
 
-\emph{Practical meaning.} When the chance constraint is strictly inactive at the optimum, the theorem
-shows that the KDE problems eventually recover the same optimizer under its
+\paragraph*{Practical meaning.} When the chance constraint is strictly inactive at the optimum, the theorem
+shows that the KDE problems eventually recover the same optimizer under
 the theorem's passive-margin and regularity assumptions; it does not assert zero
 finite-sample statistical error. \Cref{fig:passive} draws the mechanism: the margin $\gamma$
 is a fixed buffer, the uniform estimation error is a tube around the
@@ -190,26 +201,8 @@ the buffer the approximation can no longer disturb the solution. The
 theorem formalizes why
 approximation error matters most where the chance constraint is active.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.86\textwidth]{kap06/figures/fig_passive.pdf}
-  \caption{The mechanism of \cref{thm:passive}, illustrated on a
-  standalone lognormal scalar probability curve (not generated from the
-  dispatch ledger). At a solution $x^*$ where the chance
-  constraint is strictly inactive, the feasibility margin
-  $\gamma = \Prob(g(x^*,\xi) \leq 0) - \alpha$ is a fixed positive
-  buffer. The KDE error is a tube around the true probability that
-  shrinks almost surely as $N$ grows; once
-  $\sup_x |\hat{p}_N - p| < \gamma$, the point $x^*$ is feasible for
-  every approximated problem and, by the epigraph argument, solves it.}
-  \label{fig:passive}
-\end{figure}
-
 \subsection{Limits of Approximate Solutions Are Optimal}
 \label{sec:thm2}
-
-\subsubsection{Uniform convergence and limit statement}
-\label{sec:limitsstatement}
 
 The second theorem addresses the regime the first one excludes, the one
 that matters most in practice: the constraint binds, the approximated
@@ -220,7 +213,7 @@ go.
 \label{thm:limits}
 Suppose the kernel estimate satisfies
 \[
-  \sup_{x\in X}\left|\hat P_N\bigl(g(x,\xi)\leq 0\bigr)
+  \sup_{x\in X}\left|\hat{P}_N\bigl(g(x,\xi)\leq 0\bigr)
   - \Prob\bigl(g(x,\xi)\leq 0\bigr)\right| \xrightarrow[N\to\infty]{} 0
 \quad\text{almost surely}.
 \]
@@ -228,10 +221,7 @@ If $(x_N)$ is a convergent sequence of solutions of $(P_N)$,
 then its limit solves $(P_\infty)$, almost surely.
 \end{theorem}
 
-\subsubsection{Set-convergence proof architecture}
-\label{sec:limitsproof}
-
-\emph{Proof architecture.} This is the deepest of the three results, and
+\paragraph*{Proof architecture.} This is the deepest of the three results, and
 its proof is an exercise in verifying the hypotheses of a general
 optimization-convergence theorem due to \citet{alvarezmena2005}, which
 gives conditions under which minimizers of a sequence of problems
@@ -241,7 +231,7 @@ first upgrades the statistical foundation: uniform convergence of the
 kernel estimate yields uniform convergence of the constraint function
 $\hat{P}_N$ to $\Prob$ on $X$. The second translates constraint
 convergence into geometry: the admissible sets of $(P_N)$ converge to
-the admissible set of $(P_\infty)$ in the Painlev\'e-Kuratowski sense,
+the admissible set of $(P_\infty)$ in the Painlev\'e--Kuratowski sense,
 the notion of set convergence under which limits of feasible points are
 feasible. The third closes the loop from the other side: every feasible
 point of the limit problem can be approached by a sequence of points
@@ -250,37 +240,37 @@ silently exclude parts of the true feasible set. With the three
 conditions in place, the theorem of \citet{alvarezmena2005} delivers the
 conclusion.
 
-\emph{Practical meaning.} Under the stated uniform-convergence and
+\paragraph*{Practical meaning.} Under the stated uniform-convergence and
 optimization hypotheses, any convergent sequence of approximated solutions
-has a true-problem limit. The plots in Chapters~7--9 are diagnostics; they
+has a true-problem limit. The plots in Chapter~9 are diagnostics; they
 do not verify those hypotheses and therefore do not establish a limiting
 optimizer. What the theorem deliberately
 does not assert is that a convergent sequence exists; it is a statement
 about limits, conditional on their existence. Closing that gap is the
-third theorem's job, and the division of labor between
+task of the third theorem, and the division of labor between
 \cref{thm:limits,thm:existence} is itself instructive: optimality of
 limits and existence of limits are separate mathematical events,
 requiring separate hypotheses.
 
 \subsection{Existence of a Convergent Solution Sequence}
 \label{sec:thm3}
-\subsubsection{Sharp minimum and existence statement}
-\label{sec:existencestatement}
+
+The third theorem supplies the missing existence statement: it
+gives conditions under which a convergent sequence of approximate
+solutions exists at all.
+
 \begin{theorem}[Existence; Theorem 3.3 of \citealp{schuster2025}]
 \label{thm:existence}
 Suppose $x^*$ is the unique solution of $(P_\infty)$ and satisfies a
-sharp-minimum condition: there exist $\bar{\varepsilon}, \delta > 0$
-such that $f(x) > f(x^*) + \bar{\varepsilon}$ for every feasible $x$
+sharp-minimum condition: there exist $\kappa, \delta > 0$
+such that $f(x) > f(x^*) + \kappa$ for every feasible $x$
 outside the ball $B_\delta(x^*)$. Assume in addition the existence,
 projection, and inner-approximation hypotheses required by the cited
 theorem. Then a convergent sequence of
 solutions of the approximated problems exists, almost surely.
 \end{theorem}
 
-\subsubsection{Why the sharp minimum is needed}
-\label{sec:existenceproof}
-
-\emph{Proof architecture.} The sharp-minimum condition is exactly what
+\paragraph*{Proof architecture.} The sharp-minimum condition is exactly what
 forbids the failure mode that \cref{thm:limits} could not exclude. If
 near-optimal objective values were available far from $x^*$, the
 approximated solutions could achieve them and wander indefinitely;
@@ -292,47 +282,41 @@ the approximate solutions are trapped in a shrinking neighborhood of
 $x^*$; in a shallow valley, nothing prevents them from drifting between
 distant near-optimal points.
 
-\subsubsection{Recognizable sufficient conditions}
-\label{sec:existencesufficient}
-
-\emph{Practical meaning.} The conditions under which the full theory
-operate are explicit regularity conditions, and \citet{schuster2025} makes
+\paragraph*{Practical meaning.} The conditions under which the full theory
+operates are explicit regularity conditions, and \citet{schuster2025} makes
 those conditions concrete. On the geometry side, strict convexity of the
 objective on a convex feasible set, together with existence, implies
 uniqueness; a quantitative growth condition (for example, strong
 convexity on a finite-dimensional compact sublevel set) is still needed
 to supply the sharp minimum, so the hypothesis of
 \cref{thm:existence} is met by a recognizable problem class. On the statistical side, the uniform
-convergence that \cref{thm:limits,thm:existence} require is not an
-abstract wish: a Gaussian product kernel with a diagonal bandwidth
+convergence that \cref{thm:limits,thm:existence} require is not merely an
+abstract assumption: a Gaussian product kernel with a diagonal bandwidth
 matrix, under the classical bandwidth conditions and uniform continuity
 of the true density, is identified as a concrete realization that
 guarantees it, drawing on the consistency conditions surveyed by
 \citet{wied2012} and the $L^1$ theory of \citet{devroye1985}. The
-theory's assumptions can be discharged by objects this thesis already
-uses.
+uniform-convergence assumption can therefore be discharged by the
+Gaussian kernel used in this thesis; the objective assumptions hold at
+most for the dispatch adapter (\cref{sec:coverage}).
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{kap06/figures/fig_sharpmin.pdf}
   \caption{Why \cref{thm:existence} needs the sharp-minimum condition.
-  (a) When the objective grows by at least $\bar{\varepsilon}$ outside
-  the ball $B_\delta(x^*)$ (shaded), every approximate solution
-  (orange) with near-optimal value is forced into the ball, and the
-  set-convergence machinery makes the sequence Cauchy. (b) In a shallow
-  valley the condition fails: near-optimal points exist far from $x^*$,
-  and approximate solutions may alternate between them without
-  converging, even though, by \cref{thm:limits}, any limit they did have
-  would be optimal. Strict convexity of $f$ implies the geometry of
-  panel (a).}
+  (a) When the objective grows by at least $\kappa$ outside the ball
+  $B_\delta(x^*)$ (shaded), every approximate solution (blue) with
+  near-optimal value is forced into the ball, and the set-convergence
+  machinery makes the sequence Cauchy. (b) In a shallow valley the
+  condition fails: near-optimal points exist far from $x^*$, and
+  approximate solutions may alternate between them without converging,
+  even though, by \cref{thm:limits}, any limit they did have would be
+  optimal.}
   \label{fig:sharpmin}
 \end{figure}
 
 \subsection{What the Theory Does and Does Not Cover}
 \label{sec:coverage}
-
-\subsubsection{What is established}
-\label{sec:coverageestablished}
 
 Taken together, the three theorems establish two properties for sequences
 that satisfy their hypotheses. First, the KDE approach is asymptotically
@@ -345,29 +329,26 @@ and it exhibits concrete, standard objects that pay the cost. A reader
 of Chapters~4 and~5 now knows not only how to build the reformulation
 but when its assumptions apply.
 
-\subsubsection{Boundaries of the theory}
-\label{sec:coverageboundaries}
-
 Four limitations remain outside the theory. There are, first, \emph{no convergence
 rates}: the theory guarantees that the optimization error vanishes but
-not how fast, and no theorem links the kernel's bias-variance behavior
+not how fast, and no theorem links the kernel's bias--variance behavior
 to the decay of $|f(x_N) - f(x^*)|$ or $\|x_N - x^*\|$;
 \citet{schuster2025} explicitly flags this as open.
-\Cref{fig:empconv} makes the gap tangible: on a standalone lognormal
-scalar diagnostic (not the dispatch ledger) the
-optimization error decays along a clean empirical power law of slope
+\Cref{fig:empconv} illustrates the gap: on a standalone lognormal
+scalar diagnostic the optimization error decays along an
+approximately linear trend on logarithmic axes, with slope
 roughly $-0.46$, a regular behavior that no available theorem
 currently predicts. Second, the theorems cover the \emph{unbiased} estimator of
 Chapter~4; whether and how they extend to the biased construction of
 Chapter~5 is open, a point developed in \cref{sec:anchorgap}. Third, the
-results lean on convexity of the objective, while the lunar trajectory
-problem is non-convex. The dispatch adapter is affine with a convex
+results rely on convexity of the objective, while the lunar trajectory
+problem is nonconvex. The dispatch adapter is affine with a convex
 increasing objective and is the closest local analogue to the theorem's
 geometry; comparable guarantees for the lunar case do not follow. Fourth,
 the theory is asymptotic
 through and through: unlike the scenario approach of Chapter~2,
 it offers no $N$-dependent probability that a computed solution is
-feasible for the true problem. These limitations define the evidence that Part~4 must supply beyond the
+feasible for the true problem. These limitations define the evidence that Chapters~7--9 must supply beyond the
 mathematical results.
 
 \begin{figure}[t]
@@ -375,22 +356,18 @@ mathematical results.
   \includegraphics[width=0.84\textwidth]{kap06/figures/fig_empconv.pdf}
   \caption{Consistency without rates. Mean optimization error
   $|x_N - x^*|$ of the unbiased KDE solution on a standalone lognormal
-  scalar diagnostic (not generated from the dispatch ledger)
-  ($500$ trials per sample size, band is $10$th-to-$90$th percentiles),
-  on logarithmic axes. The error follows a clean empirical power law of
-  slope $\approx -0.46$, but the convergence theory guarantees only that
-  the error vanishes; no theorem predicts the slope. Quantifying this
-  rate, and its dependence on the bandwidth rule, is an open problem left by the anchor papers}
+  scalar diagnostic ($500$ trials per sample size, band is
+  $10$th-to-$90$th percentiles), on logarithmic axes. The error follows an
+  approximately linear trend of slope $\approx -0.46$, but the
+  convergence theory guarantees only that the error vanishes; no theorem
+  predicts the slope.}
   \label{fig:empconv}
 \end{figure}
 
 \subsection{The Gap Between the Two Anchor Papers}
 \label{sec:anchorgap}
 
-\subsubsection{Safety and convergence are proved separately}
-\label{sec:anchorcomparison}
-
-One observation closes Part~3's theoretical development. The two anchor papers of
+One observation closes the theoretical development of Chapters~4--6. The two anchor papers of
 this thesis work with the same high-level idea from opposite directions,
 and their results do not yet meet. \citet{keil2021} builds a
 \emph{biased} integrated kernel that dominates the indicator for each
@@ -402,23 +379,19 @@ other's construction: the engineering line has a fixed-decision envelope
 without proven optimizer convergence, and the theoretical line has optimizer
 convergence without a built-in finite-sample envelope.
 
-\subsubsection{Open unified theory}
-\label{sec:unifiedopenproblem}
-
 The resulting open problem is a unified convergence
 theory for the biased-KDE reformulation, establishing that the
 conservative construction of Chapter~5 inherits the asymptotic
 correctness of this chapter, ideally with rates. Its resolution would
 fuse a finite-sample, selection-aware safety result with correctness in the
 limit into a single certified method.
-This thesis does not claim to close that problem. What it does claim,
-and delivers in Part~4, is the systematic empirical groundwork on which
-a closure must rest: controlled experiments in which the biased and
-unbiased reformulations are run side by side, across sample sizes,
-bandwidths, and risk levels, on problems whose true solutions are
-known, so that the conjectured convergence of the biased construction is
-measured even where it is not yet proven. The theory of this chapter
-tells us how to interpret those measurements; the gap between the anchors
+This thesis does not claim to close that problem. What it does provide,
+in Chapters~7--9, is empirical groundwork for such a closure:
+single-seed diagnostics in which the biased and unbiased reformulations
+are run side by side at three nested sample sizes with their bandwidth
+rules, including problems with exact probability references. These
+diagnostics do not measure convergence; the theory of this chapter
+determines how they can be interpreted, and the gap between the anchors
 motivates the comparison.
 The next chapter instantiates these distinctions in a discretized optimal-control
 formulation. It records which assumptions are represented by the local solver and

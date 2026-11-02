@@ -7,17 +7,30 @@ experiment versions remain auditable.
 from __future__ import annotations
 
 import csv
+import os
 import subprocess
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-RESULTS = ROOT / "results_paper_aligned_20260906"
-FIGURES = ROOT / "kap09" / "figures"
+RESULTS = Path(os.environ.get("THESIS_RESULTS_DIR", ROOT / "results_paper_aligned_20260906"))
+FIGURES = Path(os.environ.get("THESIS_FIGURES_DIR", ROOT / "kap09" / "figures"))
+PREAMBLE = (r"""\usepackage[T1]{fontenc}\usepackage[bitstream-charter]{mathdesign}
+\usepackage{pgfplots}\pgfplotsset{compat=1.18}
+\definecolor{cnominal}{HTML}{7A7A7A}\definecolor{cscenario}{HTML}{D9842B}
+\definecolor{cunbiased}{HTML}{1F4E79}\definecolor{cbiased}{HTML}{2E7D4F}
+\definecolor{ctruth}{HTML}{222222}\definecolor{cannot}{HTML}{333333}
+"""
+        # House style: 8.5 pt ticks/legends, 9 pt labels, 9.5 pt regular titles, open axes, no grid, unframed legends.
+        r"\pgfplotsset{every axis/.append style={axis lines=left,axis line style={draw=cannot,line width=0.8pt,-},"
+        r"tick style={draw=cannot,line width=0.8pt},tick label style={font=\fontsize{8.5}{10}\selectfont},"
+        r"label style={font=\fontsize{9}{11}\selectfont},title style={font=\fontsize{9.5}{11}\selectfont,yshift=-2pt},"
+        r"legend style={font=\fontsize{8.5}{10}\selectfont,draw=none,fill=none,legend cell align=left}}}" "\n")
+XTICKS = "xmode=log,log basis x=10,xtick={250,1000,5000},xticklabels={250,1000,5000},minor tick num=0,"
 DISTS = ("gaussian", "bimodal", "skewed", "heavy_tailed")
 METHODS = {
-    "schuster_gaussian": "Schuster Gaussian",
-    "keil_biased_epanechnikov": "Keil biased Epanechnikov",
+    "schuster_gaussian": "Unbiased KDE",
+    "keil_biased_epanechnikov": "Biased KDE",
 }
 
 
@@ -36,15 +49,14 @@ def static_tex(data):
         top = i < 2
         ylabel = "ylabel={test violation}," if i in (0, 2) else ""
         labels = r"xticklabels=\empty," if top else ""
-        legend = ("legend style={at={(0.03,0.97)},anchor=north west,font=\\scriptsize,"
-                  "draw=black,fill=white}," if i == 0 else "")
+        legend = ("legend style={at={(1.12,1.38)},anchor=south,legend columns=2}," if i == 0 else "")
         xlabel = "xlabel={}," if top else "xlabel={training size $N$},"
         panel = [
             f"\\nextgroupplot[title={{({chr(97+i)}) {dist.replace('_', ' ').title()}}},"
             f"{xlabel}{ylabel}{labels}"
-            "xmode=log,log basis x=10,xtick={250,1000,5000},"
-            f"xticklabel style={{font=\\scriptsize,/pgf/number format/fixed}},"
-            f"xlabel style={{yshift=-4pt}},xmin=200,xmax=6500,ymin=0,ymax=.12,grid=major,{legend}]"
+            f"{XTICKS}"
+            "ytick={0,0.05,0.1},yticklabel style={/pgf/number format/fixed},"
+            f"xmin=200,xmax=6500,ymin=0,ymax=.12,{legend}]"
         ]
         for method, label in METHODS.items():
             points = []
@@ -53,12 +65,12 @@ def static_tex(data):
             selected.sort(key=lambda r: val(r, "n_train"))
             for row in selected:
                 points.append(f"({row['n_train']},{val(row, 'test_violation'):.6f})")
-            color = "blue!75!black" if method.startswith("schuster") else "red!75!black"
+            color = "cunbiased" if method.startswith("schuster") else "cbiased"
             style = "solid,mark=*" if method.startswith("schuster") else "dashed,mark=square*"
             panel.append(f"\\addplot[{color},{style},thick] coordinates {{{' '.join(points)}}};")
             if i == 0:
                 panel.append(f"\\addlegendentry{{{label}}}")
-        panel.append("\\addplot[black!60,dashed,forget plot] coordinates {(250,.1) (5000,.1)};")
+        panel.append("\\addplot[ctruth,dashed,thick,forget plot] coordinates {(250,.1) (5000,.1)};")
         panels.append("\n".join(panel))
     return "\n".join(panels)
 
@@ -66,8 +78,8 @@ def static_tex(data):
 def dispatch_tex(data):
     series = []
     for method, label, color, style in (
-        ("schuster_gaussian", "Schuster Gaussian", "blue!75!black", "solid,mark=*"),
-        ("keil_biased_epanechnikov", "Keil biased Epanechnikov", "red!75!black", "dashed,mark=square*"),
+        ("schuster_gaussian", "Unbiased KDE", "cunbiased", "solid,mark=*"),
+        ("keil_biased_epanechnikov", "Biased KDE", "cbiased", "dashed,mark=square*"),
     ):
         selected = [r for r in data if r.get("benchmark") == "energy_dispatch_paper_aligned"
                     and r.get("method") == method]
@@ -86,25 +98,27 @@ def dispatch_tex(data):
 
 def documents(data):
     static = r"""\documentclass[border=3pt]{standalone}
-\usepackage{pgfplots}\usepgfplotslibrary{groupplots}\pgfplotsset{compat=1.18}
+""" + PREAMBLE + r"""\usepgfplotslibrary{groupplots}
 \begin{document}\begin{tikzpicture}
-\begin{groupplot}[group style={group size=2 by 2,horizontal sep=1.15cm,vertical sep=1.05cm},
-width=7.0cm,height=4.8cm,grid=major]
+\begin{groupplot}[group style={group size=2 by 2,horizontal sep=1.6cm,vertical sep=1.5cm},
+width=7.0cm,height=4.4cm]
 """ + static_tex(data) + r"""
 \end{groupplot}
 \end{tikzpicture}\end{document}
 """
     left, right = dispatch_tex(data)
     dispatch = r"""\documentclass[border=3pt]{standalone}
-\usepackage{pgfplots}\usepgfplotslibrary{groupplots}\pgfplotsset{compat=1.18}
+""" + PREAMBLE + r"""\usepgfplotslibrary{groupplots}
 \begin{document}\begin{tikzpicture}
-\begin{groupplot}[group style={group size=2 by 1,horizontal sep=1.3cm},width=7.2cm,height=5.2cm,grid=major,
-xmode=log,log basis x=10,xtick={250,1000,5000},xmin=200,xmax=6500]
-\nextgroupplot[xlabel={training size $N$},ylabel={objective},title={Dispatch objective}]
+\begin{groupplot}[group style={group size=2 by 1,horizontal sep=1.9cm},width=6.85cm,height=5.0cm,
+""" + XTICKS + r"""xmin=200,xmax=6500]
+\nextgroupplot[xlabel={training size $N$},ylabel={objective},title={(a) Objective},ymax=940,
+legend style={at={(0.97,0.97)},anchor=north east}]
 """ + left + r"""
-\nextgroupplot[xlabel={training size $N$},ylabel={test violation},title={Dispatch test violation},ymin=0,ymax=.1]
+\nextgroupplot[xlabel={training size $N$},ylabel={test violation},title={(b) Test violation},ymin=0,ymax=.1,
+ytick={0,0.02,0.04,0.06,0.08,0.1},yticklabel style={/pgf/number format/fixed}]
 """ + right + r"""
-\addplot[black!60,dashed,forget plot] coordinates {(250,.1) (5000,.1)};
+\addplot[ctruth,dashed,thick,forget plot] coordinates {(250,.1) (5000,.1)};
 \end{groupplot}\end{tikzpicture}\end{document}
 """
     return {"fig_paper_aligned_static": static, "fig_paper_aligned_dispatch": dispatch}

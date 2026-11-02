@@ -32,29 +32,14 @@ matplotlib.use("Agg")            # safe default; remove if you want interactive
 import matplotlib.pyplot as plt
 from scipy import stats
 
-# --------------------------------------------------------------------------
-# Shared style
-# --------------------------------------------------------------------------
-plt.rcParams.update({
-    "font.size": 9.5,
-    "font.family": "serif",
-    "mathtext.fontset": "dejavuserif",
-    "axes.spines.top": False,
-    "axes.spines.right": False,
-    "figure.dpi": 200,
-    "axes.titlesize": 10,
-    "legend.fontsize": 8.3,
-    "savefig.bbox": "tight",
-})
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from thesis_style import apply_style, COLORS, WBOX, width_in
+apply_style()
 
-BLUE   = "#1f4e79"
-RED    = "#b3392e"
-GRAY   = "#7a7a7a"
-GREEN  = "#2e7d4f"
-ORANGE = "#d9842b"
-
-# semi-opaque white backplate for any label that sits over plotted content
-WBOX = dict(boxstyle="round,pad=0.18", fc="white", ec="none", alpha=0.85)
+BLUE, RED, GRAY = COLORS["unbiased"], COLORS["violation"], COLORS["nominal"]
+GREEN, ORANGE, TRUTH = COLORS["safe"], COLORS["scenario"], COLORS["truth"]
+ANN = COLORS["annotation"]
 
 OUT = "figures"
 os.makedirs(OUT, exist_ok=True)
@@ -68,14 +53,6 @@ def finish(fig, name):
     print("wrote", name)
 
 
-def styled_legend(ax, **kw):
-    """A legend with a white, borderless, high-z-order background."""
-    leg = ax.legend(frameon=True, framealpha=0.9, edgecolor="none",
-                    facecolor="white", **kw)
-    leg.set_zorder(7)
-    return leg
-
-
 # ==========================================================================
 # Figure 1  --  fig_meanvalue
 # The mean-value fallacy: density with two decisions, and the price curve.
@@ -87,60 +64,56 @@ def fig_meanvalue():
     viol = (xi > mean_xi).mean()
     q95 = np.quantile(xi, 0.95)
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.9))
+    fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.8))
 
     # ---- panel (a): density and two vertical decision lines ----
     ax = axes[0]
-    xs = np.linspace(60, 175, 600)
+    xs = np.linspace(60, 190, 600)
     kde = stats.gaussian_kde(xi)
     dens = kde(xs)
-    ax.plot(xs, dens, color=BLUE, lw=1.7, zorder=4)
+    ax.plot(xs, dens, color=TRUTH, lw=1.7, zorder=4)
     ax.fill_between(xs, dens, where=xs > mean_xi, color=RED, alpha=0.25,
                     zorder=2)
 
-    ax.axvline(mean_xi, color="k", lw=1.2, ls="--", zorder=3)
-    ax.axvline(q95, color=GREEN, lw=1.6, zorder=3)
+    ax.axvline(mean_xi, ymax=0.64, color=GRAY, lw=1.4, ls="--", zorder=3)
+    ax.axvline(q95, ymax=0.64, color=BLUE, lw=1.6, zorder=3)
 
     ymax = dens.max()
-    ax.set_ylim(0, ymax * 1.32)          # headroom so labels clear the curve
+    ax.set_ylim(0, ymax * 1.75)          # headroom so labels clear the curve
 
     # mean-value label: upper-left, arrow down to the dashed line
-    ax.annotate("mean-value plan\n$x=\\bar{\\xi}$",
-                xy=(mean_xi, ymax * 1.02), xytext=(100, ymax * 1.20),
-                fontsize=8.3, ha="center", va="center", zorder=8, bbox=WBOX,
-                )
+    ax.annotate("mean-value\nplan\n$x=\\bar{\\xi}$",
+                xy=(mean_xi, ymax * 1.02), xytext=(mean_xi + 3, ymax * 1.45),
+                ha="right", va="center", color=GRAY, zorder=8)
     # 95%-reliable label: upper-right, arrow down to the green line
-    ax.annotate("95% reliable plan\n$x=q_{0.95}$",
-                xy=(q95, ymax * 0.78), xytext=(135, ymax * 1.0),
-                fontsize=8.3, ha="center", va="center", color=GREEN,
-                zorder=8, bbox=WBOX,
-                )
+    ax.annotate("95% reliable\nplan\n$x=q_{0.95}$",
+                xy=(q95, ymax * 0.78), xytext=(q95 - 3, ymax * 1.45),
+                ha="left", va="center", color=BLUE, zorder=8)
     # shortfall label inside the shaded region, clear of both lines
-    ax.text(117, ymax * 0.20, f"shortfall {viol * 100:.1f}%",
-            fontsize=8.0, color=RED, ha="center", va="center",
-            zorder=8, bbox=WBOX)
+    ax.text(166, ymax * 0.50, f"shortfall\n{viol * 100:.1f}%",
+            color=RED, ha="center", va="center", zorder=8)
 
     ax.set_xlabel("net demand $\\xi$ [MW]")
     ax.set_ylabel("density")
-    ax.set_title("(a) Two plans against the demand density")
+    ax.set_title("(a) Two plans vs. demand density")
 
     # ---- panel (b): price of reliability ----
     ax = axes[1]
     levels = np.linspace(0.50, 0.999, 200)
     xq = np.quantile(xi, levels)
-    ax.plot((1 - levels) * 100, xq, color=BLUE, lw=1.7, zorder=4)
+    ax.plot((1 - levels) * 100, xq, color=TRUTH, lw=1.7, zorder=4)
 
-    ax.scatter([viol * 100], [mean_xi], color="k", s=22, zorder=6)
-    ax.scatter([5], [q95], color=GREEN, s=22, zorder=6)
+    ax.scatter([viol * 100], [mean_xi], color=GRAY, s=22, zorder=6)
+    ax.scatter([5], [q95], color=BLUE, s=22, zorder=6)
 
     ax.annotate("mean-value plan",
-                xy=(viol * 100, mean_xi), xytext=(44, 112),
-                fontsize=8.3, ha="center", zorder=8, bbox=WBOX,
-                arrowprops=dict(arrowstyle="->", lw=0.8, shrinkB=3))
+                xy=(viol * 100, mean_xi), xytext=(62, 122),
+                ha="center", color=GRAY, zorder=8,
+                arrowprops=dict(arrowstyle="->", lw=0.8, color=GRAY, shrinkB=3))
     ax.annotate("$\\varepsilon = 0.05$",
                 xy=(5, q95), xytext=(16, q95 - 1),
-                fontsize=8.3, color=GREEN, ha="center", zorder=8, bbox=WBOX,
-                arrowprops=dict(arrowstyle="->", lw=0.8, color=GREEN,
+                color=BLUE, ha="center", zorder=8,
+                arrowprops=dict(arrowstyle="->", lw=0.8, color=BLUE,
                                 shrinkB=3))
     ax.set_xlabel("accepted shortfall probability $\\varepsilon$ [%]")
     ax.set_ylabel("required capacity [MW]")
@@ -172,18 +145,18 @@ def fig_violations():
               "portfolio loss cap\n(heavy-tailed returns)"]
     vals = [v1 * 100, v2 * 100, v3 * 100]
 
-    fig, ax = plt.subplots(figsize=(5.8, 3.0))
+    fig, ax = plt.subplots(figsize=(width_in(0.95), 3.0))
     bars = ax.bar(labels, vals, color=[BLUE, ORANGE, RED], alpha=0.85,
                   width=0.55, zorder=3)
-    ax.axhline(5, color=GREEN, lw=1.4, ls="--", zorder=2)
+    ax.axhline(5, color=TRUTH, lw=1.2, ls="--", zorder=2)
 
     ax.set_ylim(0, max(vals) * 1.32)
     for b, v in zip(bars, vals):
         ax.text(b.get_x() + b.get_width() / 2, v + max(vals) * 0.03,
-                "%.0f%%" % v, ha="center", fontsize=9.5, zorder=6)
+                "%.0f%%" % v, ha="center", zorder=6)
     # target label parked in clear space on the right, above the dashed line
-    ax.text(2.32, 3.0, "target $\\varepsilon = 5\\%$", color=GREEN,
-            fontsize=9.0, ha="center", va="bottom", zorder=6, bbox=WBOX)
+    ax.text(2.32, 3.0, "target $\\varepsilon = 5\\%$", color=ANN,
+            ha="center", va="bottom", zorder=6, bbox=WBOX)
 
     ax.set_ylabel("violation frequency of\nmean-value solution [%]")
     fig.tight_layout()
@@ -195,41 +168,41 @@ def fig_violations():
 # The reliability spectrum: cost vs reliability, three regimes.
 # ==========================================================================
 def fig_spectrum():
-    fig, ax = plt.subplots(figsize=(6.0, 3.2))
+    fig, ax = plt.subplots(figsize=(width_in(0.82), 3.0))
     rel = np.linspace(0.50, 0.99995, 500)
     cost = 100 + 35 * stats.norm.ppf(rel)
-    ax.plot(rel * 100, cost, color=BLUE, lw=2.0, zorder=4)
+    ax.plot(rel * 100, cost, color=TRUTH, lw=1.8, zorder=4)
 
     det_y = 100.0
     rob_y = 100 + 35 * stats.norm.ppf(0.99995)
 
     # shaded operating band
-    ax.axvspan(90, 99.9, color=GREEN, alpha=0.10, zorder=1)
+    ax.axvspan(90, 99.9, color=BLUE, alpha=0.10, zorder=1)
 
-    ax.scatter([50], [det_y], color=RED, s=38, zorder=6)
-    ax.scatter([99.995], [rob_y], color=GRAY, s=38, zorder=6)
+    ax.scatter([50], [det_y], color=GRAY, s=38, zorder=6)
+    ax.scatter([99.995], [rob_y], color=ORANGE, s=38, zorder=6)
 
     ax.set_ylim(85, rob_y * 1.05)
-    ax.set_xlim(48, 101.5)
+    ax.set_xlim(48, 103)
 
     # deterministic label: lower-middle, arrow to the red dot
     ax.annotate("deterministic (mean value):\ncheap, no guarantee",
-                xy=(50, det_y), xytext=(58, 120),
-                fontsize=8.7, color=RED, ha="center", zorder=8, bbox=WBOX,
-                arrowprops=dict(arrowstyle="->", lw=0.9, color=RED,
+                xy=(50, det_y), xytext=(49.5, 123),
+                color=GRAY, ha="left", va="bottom", zorder=8,
+                arrowprops=dict(arrowstyle="->", lw=0.9, color=GRAY,
                                 shrinkB=4))
     # bounded-set robust proxy: upper-left of the dot, arrow pointing right to it,
     # so the arrow never overlaps the text
     ax.annotate("bounded-set robust design:\nhigh-quantile proxy",
                 xy=(100, rob_y), xytext=(82, rob_y * 1),
-                fontsize=8.7, color=GRAY, ha="center", va="center",
+                color=ORANGE, ha="center", va="center",
                 zorder=8, bbox=WBOX,
-                arrowprops=dict(arrowstyle="->", lw=0.9, color=GRAY,
+                arrowprops=dict(arrowstyle="->", lw=0.9, color=ORANGE,
                                 shrinkB=4))
     # operating-range label inside the shaded band, low so it clears the curve
-    ax.text(94.95, 112, "chance-constrained\noperating range\n"
+    ax.text(89.5, 104, "chance-constrained\noperating range\n"
             "$1-\\varepsilon \\in [0.90,\\ 0.999]$",
-            ha="center", va="center", fontsize=6.4, color=GREEN,
+            ha="center", va="center", color=BLUE,
             zorder=8, bbox=WBOX)
 
     ax.set_xlabel("reliability level $1-\\varepsilon$ [%]")
@@ -252,52 +225,54 @@ def fig_hardness():
     feas = (inA | inB).astype(float)
     both = (inA & inB).astype(float)
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.4, 3.1))
+    fig, axes = plt.subplots(1, 2, figsize=(width_in(0.9), 2.75))
 
     # ---- panel (a): union of half-spaces ----
     ax = axes[0]
-    ax.contourf(X, Y, feas, levels=[0.5, 1.5], colors=[BLUE], alpha=0.18,
+    ax.contourf(X, Y, feas, levels=[0.5, 1.5], colors=[BLUE], alpha=0.15,
                 zorder=1)
-    ax.contourf(X, Y, both, levels=[0.5, 1.5], colors=[BLUE], alpha=0.18,
+    ax.contourf(X, Y, both, levels=[0.5, 1.5], colors=[BLUE], alpha=0.15,
                 zorder=1)
-    ax.plot(g, (1 - a[0] * g) / a[1], color=RED, lw=1.4, zorder=3,
+    ax.plot(g, (1 - a[0] * g) / a[1], color=TRUTH, lw=1.3, zorder=3,
             label="$\\xi^{(1)\\top}x=1$")
-    ax.plot(g, (1 - b[0] * g) / b[1], color=ORANGE, lw=1.4, zorder=3,
+    ax.plot(g, (1 - b[0] * g) / b[1], color=TRUTH, lw=1.3, ls=(0, (5, 2)), zorder=3,
             label="$\\xi^{(2)\\top}x=1$")
 
     p1 = np.array([0.05, 2.4])
     p2 = np.array([2.4, 0.05])
     mid = 0.5 * (p1 + p2)
-    ax.plot([p1[0], p2[0]], [p1[1], p2[1]], "k--", lw=1.0, zorder=3)
-    ax.scatter(*p1, color="k", s=22, zorder=6)
-    ax.scatter(*p2, color="k", s=22, zorder=6)
-    ax.scatter(*mid, facecolor="white", edgecolor="k", s=32, zorder=6)
+    ax.plot([p1[0], p2[0]], [p1[1], p2[1]], color=TRUTH, ls="--", lw=1.0, zorder=3)
+    ax.scatter(*p1, color=TRUTH, s=22, zorder=6)
+    ax.scatter(*p2, color=TRUTH, s=22, zorder=6)
+    ax.scatter(*mid, facecolor="white", edgecolor=TRUTH, s=32, zorder=6)
 
-    ax.text(-0.1, 2.62, "feasible", fontsize=8.3, zorder=8, bbox=WBOX)
-    ax.text(2.15, 0.30, "feasible", fontsize=8.3, zorder=8, bbox=WBOX)
-    ax.annotate("midpoint\ninfeasible", xy=mid, xytext=(1.95, 1.75),
-                fontsize=8.3, ha="center", zorder=8, bbox=WBOX,
-                arrowprops=dict(arrowstyle="->", lw=0.8, shrinkB=5))
+    ax.text(-0.1, 2.62, "feasible", color=ANN, zorder=8, bbox=WBOX)
+    ax.text(2.15, 0.30, "feasible", color=ANN, zorder=8, bbox=WBOX)
+    ax.annotate("midpoint\ninfeasible", xy=mid, xytext=(2.2, 1.3),
+                ha="center", color=ANN, zorder=8, bbox=WBOX,
+                arrowprops=dict(arrowstyle="->", lw=0.8, color=ANN, shrinkB=5))
 
     ax.set_xlim(-0.3, 3.0)
     ax.set_ylim(-0.3, 3.0)
     ax.set_xlabel("$x_1$")
     ax.set_ylabel("$x_2$")
-    ax.set_title("(a) Feasible set is a union of half-spaces")
-    styled_legend(ax, loc="upper right", fontsize=8.0)
+    ax.set_title("(a) Union of half-spaces")
+    ax.legend(loc="upper right")
 
     # ---- panel (b): indicator vs smooth surrogates ----
     ax = axes[1]
     y = np.linspace(-3, 3, 600)
-    ax.step(y, (y <= 0).astype(float), where="post", color=RED, lw=1.7,
+    ax.step(y, (y <= 0).astype(float), where="post", color=TRUTH, lw=1.7,
             zorder=4, label="indicator $\\mathbf{1}\\{y\\leq 0\\}$")
-    for h, c in [(0.6, BLUE), (1.2, GREEN)]:
-        ax.plot(y, stats.norm.cdf(-y / h), color=c, lw=1.6, zorder=3,
+    for h, ls in [(0.6, "-"), (1.2, (0, (5, 2)))]:
+        ax.plot(y, stats.norm.cdf(-y / h), color=BLUE, ls=ls, lw=1.6, zorder=3,
                 label="smooth surrogate, $h=%.1f$" % h)
     ax.set_xlabel("constraint residual $y$")
     ax.set_ylabel("contribution to $P(Y\\leq 0)$")
-    ax.set_title("(b) The discontinuity at the heart of the problem")
-    styled_legend(ax, loc="upper right", fontsize=6.0)
+    ax.set_title("(b) Indicator vs. smooth surrogates")
+    ax.set_ylim(-0.05, 1.8)
+    ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0])
+    ax.legend(loc="upper center")
 
     fig.tight_layout()
     finish(fig, "fig_hardness")
@@ -308,7 +283,7 @@ def fig_hardness():
 # (a) bimodal truth vs Gaussian fit; (b) skewed tail underestimate (log y).
 # ==========================================================================
 def fig_mismatch():
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.9))
+    fig, axes = plt.subplots(1, 2, figsize=(width_in(0.82), 2.5))
 
     # ---- panel (a): bimodal shape mismatch ----
     m = np.concatenate([rng.normal(-1.6, 0.45, 60_000),
@@ -318,13 +293,14 @@ def fig_mismatch():
     gfit = stats.norm(m.mean(), m.std())
     ax = axes[0]
     ax.plot(xs, kdem(xs), color=BLUE, lw=1.8, zorder=4,
-            label="true law (bimodal)")
-    ax.plot(xs, gfit.pdf(xs), color=RED, lw=1.6, ls="--", zorder=3,
+            label="KDE of bimodal sample")
+    ax.plot(xs, gfit.pdf(xs), color=GRAY, lw=1.6, ls="--", zorder=3,
             label="fitted Gaussian")
     ax.set_xlabel("disturbance value")
     ax.set_ylabel("density")
+    ax.set_ylim(0, kdem(xs).max() * 1.65)
     ax.set_title("(a) Shape mismatch")
-    styled_legend(ax, loc="upper right", fontsize=8.0)
+    ax.legend(loc="upper right")
 
     # ---- panel (b): skewed law, Gaussian tail underestimate (log scale) ----
     gdist = stats.gamma(2.0)
@@ -336,25 +312,26 @@ def fig_mismatch():
     xs2 = np.linspace(-3, 8, 800)
 
     ax = axes[1]
-    ax.semilogy(xs2, gdist.pdf(xs2 + 2.0), color=BLUE, lw=1.8, zorder=4,
+    ax.semilogy(xs2, gdist.pdf(xs2 + 2.0), color=TRUTH, lw=1.8, zorder=4,
                 label="true law (skewed)")
-    ax.semilogy(xs2, gf.pdf(xs2), color=RED, lw=1.6, ls="--", zorder=3,
+    ax.semilogy(xs2, gf.pdf(xs2), color=GRAY, lw=1.6, ls="--", zorder=3,
                 label="fitted Gaussian")
-    ax.axvline(thr, color="k", lw=1.0, zorder=2)
+    ax.axvline(thr, ymax=0.66, color=TRUTH, lw=1.0, zorder=2)
     ax.fill_between(xs2, gdist.pdf(xs2 + 2.0), 1e-7, where=xs2 > thr,
-                    color=BLUE, alpha=0.25, zorder=1)
-    ax.set_ylim(1e-6, 1.2)
+                    color=TRUTH, alpha=0.2, zorder=1)
+    ax.set_ylim(1e-6, 1e3)
+    ax.set_yticks([1e-6, 1e-4, 1e-2, 1])
 
     # two stacked labels parked low and just right of the threshold line,
     # well clear of the legend in the upper-right corner
-    ax.text(5, 3e-3, "true tail: %.1f%%" % (p_true * 100),
-            fontsize=8.3, color=BLUE, ha="left", zorder=8, bbox=WBOX)
-    ax.text(4.35, 6e-5, "Gaussian: %.2f%%" % (p_g * 100),
-            fontsize=8.3, color=RED, ha="left", zorder=8, bbox=WBOX)
+    ax.text(3.65, 4e-4, "true tail:\n%.1f%%" % (p_true * 100),
+            color=TRUTH, ha="right", zorder=8, bbox=WBOX)
+    ax.text(3.65, 6e-6, "Gaussian:\n%.2f%%" % (p_g * 100),
+            color=GRAY, ha="right", zorder=8, bbox=WBOX)
     ax.set_xlabel("forecast error")
     ax.set_ylabel("density (log scale)")
-    ax.set_title("(b) Tail mass underestimated ~%.0fx" % (p_true / p_g))
-    styled_legend(ax, loc="upper right", fontsize=8.0)
+    ax.set_title("(b) Tail underestimated ~%.0fx" % (p_true / p_g))
+    ax.legend(loc="upper right")
 
     fig.tight_layout()
     finish(fig, "fig_mismatch")
@@ -373,31 +350,31 @@ def fig_residual():
     dens = kdey(ynodes)
     psafe = kdey.integrate_box_1d(-np.inf, 0.0)
 
-    fig, ax = plt.subplots(figsize=(6.0, 3.0))
+    fig, ax = plt.subplots(figsize=(width_in(0.88), 2.9))
     ax.hist(ximix, bins=34, density=True, color=GRAY, alpha=0.30, zorder=1,
             label="residual samples $y_j=g(x,\\xi_j)$, $N=%d$" % N)
     ax.plot(ynodes, dens, color=BLUE, lw=1.9, zorder=4,
             label="KDE $\\hat{\\rho}_{Y(x)}$")
     ax.fill_between(ynodes, dens, where=ynodes <= 0, color=GREEN, alpha=0.28,
                     zorder=2)
-    ax.axvline(0, color="k", lw=1.1, zorder=3)
+    ax.axvline(0, color=TRUTH, lw=1.1, zorder=3)
 
-    ax.set_ylim(0, dens.max() * 1.28)
+    ax.set_ylim(0, dens.max() * 1.7)
 
     # probability label parked top-left, clear of the curve
-    ax.text(-2.75, dens.max() * 1.15,
+    ax.text(-2.75, dens.max() * 1.52,
             "$\\hat{P}(Y(x)\\leq 0)=\\int_{-\\infty}^{0}\\hat{\\rho}\\,dy"
             "\\approx %.2f$" % psafe,
-            fontsize=8.0, color=GREEN, ha="left", va="center",
+            color=GREEN, ha="left", va="center",
             zorder=8, bbox=WBOX)
-    ax.text(-1.0, 0.06, "safe", fontsize=9.0, color=GREEN, ha="center",
+    ax.text(-1.0, 0.06, "safe", color=GREEN, ha="center",
             zorder=8, bbox=WBOX)
-    ax.text(0.95, 0.06, "unsafe", fontsize=9.0, color=RED, ha="center",
+    ax.text(0.95, 0.06, "unsafe", color=RED, ha="center",
             zorder=8, bbox=WBOX)
 
     ax.set_xlabel("constraint residual $y$")
     ax.set_ylabel("density")
-    styled_legend(ax, loc="upper right", fontsize=8.0)
+    ax.legend(loc="lower right", bbox_to_anchor=(1.0, 1.01))
     fig.tight_layout()
     finish(fig, "fig_residual")
 
