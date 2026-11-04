@@ -1,0 +1,145 @@
+\section{Core Implementation}
+\label{app:code}
+
+This appendix lists the core implementation behind the methods and results of
+the thesis: the kernel and bandwidth functions, the KDE chance-constraint
+estimators, the residual maps of the three benchmark models, and the
+optimization layer that turns these estimators into constraints of a nonlinear
+program. Input validation, file input and output, result bookkeeping, and the
+code that produces the figures are omitted. Throughout, a residual
+$r=g(x,\xi)\leq0$ is safe and $r>0$ is a violation, as in \cref{eq:residual}.
+The listings are verbatim excerpts. Their line numbers are those of the source
+module named in each caption, so a gap in the numbering marks omitted lines.
+
+\renewcommand{\thelstlisting}{\thesection.\arabic{lstlisting}}
+
+\subsection{KDE Estimators}
+
+\Cref{lst:kernels} evaluates the integrated kernels $F_K$ at a standardized
+argument. The Gaussian case uses $F_K=\Phi$, as in \cref{eq:gaussiancase}.
+The biased Epanechnikov kernel shifts the integrated Epanechnikov kernel by one
+bandwidth, which is the bias $b(h)=h$ in \cref{eq:domination}. Its support
+moves to $[0,2]$ in standardized coordinates, so every positive residual
+contributes zero safe mass.
+
+\codepart[caption={Integrated Gaussian, Epanechnikov, and biased Epanechnikov
+kernels (\texttt{kde\_cco/kde/kernels.py})}, label={lst:kernels}]%
+{kde/kernels.py}{54}{88}
+
+\Cref{lst:bandwidth} implements the two bandwidth rules.
+\texttt{silverman\_bandwidth} is the robust rule \cref{eq:ch3-bandwidth-rule}
+used in the main experiment rows, and \texttt{schuster\_bandwidth} is the scalar
+Schuster scaling \cref{eq:schuster-local-bandwidth} used in the paper-aligned
+profile. Both keep a positive floor, so the kernel never becomes singular inside
+the optimizer.
+
+\codepart[caption={Silverman and Schuster bandwidth rules
+(\texttt{kde\_cco/kde/bandwidth.py})}, label={lst:bandwidth}]%
+{kde/bandwidth.py}{8}{62}
+
+\Cref{lst:scalar} turns residual samples $r_j=g(x,\xi_j)$ into the quantities
+the optimizer consumes. \texttt{kde\_safe\_probability} is $\hat p_h(x)$ of
+\cref{eq:integrated}, imposed as \cref{eq:smoothcc}.
+\texttt{kde\_violation\_upper} with \texttt{bias=True} returns
+$1-\hat p_h^{\,b}(x)$ of \cref{eq:biasedcc}, which is never smaller than the
+empirical violation frequency. \texttt{kde\_safe\_probability\_gradient} is
+the analytic gradient \cref{eq:gradient} for the Gaussian kernel.
+
+\codepart[caption={Integrated-KDE chance-constraint estimators and gradient
+(\texttt{kde\_cco/constraints/scalar.py})}, label={lst:scalar}]%
+{constraints/scalar.py}{86}{149}
+
+\Cref{lst:joint} reduces the residual vector $(g_1,\dots,g_m)$ to one scalar
+statistic. \texttt{max\_violation} is the exact reduction
+\cref{eq:exactreduction}, and \texttt{smooth\_max} is the log-sum-exp surrogate
+\cref{eq:lse} with unit weights $w_r=1$ and temperature $\tau$, evaluated stably
+through \texttt{scipy.special.logsumexp}.
+
+\codepart[caption={Exact and smoothed joint statistics
+(\texttt{kde\_cco/constraints/joint.py})}, label={lst:joint}]%
+{constraints/joint.py}{26}{46}
+
+\subsection{Benchmark Models}
+
+\Cref{lst:static-model} defines the static nonlinear benchmark of
+\cref{ch:experiments} (\cref{tab:local-static-results}). The objective is a
+shifted quadratic with a small coupling term, and the deterministic constraints
+keep the decision in a compact nonnegative region. The uncertain residual is
+the circular safety condition
+$(x_1+0.25\,\xi_1)^2+(x_2+0.25\,\xi_2)^2-1\leq0$, evaluated for all samples at
+once.
+
+\codepart[caption={Static nonlinear benchmark
+(\texttt{kde\_cco/problems/static\_problem.py})}, label={lst:static-model}]%
+{problems/static_problem.py}{40}{63}
+
+\Cref{lst:dispatch-model} defines the two-generator dispatch benchmark
+(\cref{tab:dispatch-results}). The cost is quadratic in the output of each
+generator. The first residual component is the balance deficit
+$d-r_0-\xi-(x_1+x_2)$, where $d$ is the demand, $r_0$ the nominal renewable
+output, and $\xi$ the renewable forecast error. The two capacity components do
+not depend on $\xi$, so the stochastic part of the problem is the balance
+equation alone.
+
+\codepart[caption={Dispatch benchmark
+(\texttt{kde\_cco/problems/energy\_dispatch.py})}, label={lst:dispatch-model}]%
+{problems/energy_dispatch.py}{53}{80}
+
+\Cref{lst:lunar-model} gives the lunar model of \cref{sec:lunar-benchmark}.
+\texttt{dynamics} is \cref{eq:lunar-dynamics}, and \texttt{terminal\_residual}
+and \texttt{path\_residual\_nodes} are the residuals inside the terminal and
+path events \cref{eq:lunar-terminal-risk,eq:lunar-path-risk}. When all $n_t$
+node controls are passed, \texttt{objective} evaluates the trapezoidal fuel
+integral whose mismatch with the Euler defects is \cref{eq:quadrature-mismatch}.
+
+\codepart[caption={Lunar landing dynamics, objective, and residuals
+(\texttt{kde\_cco/problems/lunar\_landing.py})}, label={lst:lunar-model}]%
+{problems/lunar_landing.py}{78}{107}
+\codepart[nolol]{problems/lunar_landing.py}{117}{123}
+\codepart[nolol]{problems/lunar_landing.py}{139}{145}
+
+\subsection{Optimization}
+
+\Cref{lst:static-solver} connects a chance constraint to SciPy's SLSQP. A
+chance constraint is passed as a function that is nonpositive when it holds,
+for example $(1-\varepsilon)-\hat p_h(x)$. SciPy instead expects inequality
+functions $c(x)\geq0$, so \texttt{\_constraint\_from\_chance} negates the
+function, and \texttt{\_solve} passes it together with the deterministic
+constraints and the box bounds to \texttt{scipy.optimize.minimize}.
+
+\codepart[caption={Chance-constraint adapter for SLSQP
+(\texttt{kde\_cco/solvers/static.py})}, label={lst:static-solver}]%
+{solvers/static.py}{107}{127}
+\codepart[nolol]{solvers/static.py}{152}{164}
+
+\Cref{lst:collocation} is the optimal-control transcription of
+\cref{ch:optimalcontrol}. \texttt{transcribe\_euler} returns the forward Euler
+defects \cref{eq:euler-defect} and the boundary residuals. The inner function
+\texttt{values} of \texttt{\_chance\_constraints} computes the terminal and
+node-wise path margins of one continuation stage. The nominal stage uses the
+sample mean, the worst-case stage the largest residual, and the scenario stage
+one inequality per sample. The unbiased stage uses the Gaussian KDE and the
+biased stage the shifted Epanechnikov kernel, both in the safe-probability form
+equivalent to \cref{eq:ocp-kde}. The core of \texttt{solve\_collocation}
+stacks states and controls into one decision vector and passes the defects as
+equalities and the chance margins as inequalities to SLSQP.
+
+\codepart[caption={Euler transcription and KDE chance stages
+(\texttt{kde\_cco/solvers/collocation.py})}, label={lst:collocation}]%
+{solvers/collocation.py}{17}{39}
+\codepart[nolol]{solvers/collocation.py}{77}{104}
+\codepart[nolol]{solvers/collocation.py}{144}{173}
+
+\Cref{lst:continuation} is the bandwidth continuation of the paper-aligned
+profile (\cref{tab:paper-aligned-sequence}). \texttt{\_continuation} solves a
+sequence of problems with bandwidths $c\,h_N$, warm-starts each solve from the
+previous decision, and stops at the first failure. The paper-aligned unbiased
+KDE uses one Gaussian solve at the bandwidth $h_N$ of
+\cref{eq:schuster-local-bandwidth}. The paper-aligned biased KDE runs the
+multipliers $c\in\{0.25,0.5,1,2\}$ with the $b(h)=h$ Epanechnikov surrogate and
+keeps the last successful stage.
+
+\codepart[caption={Bandwidth continuation in the paper-aligned profile
+(\texttt{kde\_cco/experiments/paper\_aligned.py})}, label={lst:continuation}]%
+{experiments/paper_aligned.py}{41}{53}
+\codepart[nolol]{experiments/paper_aligned.py}{73}{100}
