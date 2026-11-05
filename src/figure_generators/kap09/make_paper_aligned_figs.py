@@ -16,9 +16,9 @@ ROOT = Path(__file__).resolve().parents[3]
 RESULTS = Path(os.environ.get("THESIS_RESULTS_DIR", ROOT / "results_paper_aligned_20260906"))
 FIGURES = Path(os.environ.get("THESIS_FIGURES_DIR", ROOT / "kap09" / "figures"))
 PREAMBLE = (r"""\usepackage[T1]{fontenc}\usepackage[bitstream-charter]{mathdesign}
-\usepackage{pgfplots}\pgfplotsset{compat=1.18}
-\definecolor{cnominal}{HTML}{7A7A7A}\definecolor{cscenario}{HTML}{D9842B}
-\definecolor{cunbiased}{HTML}{1F4E79}\definecolor{cbiased}{HTML}{2E7D4F}
+\usepackage{pgfplots}\pgfplotsset{compat=1.18}\usetikzlibrary{patterns}
+\definecolor{cnominal}{HTML}{999999}\definecolor{cscenario}{HTML}{E4A666}
+\definecolor{cunbiased}{HTML}{1F4E79}\definecolor{cbiased}{HTML}{3DA669}
 \definecolor{ctruth}{HTML}{222222}\definecolor{cannot}{HTML}{333333}
 """
         # House style: 8.5 pt ticks/legends, 9 pt labels, 9.5 pt regular titles, open axes, no grid, unframed legends.
@@ -66,7 +66,7 @@ def static_tex(data):
             for row in selected:
                 points.append(f"({row['n_train']},{val(row, 'test_violation'):.6f})")
             color = "cunbiased" if method.startswith("schuster") else "cbiased"
-            style = "solid,mark=*" if method.startswith("schuster") else "dashed,mark=square*"
+            style = "solid,mark=*" if method.startswith("schuster") else "dashed,mark=triangle*"
             panel.append(f"\\addplot[{color},{style},thick] coordinates {{{' '.join(points)}}};")
             if i == 0:
                 panel.append(f"\\addlegendentry{{{label}}}")
@@ -79,7 +79,7 @@ def dispatch_tex(data):
     series = []
     for method, label, color, style in (
         ("schuster_gaussian", "Unbiased KDE", "cunbiased", "solid,mark=*"),
-        ("keil_biased_epanechnikov", "Biased KDE", "cbiased", "dashed,mark=square*"),
+        ("keil_biased_epanechnikov", "Biased KDE", "cbiased", "dashed,mark=triangle*"),
     ):
         selected = [r for r in data if r.get("benchmark") == "energy_dispatch_paper_aligned"
                     and r.get("method") == method]
