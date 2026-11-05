@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.colors import to_rgb
+from matplotlib.colors import to_rgb, to_rgba
 from scipy import stats
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from thesis_style import apply_style, COLORS, TEXT, HATCH_UNSAFE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
@@ -132,8 +132,8 @@ for key, c, lab in [("unbiased", BLUE, "unbiased (Gaussian)"),
                     ("biased", GREEN, "biased (Epan., $b=h$)")]:
     arr = np.array([r[:3] for r in res[key]["rel"]])
     ax.plot(Ns, arr[:, 0], ms=3.4, lw=1.5, label=lab, **style(key, every=None))
-    ax.fill_between(Ns, arr[:, 1], arr[:, 2], color=c, alpha=0.13,
-                    edgecolor=c, lw=0.6)
+    ax.fill_between(Ns, arr[:, 1], arr[:, 2], facecolor=to_rgba(c, 0.13),
+                    edgecolor=c, lw=0.6, ls=style(key)["ls"])
 ax.axhline(1-eps, color=TRUTH, ls="--", lw=1.0)
 ax.set_xscale("log"); ax.set_xticks(Ns); ax.set_xticklabels(Ns)
 ax.set_xlabel("sample size $N$")

@@ -137,17 +137,16 @@ def fig_smoothing():
         return (stats.norm.pdf((x[:, None] - samp[None, :]) / h)
                 .mean(axis=1) / h)
 
-    _k = lambda **kw: dict(color=BLUE, **kw)
-    KDES = [(2.0, _k(ls="--")),
+    KDES = [(2.0, dict(color=tint(BLUE, 0.45), ls="--")),
             (h_silv, style("unbiased")),
-            (15.0, _k(ls="-."))]
+            (15.0, dict(color=tint(BLUE, 0.7), ls=(0, (7, 2))))]
     fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.75))
 
     # panel (a): constraint functions
     ax = axes[0]
-    ax.step(xs, p_emp, where="post", **style("nominal", every=False), lw=1.0,
-            label="empirical (piecewise constant)")
-    ax.plot(xs, p_true, **style("truth"), lw=1.3, label="true $p(x)$")
+    ax.step(xs, p_emp, where="post", **style("scenario", every=False), lw=1.0,
+            zorder=4, label="empirical (piecewise constant)")
+    ax.plot(xs, p_true, **style("truth"), lw=1.3, zorder=5, label="true $p(x)$")
     for h, c in KDES:
         lab = (f"KDE, $h={h:.0f}$" if h != h_silv
                else f"KDE, $h={h_silv:.1f}$ (Silverman)")
@@ -166,9 +165,10 @@ def fig_smoothing():
     # panel (b): derivatives
     ax = axes[1]
     # piecewise-constant empirical estimator derivative: zero everywhere (marked by tick lines at samples)
-    ax.axhline(0.0, color=GRAY, lw=1.6, zorder=3)
+    _e = style("scenario", every=False)
+    ax.axhline(0.0, lw=1.6, zorder=3, **_e)
     ax.plot(samp, np.zeros_like(samp), linestyle="none", marker="|",
-            ms=7, color=GRAY, zorder=4)
+            ms=7, color=_e["color"], zorder=4)
     for h, c in KDES:
         ax.plot(xs, dp_kde(xs, h), lw=1.5, zorder=5, **c)
     ax.set_xlabel("decision $x$ [MW]")

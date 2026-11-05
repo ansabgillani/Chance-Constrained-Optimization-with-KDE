@@ -79,9 +79,14 @@ def style(role, every=0.12):
 
 
 def gray(hex_color):
-    """Printed gray value of a hex colour (0 = black, 1 = white)."""
+    """Rec.601 luma of a hex colour (0 = black, 1 = white).
+
+    Matches the black-and-white edition's Ghostscript conversion
+    (-dUseFastColor=true).
+    """
     r, g, b = (int(hex_color[i:i + 2], 16) / 255 for i in (1, 3, 5))
     return 0.299 * r + 0.587 * g + 0.114 * b
+
 
 # White backplate for the rare label that must sit over plotted content.
 WBOX = dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.85)
@@ -125,6 +130,8 @@ def apply_style():
         "savefig.bbox": "tight",
         "savefig.pad_inches": 0.02,
     })
+
+
 if __name__ == "__main__":
     # Roles drawn together must print as clearly different grays, no line may
     # be too light to see on paper, and every role needs its own pattern.

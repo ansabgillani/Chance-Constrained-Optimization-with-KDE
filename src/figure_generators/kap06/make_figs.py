@@ -13,6 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy import stats
+from matplotlib.colors import to_rgba
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from thesis_style import apply_style, COLORS, HATCH_UNSAFE, SAFE_FILL, LINE, WBOX, style, width_in, TEXT
@@ -83,7 +84,7 @@ for ax, f, title, ok in [
     fstar = 1.0
     delta = 0.55
     ebar = (f_sharp if ok else f_flat)[np.argmin(np.abs(t - delta))] - fstar
-    ax.scatter([0], [fstar], color=GREEN, marker="^", s=70, zorder=7, ec="white")
+    ax.scatter([0], [fstar], color=GREEN, marker="*", s=110, zorder=7, ec=TRUTH, lw=0.6)
     ax.axvspan(-delta, delta, color=SAFE_FILL, lw=0)
     ax.axhline(fstar + ebar, color=TRUTH, lw=1.0, ls=":")
     # approximate solutions
@@ -140,8 +141,8 @@ slope, intercept = np.polyfit(np.log(Ns), np.log(err_x[:, 0]), 1)
 fig, ax = plt.subplots(figsize=(width_in(0.84), 3.0))
 ax.loglog(Ns, err_x[:, 0], ms=4, lw=1.6, **style("unbiased", every=None),
           label="mean $|x_N - x^*|$")
-ax.fill_between(Ns, err_x[:, 1], err_x[:, 2], color=BLUE, alpha=0.13,
-                edgecolor=BLUE, lw=0.6)
+ax.fill_between(Ns, err_x[:, 1], err_x[:, 2], facecolor=to_rgba(BLUE, 0.13),
+                edgecolor=BLUE, lw=0.6, ls=style("unbiased")["ls"])
 fit = np.exp(intercept)*Ns**slope
 ax.loglog(Ns, fit, color=TRUTH, lw=1.2, ls="--",
           label=f"fitted slope $\\approx {slope:.2f}$")

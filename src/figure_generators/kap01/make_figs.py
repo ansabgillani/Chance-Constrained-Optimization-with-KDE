@@ -237,8 +237,8 @@ def fig_hardness():
     ax = axes[0]
     ax.contourf(X, Y, feas, levels=[0.5, 1.5], colors=[SAFE_FILL],
                 zorder=1)
-    ax.contourf(X, Y, both, levels=[0.5, 1.5], colors=[SAFE_FILL],
-                zorder=1)
+    ax.contourf(X, Y, both, levels=[0.5, 1.5], colors=[COLORS["safe"]],
+                alpha=0.25, zorder=1)
     ax.plot(g, (1 - a[0] * g) / a[1], lw=1.3, zorder=3, **style("truth"),
             label="$\\xi^{(1)\\top}x=1$")
     ax.plot(g, (1 - b[0] * g) / b[1], color=TRUTH, lw=1.3, ls=(0, (5, 2)), zorder=3,

@@ -8,13 +8,13 @@ cd "$(dirname "$0")/.."
 gray() {
   mkdir -p "$(dirname "$2")"
   gs -q -o "$2" -sDEVICE=pdfwrite -sColorConversionStrategy=Gray \
-     -dProcessColorModel=/DeviceGray "$1"
+     -dProcessColorModel=/DeviceGray -dUseFastColor=true "$1"
 }
 
 count=0
 for tex in kap*/kapitel*.tex; do
   chap=$(dirname "$tex")
-  for f in $(grep -oE '\\includegraphics(\[[^]]*\])?\{[^}]*\}' "$tex" | sed -E 's/.*\{([^}]*)\}$/\1/'); do
+  for f in $(grep -v '^[[:space:]]*%' "$tex" | grep -oE '\\includegraphics(\[[^]]*\])?\{[^}]*\}' | sed -E 's/.*\{([^}]*)\}$/\1/'); do
     case $f in */*) ;; *) f="$chap/figures/$f" ;; esac
     f="${f%.pdf}.pdf"
     [ -f "$f" ] || { echo "missing figure: $f" >&2; exit 1; }
