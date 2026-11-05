@@ -23,7 +23,7 @@ import matplotlib.patches as mpatches
 from scipy import stats
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, WBOX, width_in
+from thesis_style import apply_style, COLORS, LINE, SAFE_FILL, WBOX, style, width_in
 apply_style()
 
 BLUE = COLORS["unbiased"]
@@ -137,8 +137,9 @@ def fig_levelsets():
             level, label_x, label_y = 0.9, -0.30, 0.05
             title = "(a) Gaussian law"
         c = COLORS["safe"]
-        ax.contourf(X1, X2, P, levels=[level, 1.001], colors=[c], alpha=0.25)
-        ax.contour(X1, X2, P, levels=[level], colors=[c], linewidths=1.6)
+        ax.contourf(X1, X2, P, levels=[level, 1.001], colors=[SAFE_FILL])
+        ax.contour(X1, X2, P, levels=[level], colors=[c], linewidths=1.6,
+                   linestyles=["--" if mixture else "-"])
         ax.text(label_x, label_y, rf"$\{{x: p(x)\geq {level:g}\}}$",
                 fontsize=8.5, color=c, bbox=WBOX, zorder=7)
         ax.set_title(title)
@@ -174,9 +175,9 @@ def fig_kernels():
     fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.8))
 
     ax = axes[0]
-    ax.plot(u, gauss, color=BLUE, label="Gaussian")
-    ax.plot(u, epan, color=BLUE_TINT, ls="--", label="Epanechnikov")
-    ax.plot(u, epan_b, color=GREEN, label="biased (shifted support)")
+    ax.plot(u, gauss, **style("unbiased"), label="Gaussian")
+    ax.plot(u, epan, color=BLUE_TINT, ls=":", label="Epanechnikov")
+    ax.plot(u, epan_b, **style("biased"), label="biased (shifted support)")
     ax.set_xlabel("$u$")
     ax.set_ylabel("$K(u)$")
     ax.set_title("(a) Kernel functions")
@@ -190,12 +191,12 @@ def fig_kernels():
     cb = np.where(ub < -1, 0, np.where(ub > 1, 1, 0.25*(2 + 3*ub - ub**3)))
     ax.step([-2.2, 0, 0, 2.2], [0, 0, 1, 1], where="post", color=TRUTH,
             lw=1.2, label="indicator $\\mathbf{1}\\{u\\geq 0\\}$")
-    ax.plot(u, cg, color=BLUE, label="Gaussian")
-    ax.plot(u, ce, color=BLUE_TINT, ls="--", label="Epanechnikov")
-    ax.plot(u, cb, color=GREEN, label="biased")
+    ax.plot(u, cg, **style("unbiased"), label="Gaussian")
+    ax.plot(u, ce, color=BLUE_TINT, ls=":", label="Epanechnikov")
+    ax.plot(u, cb, **style("biased"), label="biased")
     ax.fill_between(u, cb, np.where(u >= 0, 1, 0),
                     where=(cb <= np.where(u >= 0, 1, 0)) & (u > -1.7),
-                    color=GREEN, alpha=0.10, lw=0)
+                    color=SAFE_FILL, lw=0)
     ax.set_xlabel("$u$")
     ax.set_ylabel("$F_K(u)$")
     ax.set_title("(b) Integrated kernels vs indicator")
@@ -229,11 +230,11 @@ def fig_bandwidth():
                              gridspec_kw=dict(width_ratios=[1.3, 1]))
 
     ax = axes[0]
-    ax.plot(ygrid, truth(ygrid), color=TRUTH, ls="--", lw=1.3,
+    ax.plot(ygrid, truth(ygrid), **style("truth"), lw=1.3,
             label="true density")
     for h, c, ls, lw, lab in [
-            (0.05, tint(BLUE, 0.45), "-", 1.2, "$h=0.05$ (undersmoothed)"),
-            (0.25, BLUE, "-", 1.8, "$h=0.25$ (near optimal)"),
+            (0.05, tint(BLUE, 0.45), (0, (3, 1.5)), 1.2, "$h=0.05$ (undersmoothed)"),
+            (0.25, BLUE, ":", 1.8, "$h=0.25$ (near optimal)"),
             (0.90, tint(BLUE, 0.7), (0, (4, 1.5, 1, 1.5)), 1.6,
              "$h=0.90$ (oversmoothed)")]:
         kde = (stats.norm.pdf((ygrid[:, None] - samp[None, :])/h)
@@ -265,7 +266,7 @@ def fig_bandwidth():
     ax = axes[1]
     ax.loglog(hs, bias2, color=GRAY, ls="--", label="squared bias")
     ax.loglog(hs, var, color=BLUE, ls=":", lw=2.0, label="variance")
-    ax.loglog(hs, mise, color=TRUTH, lw=1.8, label="MISE")
+    ax.loglog(hs, mise, color=TRUTH, ls="-", lw=1.8, label="MISE")
     ax.axvline(hstar, color=TRUTH, lw=0.8, ls=(0, (1, 2)))
     ax.text(hstar*1.12, 1.45e-4, "$h^{*}$", color=ANNOT, fontsize=9.5)
     ax.set_xlabel("bandwidth $h$")
@@ -288,7 +289,7 @@ def fig_curse():
     Nd = N1**((d + 4) / 5)
 
     fig, ax = plt.subplots(figsize=(width_in(0.8), 2.7))
-    ax.semilogy(d, Nd, "-o", color=BLUE)
+    ax.semilogy(d, Nd, **style("unbiased", every=None))
     ax.axhline(1e6, color=GRAY, lw=1.0, ls=":")
     ax.text(1.0, 1.7e6, "$10^6$ samples", color=TXTGRAY, fontsize=8.5)
 
@@ -356,7 +357,8 @@ def fig_litmap():
 
     for yr, lane, lab, above, ha, xl in papers:
         y, c = lanes[lane]
-        ax.scatter(yr, y, s=46, color=c, zorder=7, ec="white", lw=0.4)
+        ax.scatter(yr, y, s=46, color=c, marker="h", zorder=7,
+                   ec="white", lw=0.4)
         ax.annotate(lab, xy=(xl, y), xytext=(0, 5 if above else -5),
                     textcoords="offset points", ha=ha, fontsize=8.5,
                     va="bottom" if above else "top",
@@ -392,7 +394,7 @@ def fig_staircase():
     samp = LAW.rvs(N, random_state=3)
     vhat = (samp[None, :] > xs[:, None]).mean(axis=1)
     ax.plot(xs, true_v, color=TRUTH, lw=1.8, label="true $v(x)$")
-    ax.step(xs, vhat, where="post", color=ORANGE, lw=1.4,
+    ax.step(xs, vhat, where="post", **style("scenario", every=False), lw=1.4,
             label=f"$\\hat v_N(x)$, $N={N}$")
     ax.axhline(EPS, color=TRUTH, ls="--", lw=1.0)
     ax.text(91, EPS + 0.03, "$\\varepsilon = 0.05$", fontsize=8.5,
@@ -403,12 +405,13 @@ def fig_staircase():
     ax.legend(loc="upper right")
 
     ax = axes[1]
-    for k, (seed, c, lw) in enumerate([(11, tint(ORANGE, 0.55), 1.2),
-                                       (12, ORANGE, 1.2),
-                                       (13, "#8a4e0e", 1.2)]):
+    for k, (seed, c, lw, ls) in enumerate([
+            (11, "#b76d20", 1.6, "-."),
+            (12, "#db8731", 1.3, "-."),
+            (13, "#e4a666", 1.0, "-.")]):
         sk = LAW.rvs(N, random_state=seed)
         vk = (sk[None, :] > xs[:, None]).mean(axis=1)
-        ax.step(xs, vk, where="post", lw=lw, color=c, label=f"draw {k+1}")
+        ax.step(xs, vk, where="post", lw=lw, color=c, ls=ls, label=f"draw {k+1}")
     ax.plot(xs, true_v, color=TRUTH, lw=1.8, label="true $v(x)$")
     ax.axhline(EPS, color=TRUTH, ls="--", lw=1.0)
     ax.set_xlim(120, 155)
