@@ -36,7 +36,7 @@ import matplotlib.patches as mpatches
 from matplotlib.colors import to_rgb
 from scipy import stats
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, WBOX, width_in
+from thesis_style import apply_style, COLORS, HATCH_UNSAFE, LINE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
 
 apply_style()
 BLUE, GREEN, RED = COLORS["unbiased"], COLORS["biased"], COLORS["violation"]
@@ -80,23 +80,23 @@ def fig_pipeline():
     ax.set_ylim(0, 6)
     ax.axis("off")
 
-    def pbox(x, y, w, h, color, title, body):
+    def pbox(x, y, w, h, color, title, body, a=0.14, ls='-'):
         ax.add_patch(mpatches.FancyBboxPatch(
             (x, y), w, h, boxstyle="round,pad=0.0,rounding_size=0.25",
-            fc=tint(color), ec=color, lw=0.8))
+            fc=tint(color, a), ec=color, lw=0.8, ls=ls))
         ax.text(x + w/2, y + h*0.68, title, ha="center", va="center",
                 fontsize=9, fontweight="bold", color=COLORS["annotation"])
         ax.text(x + w/2, y + h*0.30, body, ha="center", va="center",
                 fontsize=8.5, color=COLORS["annotation"])
 
     yb, hb = 3.0, 2.2
-    pbox(0.0, yb, 2.8, hb, GRAY, "samples", "$\\xi_1,\\dots,\\xi_N$")
-    pbox(3.3, yb, 3.4, hb, GRAY, "residuals", "$y_j(x)=g(x,\\xi_j)$")
-    pbox(7.2, yb, 2.6, hb, BLUE, "KDE", "$\\hat\\rho_h(\\,\\cdot\\,;x)$")
+    pbox(0.0, yb, 2.8, hb, GRAY, "samples", "$\\xi_1,\\dots,\\xi_N$", ls=":")
+    pbox(3.3, yb, 3.4, hb, GRAY, "residuals", "$y_j(x)=g(x,\\xi_j)$", ls=":")
+    pbox(7.2, yb, 2.6, hb, BLUE, "KDE", "$\\hat\\rho_h(\\,\\cdot\\,;x)$", a=0.30)
     pbox(10.3, yb, 3.7, hb, BLUE, "smooth constraint",
-         "$\\hat p_h(x)\\geq 1-\\varepsilon$")
+         "$\\hat p_h(x)\\geq 1-\\varepsilon$", a=0.30)
     pbox(4.9, 0.0, 4.6, 1.7, GRAY, "NLP solver",
-         "updates $x$ (uses $\\nabla_x \\hat p_h$)")
+         "updates $x$ (uses $\\nabla_x \\hat p_h$)", a=0.30, ls=":")
 
     arr = dict(arrowstyle="->", lw=0.8, color=ARROW, shrinkA=0, shrinkB=0)
     for x1, x2 in [(2.8, 3.3), (6.7, 7.2), (9.8, 10.3)]:
@@ -137,18 +137,21 @@ def fig_smoothing():
         return (stats.norm.pdf((x[:, None] - samp[None, :]) / h)
                 .mean(axis=1) / h)
 
-    KDES = [(2.0, tint(BLUE, 0.45)), (h_silv, BLUE), (15.0, tint(BLUE, 0.7))]
+    _k = lambda **kw: dict(color=BLUE, **kw)
+    KDES = [(2.0, _k(ls="--", marker="^", markevery=0.12)),
+            (h_silv, _k(ls="-", marker="o", markevery=0.12)),
+            (15.0, _k(ls="-.", marker="s", markevery=0.12))]
     fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.75))
 
     # panel (a): constraint functions
     ax = axes[0]
-    ax.step(xs, p_emp, where="post", color=GRAY, lw=1.0,
+    ax.step(xs, p_emp, where="post", **style("nominal", every=False), lw=1.0,
             label="empirical (piecewise constant)")
-    ax.plot(xs, p_true, color=TRUTH, ls="--", lw=1.3, label="true $p(x)$")
+    ax.plot(xs, p_true, **style("truth"), lw=1.3, label="true $p(x)$")
     for h, c in KDES:
         lab = (f"KDE, $h={h:.0f}$" if h != h_silv
                else f"KDE, $h={h_silv:.1f}$ (Silverman)")
-        ax.plot(xs, p_kde(xs, h), color=c, lw=1.5, label=lab)
+        ax.plot(xs, p_kde(xs, h), lw=1.5, label=lab, **c)
     ax.axhline(1 - EPS, color=TRUTH, ls="--", lw=1.0)
     ax.text(152, 0.90, "$1-\\varepsilon$",
             color=COLORS["annotation"], fontsize=8.5, bbox=WBOX, zorder=7)
@@ -167,7 +170,7 @@ def fig_smoothing():
     ax.plot(samp, np.zeros_like(samp), linestyle="none", marker="|",
             ms=7, color=GRAY, zorder=4)
     for h, c in KDES:
-        ax.plot(xs, dp_kde(xs, h), color=c, lw=1.5, zorder=5)
+        ax.plot(xs, dp_kde(xs, h), lw=1.5, zorder=5, **c)
     ax.set_xlabel("decision $x$ [MW]")
     ax.set_ylabel("$d\\hat p_h/dx$")
     ax.set_title("(b) Its derivative")
@@ -204,9 +207,10 @@ def fig_optimism():
 
     fig, ax = plt.subplots(figsize=(width_in(0.82), 2.7))
     bins = np.linspace(0.88, 1.0, 49)
-    ax.hist(rels[rels >= 1 - EPS], bins=bins, color=GREEN, alpha=0.75,
+    ax.hist(rels[rels >= 1 - EPS], bins=bins, color=SAFE_FILL, edgecolor=GREEN, lw=0.6,
             label="meets target")
-    ax.hist(rels[rels < 1 - EPS],  bins=bins, color=RED,   alpha=0.75,
+    ax.hist(rels[rels < 1 - EPS],  bins=bins, facecolor=UNSAFE_FILL, edgecolor=RED,
+            hatch=HATCH_UNSAFE, lw=0.6,
             label=f"violates target ({frac_below*100:.0f}% of trials)")
     ax.axvline(1 - EPS, color=TRUTH, ls="--", lw=1.0)
 
