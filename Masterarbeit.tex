@@ -47,6 +47,21 @@
 \definecolor{accblue}{RGB}{40,80,140}
 \definecolor{feasgreen}{RGB}{60,120,70}
 
+\usepackage{listings}
+\lstset{
+  language=Python,
+  basicstyle=\linespread{1}\fontsize{9}{11}\selectfont\ttfamily,
+  keywordstyle=\bfseries,
+  numbers=left, numberstyle=\tiny, numbersep=6pt,
+  frame=lines, captionpos=t,
+  breaklines=true, postbreak=\mbox{$\hookrightarrow$\space},
+  columns=fullflexible, keepspaces=true,
+  showstringspaces=false, upquote=true, breakatwhitespace=true,
+}
+% Verbatim excerpt of src/kde_cco/#2, lines #3--#4, numbered as in the source file.
+\newcommand{\codepart}[4][]{%
+  \lstinputlisting[linerange={#3-#4},firstnumber=#3,#1]{src/kde_cco/#2}}
+
 
 
 \usepackage{ifpdf}
@@ -76,6 +91,7 @@
 \usepackage{caption}
 \usepackage{subcaption}
 \captionsetup{font=small,labelfont=bf,width=0.92\textwidth}
+\captionsetup[lstlisting]{justification=raggedright,singlelinecheck=true}
 \usepackage{fancyhdr}
 \usepackage{etoolbox}
 \pretocmd{\section}{\thispagestyle{plain}}{}{}
@@ -175,6 +191,10 @@
 \phantomsection
 \addcontentsline{toc}{section}{References}
 \bibliography{bibliography}
+
+\clearpage
+\appendix
+\input{appendix/appendix}
 
 % Erklärung 
 
