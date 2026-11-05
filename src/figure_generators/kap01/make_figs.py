@@ -186,7 +186,7 @@ def fig_spectrum():
     ax.scatter([50], [det_y], color=GRAY, s=38, zorder=6,
                marker=LINE["nominal"]["marker"])
     ax.scatter([99.995], [rob_y], color=ORANGE, s=38, zorder=6,
-               marker=LINE["scenario"]["marker"])
+               marker=LINE["scenario"]["marker"], ec=TEXT["scenario"], lw=0.8)
 
     ax.set_ylim(85, rob_y * 1.05)
     ax.set_xlim(48, 103)
@@ -203,7 +203,7 @@ def fig_spectrum():
                 xy=(100, rob_y), xytext=(82, rob_y * 1),
                 color=TEXT["scenario"], ha="center", va="center",
                 zorder=8, bbox=WBOX,
-                arrowprops=dict(arrowstyle="->", lw=0.9, color=ORANGE,
+                arrowprops=dict(arrowstyle="->", lw=0.9, color=TEXT["scenario"],
                                 shrinkB=4))
     # operating-range label inside the shaded band, low so it clears the curve
     ax.text(89.5, 104, "chance-constrained\noperating range\n"
@@ -301,7 +301,7 @@ def fig_mismatch():
     ax = axes[0]
     ax.plot(xs, kdem(xs), lw=1.8, zorder=4, **style("unbiased"),
             label="KDE of bimodal sample")
-    ax.plot(xs, gfit.pdf(xs), lw=1.6, zorder=3, **style("nominal"),
+    ax.plot(xs, gfit.pdf(xs), lw=1.8, zorder=3, **{**style("nominal"), "mec": TEXT["nominal"]},
             label="fitted Gaussian")
     ax.set_xlabel("disturbance value")
     ax.set_ylabel("density")
@@ -321,7 +321,7 @@ def fig_mismatch():
     ax = axes[1]
     ax.semilogy(xs2, gdist.pdf(xs2 + 2.0), lw=1.8, zorder=4, **style("truth"),
                 label="true law (skewed)")
-    ax.semilogy(xs2, gf.pdf(xs2), lw=1.6, zorder=3, **style("nominal"),
+    ax.semilogy(xs2, gf.pdf(xs2), lw=1.8, zorder=3, **{**style("nominal"), "mec": TEXT["nominal"]},
                 label="fitted Gaussian")
     ax.axvline(thr, ymax=0.66, lw=1.0, zorder=2, **style("truth"))
     ax.fill_between(xs2, gdist.pdf(xs2 + 2.0), 1e-7, where=xs2 > thr,
@@ -335,7 +335,7 @@ def fig_mismatch():
     ax.text(3.65, 4e-4, "true tail:\n%.1f%%" % (p_true * 100),
             color=TRUTH, ha="right", zorder=8, bbox=WBOX)
     ax.text(3.65, 6e-6, "Gaussian:\n%.2f%%" % (p_g * 100),
-            color=TEXT["nominal"], ha="right", zorder=8, bbox=WBOX)
+            color=TEXT["annotation"], ha="right", zorder=8, bbox=WBOX)
     ax.set_xlabel("forecast error")
     ax.set_ylabel("density (log scale)")
     ax.set_title("(b) Tail underestimated ~%.0fx" % (p_true / p_g))
@@ -359,7 +359,7 @@ def fig_residual():
     psafe = kdey.integrate_box_1d(-np.inf, 0.0)
 
     fig, ax = plt.subplots(figsize=(width_in(0.88), 2.9))
-    ax.hist(ximix, bins=34, density=True, color=GRAY, alpha=0.30, zorder=1,
+    ax.hist(ximix, bins=34, density=True, fill=False, edgecolor=GRAY, lw=0.6, zorder=1,
             label="residual samples $y_j=g(x,\\xi_j)$, $N=%d$" % N)
     ax.plot(ynodes, dens, lw=1.9, zorder=4, **style("unbiased"),
             label="KDE $\\hat{\\rho}_{Y(x)}$")
@@ -372,7 +372,7 @@ def fig_residual():
     ax.text(-2.75, dens.max() * 1.52,
             "$\\hat{P}(Y(x)\\leq 0)=\\int_{-\\infty}^{0}\\hat{\\rho}\\,dy"
             "\\approx %.2f$" % psafe,
-            color=TEXT["safe"], ha="left", va="center",
+            color=TEXT["truth"], ha="left", va="center",
             zorder=8, bbox=WBOX)
     ax.text(-1.0, 0.06, "safe", color=TEXT["safe"], ha="center",
             zorder=8, bbox=WBOX)

@@ -131,9 +131,11 @@ ax = axes[0]
 for key, c, lab in [("unbiased", BLUE, "unbiased (Gaussian)"),
                     ("biased", GREEN, "biased (Epan., $b=h$)")]:
     arr = np.array([r[:3] for r in res[key]["rel"]])
-    ax.plot(Ns, arr[:, 0], ms=3.4, lw=1.5, label=lab, **style(key, every=None))
+    ax.plot(Ns, arr[:, 0], ms=3.4, lw=1.8 if key == "biased" else 1.5,
+            label=lab, **style(key, every=None))
+    hat = "...." if key == "biased" else None
     ax.fill_between(Ns, arr[:, 1], arr[:, 2], facecolor=to_rgba(c, 0.13),
-                    edgecolor=c, lw=0.6, ls=style(key)["ls"])
+                    edgecolor=c, lw=0.6, ls=style(key)["ls"], hatch=hat)
 ax.axhline(1-eps, color=TRUTH, ls="--", lw=1.0)
 ax.set_xscale("log"); ax.set_xticks(Ns); ax.set_xticklabels(Ns)
 ax.set_xlabel("sample size $N$")
@@ -176,7 +178,7 @@ fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.8))
 ax = axes[0]
 ax.plot(t, g1, color=GRAY, lw=1.0, ls=":", label="$g_1$")
 ax.plot(t, g2, color=GRAY, lw=1.0, ls="--", label="$g_2$")
-ax.plot(t, mx, color=TRUTH, lw=1.8, label="$s=\\max(g_1, g_2)$")
+ax.plot(t, mx, color=TRUTH, lw=1.3, zorder=5, label="$s=\\max(g_1, g_2)$")
 for tau, c, tls in [(0.4, tint(BLUE, 0.55), "-."), (0.15, BLUE, "-")]:
     lse = tau*np.log(np.exp(g1/tau) + np.exp(g2/tau))
     ax.plot(t, lse, color=c, lw=1.5, ls=tls,

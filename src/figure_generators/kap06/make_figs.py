@@ -93,19 +93,19 @@ for ax, f, title, ok in [
     else:
         xn = np.array([1.6, -1.3, 1.0, -1.75])
     fn = np.interp(xn, t, f)
-    ax.scatter(xn, fn, color=BLUE, s=26, zorder=6, ec="white")
+    ax.scatter(xn, fn, facecolor="white", edgecolor=TRUTH, lw=0.8, s=30, zorder=6)
     ax.set_title(title)
     ax.set_xlabel("decision space")
     ax.set_xlim(-2.2, 2.2)
 axes[0].set_ylabel("objective $f$")
 axes[0].set_ylim(0.45, 4.8)
-axes[0].text(0, 0.62, "$B_\\delta(x^*)$", color=TEXT["safe"],
+axes[0].text(0, 0.62, "$B_\\delta(x^*)$", color=TEXT["truth"],
              ha="center", zorder=7)
 axes[0].text(0, 3.2,
              "outside the ball,\n$f > f(x^*) + \\kappa$:\n"
              "approximate solutions\nare trapped near $x^*$",
              color=ANN, ha="center", zorder=7)
-axes[1].text(0, 0.62, "$B_\\delta(x^*)$", color=TEXT["safe"],
+axes[1].text(0, 0.62, "$B_\\delta(x^*)$", color=TEXT["truth"],
              ha="center", zorder=7)
 axes[1].text(0, 3.2,
              "near-optimal points exist\nfar from $x^*$: the sequence\n"

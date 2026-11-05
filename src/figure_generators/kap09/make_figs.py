@@ -24,10 +24,10 @@ PREAMBLE = (r"""\usepackage[T1]{fontenc}\usepackage[bitstream-charter]{mathdesig
         r"tick style={draw=cannot,line width=0.8pt},tick label style={font=\fontsize{8.5}{10}\selectfont},"
         r"label style={font=\fontsize{9}{11}\selectfont},title style={font=\fontsize{9.5}{11}\selectfont,yshift=-2pt},"
         r"legend style={font=\fontsize{8.5}{10}\selectfont,draw=none,fill=none,legend cell align=left}}}" "\n")
-BAR = {"nominal": "fill=cnominal,draw=cnominal",
-       "scenario": "fill=cscenario,draw=cscenario",
-       "unbiased_kde": "fill=cunbiased,draw=cunbiased",
-       "local_shifted_epanechnikov": "fill=cbiased,draw=cbiased,postaction={pattern=north east lines,pattern color=white}"}
+BAR = {"nominal": "fill=cnominal,draw=cannot,line width=0.5pt",
+       "scenario": "fill=cscenario,draw=cannot,line width=0.5pt",
+       "unbiased_kde": "fill=cunbiased,draw=cannot,line width=0.5pt",
+       "local_shifted_epanechnikov": "fill=cbiased,draw=cannot,line width=0.5pt,postaction={pattern=north east lines,pattern color=white}"}
 MARK = {"nominal": "diamond*", "scenario": "square*", "unbiased_kde": "*",
         "local_shifted_epanechnikov": "triangle*"}
 METHODS = {

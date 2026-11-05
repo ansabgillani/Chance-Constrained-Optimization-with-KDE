@@ -85,7 +85,7 @@ def fig_taxonomy():
             tcolor=None):
         ax.add_patch(mpatches.FancyBboxPatch(
             (x, y), w, h, boxstyle="round,pad=0.12,rounding_size=0.25",
-            fc=tint(color, 0.14), ec=color, lw=0.8))
+            fc=tint(color, 0.14), ec=tcolor or color, lw=1.0))
         ax.text(x + w/2, y + h*tfrac, label, ha="center", va="center",
                 fontsize=9, color=tcolor or color, weight="bold",
                 linespacing=1.05)
@@ -234,7 +234,7 @@ def fig_bandwidth():
     ax.plot(ygrid, truth(ygrid), **style("truth"), lw=1.3,
             label="true density")
     for h, c, ls, lw, lab in [
-            (0.05, tint(BLUE, 0.45), (0, (3, 1.5)), 1.2, "$h=0.05$ (undersmoothed)"),
+            (0.05, tint(BLUE, 0.70), (0, (3, 1.5)), 1.2, "$h=0.05$ (undersmoothed)"),
             (0.25, BLUE, ":", 1.8, "$h=0.25$ (near optimal)"),
             (0.90, tint(BLUE, 0.7), (0, (4, 1.5, 1, 1.5)), 1.6,
              "$h=0.90$ (oversmoothed)")]:
@@ -265,7 +265,7 @@ def fig_bandwidth():
     hstar = hs[np.argmin(mise)]
 
     ax = axes[1]
-    ax.loglog(hs, bias2, color=GRAY, ls="--", label="squared bias")
+    ax.loglog(hs, bias2, color="#7d7d7d", ls="--", label="squared bias")
     ax.loglog(hs, var, color=BLUE, ls=":", lw=2.0, label="variance")
     ax.loglog(hs, mise, color=TRUTH, ls="-", lw=1.8, label="MISE")
     ax.axvline(hstar, color=TRUTH, lw=0.8, ls=(0, (1, 2)))
@@ -395,7 +395,10 @@ def fig_staircase():
     samp = LAW.rvs(N, random_state=3)
     vhat = (samp[None, :] > xs[:, None]).mean(axis=1)
     ax.plot(xs, true_v, color=TRUTH, lw=1.8, label="true $v(x)$")
-    ax.step(xs, vhat, where="post", **style("scenario", every=False), lw=1.4,
+    # Empirical estimator: scenario dash-dot in a darker orange (0.48 printed gray),
+    # matching fig_smoothing and staying visible in black-and-white print.
+    ax.step(xs, vhat, where="post",
+            **(style("scenario", every=False) | {"color": "#b76d20"}), lw=1.6,
             label=f"$\\hat v_N(x)$, $N={N}$")
     ax.axhline(EPS, color=TRUTH, ls="--", lw=1.0)
     ax.text(91, EPS + 0.03, "$\\varepsilon = 0.05$", fontsize=8.5,
@@ -408,8 +411,8 @@ def fig_staircase():
     ax = axes[1]
     for k, (seed, c, lw, ls) in enumerate([
             (11, "#b76d20", 1.6, "-."),
-            (12, "#db8731", 1.3, "-."),
-            (13, "#e4a666", 1.0, "-.")]):
+            (12, "#c47a2a", 1.3, (0, (6, 1.5, 1, 1.5, 1, 1.5))),
+            (13, "#d08638", 1.2, (0, (9, 2, 2, 2)))]):
         sk = LAW.rvs(N, random_state=seed)
         vk = (sk[None, :] > xs[:, None]).mean(axis=1)
         ax.step(xs, vk, where="post", lw=lw, color=c, ls=ls, label=f"draw {k+1}")

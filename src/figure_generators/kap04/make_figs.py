@@ -36,7 +36,7 @@ import matplotlib.patches as mpatches
 from matplotlib.colors import to_rgb
 from scipy import stats
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, HATCH_UNSAFE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
+from thesis_style import apply_style, COLORS, HATCH_UNSAFE, SAFE_FILL, UNSAFE_FILL, TEXT, WBOX, style, width_in
 
 apply_style()
 BLUE, GREEN, RED = COLORS["unbiased"], COLORS["biased"], COLORS["violation"]
@@ -137,14 +137,17 @@ def fig_smoothing():
         return (stats.norm.pdf((x[:, None] - samp[None, :]) / h)
                 .mean(axis=1) / h)
 
-    KDES = [(2.0, dict(color=tint(BLUE, 0.45), ls="--")),
+    KDES = [(2.0, dict(color=tint(BLUE, 0.7), ls="--")),
             (h_silv, style("unbiased")),
-            (15.0, dict(color=tint(BLUE, 0.7), ls=(0, (7, 2))))]
+            (15.0, dict(color=tint(BLUE, 0.9), ls=(0, (7, 2))))]
     fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.75))
 
     # panel (a): constraint functions
     ax = axes[0]
-    ax.step(xs, p_emp, where="post", **style("scenario", every=False), lw=1.0,
+    # Empirical estimator: scenario dash-dot in a darker orange (0.48 printed gray),
+    # so it stays visible under the truth curve in black-and-white print.
+    _e = style("scenario", every=False) | {"color": "#b76d20"}
+    ax.step(xs, p_emp, where="post", **_e, lw=1.5,
             zorder=4, label="empirical (piecewise constant)")
     ax.plot(xs, p_true, **style("truth"), lw=1.3, zorder=5, label="true $p(x)$")
     for h, c in KDES:
@@ -152,8 +155,8 @@ def fig_smoothing():
                else f"KDE, $h={h_silv:.1f}$ (Silverman)")
         ax.plot(xs, p_kde(xs, h), lw=1.5, label=lab, **c)
     ax.axhline(1 - EPS, color=TRUTH, ls="--", lw=1.0)
-    ax.text(152, 0.90, "$1-\\varepsilon$",
-            color=COLORS["annotation"], fontsize=8.5, bbox=WBOX, zorder=7)
+    ax.text(97, 0.965, "$1-\\varepsilon$",
+            color=TEXT["annotation"], fontsize=8.5, bbox=WBOX, zorder=7)
     ax.set_xlabel("decision $x$ [MW]")
     ax.set_ylabel("$\\hat p_h(x)$")
     ax.set_ylim(0.35, 1.03)
@@ -165,7 +168,6 @@ def fig_smoothing():
     # panel (b): derivatives
     ax = axes[1]
     # piecewise-constant empirical estimator derivative: zero everywhere (marked by tick lines at samples)
-    _e = style("scenario", every=False)
     ax.axhline(0.0, lw=1.6, zorder=3, **_e)
     ax.plot(samp, np.zeros_like(samp), linestyle="none", marker="|",
             ms=7, color=_e["color"], zorder=4)
