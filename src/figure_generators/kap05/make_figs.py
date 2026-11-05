@@ -12,16 +12,16 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.colors import to_rgb
+from matplotlib.colors import to_rgb, to_rgba
 from scipy import stats
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, WBOX, width_in
+from thesis_style import apply_style, COLORS, TEXT, HATCH_UNSAFE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
 
 apply_style()
 BLUE, GREEN, RED = COLORS["unbiased"], COLORS["biased"], COLORS["violation"]
 GRAY, ORANGE, TRUTH = COLORS["nominal"], COLORS["scenario"], COLORS["truth"]
 ANN = COLORS["annotation"]
-LRED, LGREEN = "#e6b8b3", "#a9d2b9"   # light shading: optimism credit, safety margin
+LRED, LGREEN = UNSAFE_FILL, SAFE_FILL   # light shading: optimism credit, safety margin
 
 
 def tint(c, a):
@@ -50,18 +50,19 @@ phi_bias = C_epan((-y - h)/h)           # biased Epanechnikov, b = h
 
 fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.7))
 ax = axes[0]
-ax.step([-4.0, 0, 0, 2.6], [1, 1, 0, 0], where="post", color=TRUTH,
-        lw=1.4, label="indicator $\\mathbf{1}\\{y\\leq 0\\}$")
-ax.plot(y, phi_unb, color=BLUE, lw=1.6, label="unbiased (Gaussian)")
-ax.plot(y, phi_bias, color=GREEN, lw=1.6,
-        label="biased (Epanechnikov, $b=h$)")
-ax.fill_between(y, phi_unb, ind, where=(y > 0), color=LRED, lw=0)
+ax.step([-4.0, 0, 0, 2.6], [1, 1, 0, 0], where="post", lw=1.4,
+        label="indicator $\\mathbf{1}\\{y\\leq 0\\}$", **style("truth"))
+ax.plot(y, phi_unb, lw=1.6, label="unbiased (Gaussian)", **style("unbiased"))
+ax.plot(y, phi_bias, lw=1.6, label="biased (Epanechnikov, $b=h$)",
+        **style("biased"))
+ax.fill_between(y, phi_unb, ind, where=(y > 0), facecolor=LRED,
+                edgecolor=RED, hatch=HATCH_UNSAFE, lw=0)
 ax.fill_between(y, phi_bias, ind, where=(phi_bias < ind),
                 color=LGREEN, lw=0)
 ax.text(1.8, 0.62, "optimism:\ncredit for\nviolating\nsamples",
-        color=RED, ha="center", va="center")
+        color=TEXT["violation"], ha="center", va="center")
 ax.text(-2.5, 0.19, "safety margin:\ndiscount for\nboundary\nsamples",
-        color=GREEN, ha="center", va="center")
+        color=TEXT["biased"], ha="center", va="center")
 ax.set_xlabel("residual $y$ (units of $h$)")
 ax.set_ylabel("contribution to $\\hat p$")
 ax.set_title("(a) The domination condition")
@@ -130,8 +131,11 @@ ax = axes[0]
 for key, c, lab in [("unbiased", BLUE, "unbiased (Gaussian)"),
                     ("biased", GREEN, "biased (Epan., $b=h$)")]:
     arr = np.array([r[:3] for r in res[key]["rel"]])
-    ax.plot(Ns, arr[:, 0], "-o", ms=3.4, lw=1.5, color=c, label=lab)
-    ax.fill_between(Ns, arr[:, 1], arr[:, 2], color=c, alpha=0.13)
+    ax.plot(Ns, arr[:, 0], ms=3.4, lw=1.8 if key == "biased" else 1.5,
+            label=lab, **style(key, every=None))
+    hat = "...." if key == "biased" else None
+    ax.fill_between(Ns, arr[:, 1], arr[:, 2], facecolor=to_rgba(c, 0.13),
+                    edgecolor=c, lw=0.6, ls=style(key)["ls"], hatch=hat)
 ax.axhline(1-eps, color=TRUTH, ls="--", lw=1.0)
 ax.set_xscale("log"); ax.set_xticks(Ns); ax.set_xticklabels(Ns)
 ax.set_xlabel("sample size $N$")
@@ -145,7 +149,7 @@ xpos = np.arange(len(Ns))
 ax.bar(xpos - w/2, fr_u, width=w, color=BLUE, alpha=0.85,
        label="unbiased")
 ax.bar(xpos + w/2, fr_b, width=w, color=GREEN, alpha=0.85,
-       label="biased")
+       label="biased", hatch="////", edgecolor="white", lw=0)
 ax.set_xticks(xpos); ax.set_xticklabels(Ns)
 ax.set_xlabel("sample size $N$")
 ax.set_ylabel("trials violating target [%]")
@@ -174,10 +178,10 @@ fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.8))
 ax = axes[0]
 ax.plot(t, g1, color=GRAY, lw=1.0, ls=":", label="$g_1$")
 ax.plot(t, g2, color=GRAY, lw=1.0, ls="--", label="$g_2$")
-ax.plot(t, mx, color=TRUTH, lw=1.8, label="$s=\\max(g_1, g_2)$")
-for tau, c in [(0.4, tint(BLUE, 0.55)), (0.15, BLUE)]:
+ax.plot(t, mx, color=TRUTH, lw=1.3, zorder=5, label="$s=\\max(g_1, g_2)$")
+for tau, c, tls in [(0.4, tint(BLUE, 0.55), "-."), (0.15, BLUE, "-")]:
     lse = tau*np.log(np.exp(g1/tau) + np.exp(g2/tau))
-    ax.plot(t, lse, color=c, lw=1.5,
+    ax.plot(t, lse, color=c, lw=1.5, ls=tls,
             label=f"$s_\\tau$, $\\tau={tau}$")
 ax.axhline(0, color=TRUTH, lw=0.8, ls="--")
 ax.set_xlabel("slice through decision space")
@@ -219,7 +223,8 @@ kernels = [BLUE, BLUE, BLUE, BLUE, GREEN]
 fig, ax = plt.subplots(figsize=(width_in(0.82), 2.7))
 ax.semilogy(stages, hs, color=COLORS["muted"], lw=1.0, ls="--", zorder=2)
 for st, hh, c in zip(stages, hs, kernels):
-    ax.scatter(st, hh, s=70, color=c, zorder=6, ec="white", lw=0.6)
+    ax.scatter(st, hh, s=70, color=c, zorder=6, ec="white", lw=0.6,
+               marker="o" if c == BLUE else "^")
 for st in stages[:-1]:
     ax.annotate("", xy=(st+0.86, hs[st]*1.0), xytext=(st+0.14, hs[st-1]),
                 arrowprops=dict(arrowstyle="->", lw=0.9, color=COLORS["muted"],
@@ -228,9 +233,9 @@ for st in stages[:-1]:
 ax.text(2.5, 9.5, "warm start: each solution\ninitializes the next stage",
         color=ANN, ha="center")
 ax.text(1.0, 2.4, "Gaussian\nkernel\n(smooth, fast)",
-        color=BLUE, ha="center")
+        color=TEXT["unbiased"], ha="center")
 ax.text(4.62, 0.5, "switch to split-Bernstein\n(exact safety)",
-        color=GREEN, ha="center")
+        color=TEXT["biased"], ha="center")
 ax.text(4.85, 6.8, "$N$ increases as\n$h$ decreases",
         color=ANN, ha="center")
 ax.set_xticks(stages)

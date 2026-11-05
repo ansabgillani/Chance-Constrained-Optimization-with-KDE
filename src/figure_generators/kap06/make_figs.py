@@ -13,9 +13,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy import stats
+from matplotlib.colors import to_rgba
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, WBOX, width_in
+from thesis_style import apply_style, COLORS, HATCH_UNSAFE, SAFE_FILL, LINE, WBOX, style, width_in, TEXT
 apply_style()
 BLUE = COLORS["unbiased"]; RED = COLORS["violation"]; GRAY = COLORS["nominal"]
 GREEN = COLORS["safe"]; ORANGE = COLORS["scenario"]; TRUTH = COLORS["truth"]
@@ -41,6 +42,8 @@ for half, alpha_f, lab in [(0.60*gamma, 0.13, None),
                             "uniform KDE error tube, shrinking in $N$")]:
     ax.fill_between(xs, p - half, p + half, color=BLUE, alpha=alpha_f,
                     label=lab)
+    ax.fill_between(xs, p - half, p + half, facecolor="none",
+                    edgecolor=BLUE, lw=0.6)
 ax.plot(xs, p, color=TRUTH, lw=1.7, label="true probability $p(x)$")
 ax.axhline(alpha, color=TRUTH, ls="--", lw=1.1)
 ax.text(119.5, alpha - 0.013, "$\\alpha = 1-\\varepsilon$",
@@ -81,8 +84,8 @@ for ax, f, title, ok in [
     fstar = 1.0
     delta = 0.55
     ebar = (f_sharp if ok else f_flat)[np.argmin(np.abs(t - delta))] - fstar
-    ax.scatter([0], [fstar], color=GREEN, s=40, zorder=6, ec="white")
-    ax.axvspan(-delta, delta, color=GREEN, alpha=0.10)
+    ax.scatter([0], [fstar], color=GREEN, marker="*", s=110, zorder=7, ec=TRUTH, lw=0.6)
+    ax.axvspan(-delta, delta, color=SAFE_FILL, lw=0)
     ax.axhline(fstar + ebar, color=TRUTH, lw=1.0, ls=":")
     # approximate solutions
     if ok:
@@ -90,19 +93,19 @@ for ax, f, title, ok in [
     else:
         xn = np.array([1.6, -1.3, 1.0, -1.75])
     fn = np.interp(xn, t, f)
-    ax.scatter(xn, fn, color=BLUE, s=26, zorder=6, ec="white")
+    ax.scatter(xn, fn, facecolor="white", edgecolor=TRUTH, lw=0.8, s=30, zorder=6)
     ax.set_title(title)
     ax.set_xlabel("decision space")
     ax.set_xlim(-2.2, 2.2)
 axes[0].set_ylabel("objective $f$")
 axes[0].set_ylim(0.45, 4.8)
-axes[0].text(0, 0.62, "$B_\\delta(x^*)$", color=GREEN,
+axes[0].text(0, 0.62, "$B_\\delta(x^*)$", color=TEXT["truth"],
              ha="center", zorder=7)
 axes[0].text(0, 3.2,
              "outside the ball,\n$f > f(x^*) + \\kappa$:\n"
              "approximate solutions\nare trapped near $x^*$",
              color=ANN, ha="center", zorder=7)
-axes[1].text(0, 0.62, "$B_\\delta(x^*)$", color=GREEN,
+axes[1].text(0, 0.62, "$B_\\delta(x^*)$", color=TEXT["truth"],
              ha="center", zorder=7)
 axes[1].text(0, 3.2,
              "near-optimal points exist\nfar from $x^*$: the sequence\n"
@@ -136,9 +139,10 @@ err_x = np.array(err_x)
 slope, intercept = np.polyfit(np.log(Ns), np.log(err_x[:, 0]), 1)
 
 fig, ax = plt.subplots(figsize=(width_in(0.84), 3.0))
-ax.loglog(Ns, err_x[:, 0], "-o", ms=4, lw=1.6, color=BLUE,
+ax.loglog(Ns, err_x[:, 0], ms=4, lw=1.6, **style("unbiased", every=None),
           label="mean $|x_N - x^*|$")
-ax.fill_between(Ns, err_x[:, 1], err_x[:, 2], color=BLUE, alpha=0.13)
+ax.fill_between(Ns, err_x[:, 1], err_x[:, 2], facecolor=to_rgba(BLUE, 0.13),
+                edgecolor=BLUE, lw=0.6, ls=style("unbiased")["ls"])
 fit = np.exp(intercept)*Ns**slope
 ax.loglog(Ns, fit, color=TRUTH, lw=1.2, ls="--",
           label=f"fitted slope $\\approx {slope:.2f}$")

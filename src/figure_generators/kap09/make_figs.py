@@ -14,9 +14,9 @@ ROOT = Path(__file__).resolve().parents[3]
 RESULTS = Path(os.environ.get("THESIS_RESULTS_DIR", ROOT / "results"))
 FIGURES = Path(os.environ.get("THESIS_FIGURES_DIR", ROOT / "kap09" / "figures"))
 PREAMBLE = (r"""\usepackage[T1]{fontenc}\usepackage[bitstream-charter]{mathdesign}
-\usepackage{pgfplots}\pgfplotsset{compat=1.18}
-\definecolor{cnominal}{HTML}{7A7A7A}\definecolor{cscenario}{HTML}{D9842B}
-\definecolor{cunbiased}{HTML}{1F4E79}\definecolor{cbiased}{HTML}{2E7D4F}
+\usepackage{pgfplots}\pgfplotsset{compat=1.18}\usetikzlibrary{patterns}
+\definecolor{cnominal}{HTML}{999999}\definecolor{cscenario}{HTML}{E4A666}
+\definecolor{cunbiased}{HTML}{1F4E79}\definecolor{cbiased}{HTML}{3DA669}
 \definecolor{ctruth}{HTML}{222222}\definecolor{cannot}{HTML}{333333}
 """
         # House style: 8.5 pt ticks/legends, 9 pt labels, 9.5 pt regular titles, open axes, no grid, unframed legends.
@@ -24,8 +24,12 @@ PREAMBLE = (r"""\usepackage[T1]{fontenc}\usepackage[bitstream-charter]{mathdesig
         r"tick style={draw=cannot,line width=0.8pt},tick label style={font=\fontsize{8.5}{10}\selectfont},"
         r"label style={font=\fontsize{9}{11}\selectfont},title style={font=\fontsize{9.5}{11}\selectfont,yshift=-2pt},"
         r"legend style={font=\fontsize{8.5}{10}\selectfont,draw=none,fill=none,legend cell align=left}}}" "\n")
-BAR = {"nominal": "cnominal", "scenario": "cscenario", "unbiased_kde": "cunbiased",
-       "local_shifted_epanechnikov": "cbiased"}
+BAR = {"nominal": "fill=cnominal,draw=cannot,line width=0.5pt",
+       "scenario": "fill=cscenario,draw=cannot,line width=0.5pt",
+       "unbiased_kde": "fill=cunbiased,draw=cannot,line width=0.5pt",
+       "local_shifted_epanechnikov": "fill=cbiased,draw=cannot,line width=0.5pt,postaction={pattern=north east lines,pattern color=white}"}
+MARK = {"nominal": "diamond*", "scenario": "square*", "unbiased_kde": "*",
+        "local_shifted_epanechnikov": "triangle*"}
 METHODS = {
     "nominal": "Nominal",
     "scenario": "Scenario",
@@ -56,7 +60,7 @@ def static_panel_tex(rows):
     for index, dist in enumerate(DISTS):
         selected = {r["method"]: num(r, "test_violation") for r in rows
                     if r.get("benchmark") == "static_nonlinear" and r.get("distribution") == dist}
-        bars = "".join(f"\\addplot[ybar,bar width=9pt,bar shift=0pt,fill={BAR[m]},draw={BAR[m]}] "
+        bars = "".join(f"\\addplot[ybar,bar width=9pt,bar shift=0pt,{BAR[m]}] "
                        f"coordinates {{({esc(METHODS[m])},{selected[m]:.6f})}};\n"
                        for m in METHODS if selected.get(m) is not None)
         top = index < 2
@@ -86,7 +90,7 @@ def tradeoff_tex(rows):
                 if x is not None and y is not None:
                     points.append(f"({x:.6f},{y:.6f})")
         if points:
-            out += [f"\\addplot[only marks,mark=*,mark size=2.5pt,color={color}] coordinates {{{' '.join(points)}}};"]
+            out += [f"\\addplot[only marks,mark={MARK[method]},mark size=2.5pt,color={color}] coordinates {{{' '.join(points)}}};"]
     return "\n".join(out)
 
 
@@ -123,7 +127,7 @@ def documents(rows):
 \begin{groupplot}[group style={group size=2 by 1,horizontal sep=1.7cm},width=6.5cm,height=5.0cm,enlarge x limits=0.06,enlarge y limits=0.06]
 \nextgroupplot[xlabel={bandwidth $h$},ylabel={estimated violation},title={(a) Bandwidth sweep}]
 """ + f"\\addplot[cunbiased,mark=*,thick] coordinates {{{sensitivity_series(rows, 'bandwidth_sweep')}}};\n" + r"""\nextgroupplot[xlabel={training sample size $N$},title={(b) Sample-size sweep}]
-""" + f"\\addplot[cunbiased,mark=square*,thick] coordinates {{{sensitivity_series(rows, 'sample_size_sweep')}}};\n" + r"""\end{groupplot}\end{tikzpicture}\end{document}
+""" + f"\\addplot[cunbiased,mark=*,thick] coordinates {{{sensitivity_series(rows, 'sample_size_sweep')}}};\n" + r"""\end{groupplot}\end{tikzpicture}\end{document}
 """
     return static, tradeoff, sensitivity
 
