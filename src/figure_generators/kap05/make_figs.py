@@ -131,8 +131,9 @@ ax = axes[0]
 for key, c, lab in [("unbiased", BLUE, "unbiased (Gaussian)"),
                     ("biased", GREEN, "biased (Epan., $b=h$)")]:
     arr = np.array([r[:3] for r in res[key]["rel"]])
-    ax.plot(Ns, arr[:, 0], "-o", ms=3.4, lw=1.5, color=c, label=lab)
-    ax.fill_between(Ns, arr[:, 1], arr[:, 2], color=c, alpha=0.13)
+    ax.plot(Ns, arr[:, 0], ms=3.4, lw=1.5, label=lab, **style(key, every=None))
+    ax.fill_between(Ns, arr[:, 1], arr[:, 2], color=c, alpha=0.13,
+                    edgecolor=c, lw=0.6)
 ax.axhline(1-eps, color=TRUTH, ls="--", lw=1.0)
 ax.set_xscale("log"); ax.set_xticks(Ns); ax.set_xticklabels(Ns)
 ax.set_xlabel("sample size $N$")
@@ -146,7 +147,7 @@ xpos = np.arange(len(Ns))
 ax.bar(xpos - w/2, fr_u, width=w, color=BLUE, alpha=0.85,
        label="unbiased")
 ax.bar(xpos + w/2, fr_b, width=w, color=GREEN, alpha=0.85,
-       label="biased")
+       label="biased", hatch="////", edgecolor="white", lw=0)
 ax.set_xticks(xpos); ax.set_xticklabels(Ns)
 ax.set_xlabel("sample size $N$")
 ax.set_ylabel("trials violating target [%]")
@@ -176,9 +177,9 @@ ax = axes[0]
 ax.plot(t, g1, color=GRAY, lw=1.0, ls=":", label="$g_1$")
 ax.plot(t, g2, color=GRAY, lw=1.0, ls="--", label="$g_2$")
 ax.plot(t, mx, color=TRUTH, lw=1.8, label="$s=\\max(g_1, g_2)$")
-for tau, c in [(0.4, tint(BLUE, 0.55)), (0.15, BLUE)]:
+for tau, c, tls in [(0.4, tint(BLUE, 0.55), "-."), (0.15, BLUE, "-")]:
     lse = tau*np.log(np.exp(g1/tau) + np.exp(g2/tau))
-    ax.plot(t, lse, color=c, lw=1.5,
+    ax.plot(t, lse, color=c, lw=1.5, ls=tls,
             label=f"$s_\\tau$, $\\tau={tau}$")
 ax.axhline(0, color=TRUTH, lw=0.8, ls="--")
 ax.set_xlabel("slice through decision space")
@@ -220,7 +221,8 @@ kernels = [BLUE, BLUE, BLUE, BLUE, GREEN]
 fig, ax = plt.subplots(figsize=(width_in(0.82), 2.7))
 ax.semilogy(stages, hs, color=COLORS["muted"], lw=1.0, ls="--", zorder=2)
 for st, hh, c in zip(stages, hs, kernels):
-    ax.scatter(st, hh, s=70, color=c, zorder=6, ec="white", lw=0.6)
+    ax.scatter(st, hh, s=70, color=c, zorder=6, ec="white", lw=0.6,
+               marker="o" if c == BLUE else "^")
 for st in stages[:-1]:
     ax.annotate("", xy=(st+0.86, hs[st]*1.0), xytext=(st+0.14, hs[st-1]),
                 arrowprops=dict(arrowstyle="->", lw=0.9, color=COLORS["muted"],
