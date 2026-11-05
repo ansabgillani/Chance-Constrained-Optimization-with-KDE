@@ -34,7 +34,8 @@ from scipy import stats
 
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, WBOX, width_in
+from thesis_style import apply_style, COLORS, HATCH_UNSAFE, LINE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
+from matplotlib.colors import to_rgba
 apply_style()
 
 BLUE, RED, GRAY = COLORS["unbiased"], COLORS["violation"], COLORS["nominal"]
@@ -71,12 +72,12 @@ def fig_meanvalue():
     xs = np.linspace(60, 190, 600)
     kde = stats.gaussian_kde(xi)
     dens = kde(xs)
-    ax.plot(xs, dens, color=TRUTH, lw=1.7, zorder=4)
-    ax.fill_between(xs, dens, where=xs > mean_xi, color=RED, alpha=0.25,
-                    zorder=2)
+    ax.plot(xs, dens, lw=1.7, zorder=4, **style("truth"))
+    ax.fill_between(xs, dens, where=xs > mean_xi, facecolor=UNSAFE_FILL,
+                    edgecolor=RED, hatch=HATCH_UNSAFE, lw=0, zorder=2)
 
-    ax.axvline(mean_xi, ymax=0.64, color=GRAY, lw=1.4, ls="--", zorder=3)
-    ax.axvline(q95, ymax=0.64, color=BLUE, lw=1.6, zorder=3)
+    ax.axvline(mean_xi, ymax=0.64, lw=1.4, zorder=3, **style("nominal", every=False))
+    ax.axvline(q95, ymax=0.64, lw=1.6, zorder=3, **style("unbiased", every=False))
 
     ymax = dens.max()
     ax.set_ylim(0, ymax * 1.75)          # headroom so labels clear the curve
@@ -101,10 +102,12 @@ def fig_meanvalue():
     ax = axes[1]
     levels = np.linspace(0.50, 0.999, 200)
     xq = np.quantile(xi, levels)
-    ax.plot((1 - levels) * 100, xq, color=TRUTH, lw=1.7, zorder=4)
+    ax.plot((1 - levels) * 100, xq, lw=1.7, zorder=4, **style("truth"))
 
-    ax.scatter([viol * 100], [mean_xi], color=GRAY, s=22, zorder=6)
-    ax.scatter([5], [q95], color=BLUE, s=22, zorder=6)
+    ax.scatter([viol * 100], [mean_xi], color=GRAY, s=22, zorder=6,
+               marker=LINE["nominal"]["marker"])
+    ax.scatter([5], [q95], color=BLUE, s=22, zorder=6,
+               marker=LINE["unbiased"]["marker"])
 
     ax.annotate("mean-value plan",
                 xy=(viol * 100, mean_xi), xytext=(62, 122),
@@ -171,16 +174,19 @@ def fig_spectrum():
     fig, ax = plt.subplots(figsize=(width_in(0.82), 3.0))
     rel = np.linspace(0.50, 0.99995, 500)
     cost = 100 + 35 * stats.norm.ppf(rel)
-    ax.plot(rel * 100, cost, color=TRUTH, lw=1.8, zorder=4)
+    ax.plot(rel * 100, cost, lw=1.8, zorder=4, **style("truth"))
 
     det_y = 100.0
     rob_y = 100 + 35 * stats.norm.ppf(0.99995)
 
     # shaded operating band
-    ax.axvspan(90, 99.9, color=BLUE, alpha=0.10, zorder=1)
+    ax.axvspan(90, 99.9, facecolor=to_rgba(BLUE, 0.10), edgecolor=BLUE,
+               lw=0.6, zorder=1)
 
-    ax.scatter([50], [det_y], color=GRAY, s=38, zorder=6)
-    ax.scatter([99.995], [rob_y], color=ORANGE, s=38, zorder=6)
+    ax.scatter([50], [det_y], color=GRAY, s=38, zorder=6,
+               marker=LINE["nominal"]["marker"])
+    ax.scatter([99.995], [rob_y], color=ORANGE, s=38, zorder=6,
+               marker=LINE["scenario"]["marker"])
 
     ax.set_ylim(85, rob_y * 1.05)
     ax.set_xlim(48, 103)
@@ -229,11 +235,11 @@ def fig_hardness():
 
     # ---- panel (a): union of half-spaces ----
     ax = axes[0]
-    ax.contourf(X, Y, feas, levels=[0.5, 1.5], colors=[BLUE], alpha=0.15,
+    ax.contourf(X, Y, feas, levels=[0.5, 1.5], colors=[SAFE_FILL],
                 zorder=1)
-    ax.contourf(X, Y, both, levels=[0.5, 1.5], colors=[BLUE], alpha=0.15,
+    ax.contourf(X, Y, both, levels=[0.5, 1.5], colors=[SAFE_FILL],
                 zorder=1)
-    ax.plot(g, (1 - a[0] * g) / a[1], color=TRUTH, lw=1.3, zorder=3,
+    ax.plot(g, (1 - a[0] * g) / a[1], lw=1.3, zorder=3, **style("truth"),
             label="$\\xi^{(1)\\top}x=1$")
     ax.plot(g, (1 - b[0] * g) / b[1], color=TRUTH, lw=1.3, ls=(0, (5, 2)), zorder=3,
             label="$\\xi^{(2)\\top}x=1$")
@@ -262,10 +268,11 @@ def fig_hardness():
     # ---- panel (b): indicator vs smooth surrogates ----
     ax = axes[1]
     y = np.linspace(-3, 3, 600)
-    ax.step(y, (y <= 0).astype(float), where="post", color=TRUTH, lw=1.7,
-            zorder=4, label="indicator $\\mathbf{1}\\{y\\leq 0\\}$")
+    ax.step(y, (y <= 0).astype(float), where="post", lw=1.7,
+            zorder=4, **style("truth"), label="indicator $\\mathbf{1}\\{y\\leq 0\\}$")
     for h, ls in [(0.6, "-"), (1.2, (0, (5, 2)))]:
-        ax.plot(y, stats.norm.cdf(-y / h), color=BLUE, ls=ls, lw=1.6, zorder=3,
+        kw = style("unbiased") if h == 0.6 else dict(color=BLUE, ls=ls)
+        ax.plot(y, stats.norm.cdf(-y / h), lw=1.6, zorder=3, **kw,
                 label="smooth surrogate, $h=%.1f$" % h)
     ax.set_xlabel("constraint residual $y$")
     ax.set_ylabel("contribution to $P(Y\\leq 0)$")
@@ -292,9 +299,9 @@ def fig_mismatch():
     kdem = stats.gaussian_kde(m)
     gfit = stats.norm(m.mean(), m.std())
     ax = axes[0]
-    ax.plot(xs, kdem(xs), color=BLUE, lw=1.8, zorder=4,
+    ax.plot(xs, kdem(xs), lw=1.8, zorder=4, **style("unbiased"),
             label="KDE of bimodal sample")
-    ax.plot(xs, gfit.pdf(xs), color=GRAY, lw=1.6, ls="--", zorder=3,
+    ax.plot(xs, gfit.pdf(xs), lw=1.6, zorder=3, **style("nominal"),
             label="fitted Gaussian")
     ax.set_xlabel("disturbance value")
     ax.set_ylabel("density")
@@ -312,13 +319,14 @@ def fig_mismatch():
     xs2 = np.linspace(-3, 8, 800)
 
     ax = axes[1]
-    ax.semilogy(xs2, gdist.pdf(xs2 + 2.0), color=TRUTH, lw=1.8, zorder=4,
+    ax.semilogy(xs2, gdist.pdf(xs2 + 2.0), lw=1.8, zorder=4, **style("truth"),
                 label="true law (skewed)")
-    ax.semilogy(xs2, gf.pdf(xs2), color=GRAY, lw=1.6, ls="--", zorder=3,
+    ax.semilogy(xs2, gf.pdf(xs2), lw=1.6, zorder=3, **style("nominal"),
                 label="fitted Gaussian")
-    ax.axvline(thr, ymax=0.66, color=TRUTH, lw=1.0, zorder=2)
+    ax.axvline(thr, ymax=0.66, lw=1.0, zorder=2, **style("truth"))
     ax.fill_between(xs2, gdist.pdf(xs2 + 2.0), 1e-7, where=xs2 > thr,
-                    color=TRUTH, alpha=0.2, zorder=1)
+                    facecolor=UNSAFE_FILL, edgecolor=RED, hatch=HATCH_UNSAFE,
+                    lw=0, zorder=1)
     ax.set_ylim(1e-6, 1e3)
     ax.set_yticks([1e-6, 1e-4, 1e-2, 1])
 
@@ -353,11 +361,10 @@ def fig_residual():
     fig, ax = plt.subplots(figsize=(width_in(0.88), 2.9))
     ax.hist(ximix, bins=34, density=True, color=GRAY, alpha=0.30, zorder=1,
             label="residual samples $y_j=g(x,\\xi_j)$, $N=%d$" % N)
-    ax.plot(ynodes, dens, color=BLUE, lw=1.9, zorder=4,
+    ax.plot(ynodes, dens, lw=1.9, zorder=4, **style("unbiased"),
             label="KDE $\\hat{\\rho}_{Y(x)}$")
-    ax.fill_between(ynodes, dens, where=ynodes <= 0, color=GREEN, alpha=0.28,
-                    zorder=2)
-    ax.axvline(0, color=TRUTH, lw=1.1, zorder=3)
+    ax.fill_between(ynodes, dens, where=ynodes <= 0, color=SAFE_FILL, zorder=2)
+    ax.axvline(0, lw=1.1, zorder=3, **style("truth"))
 
     ax.set_ylim(0, dens.max() * 1.7)
 
