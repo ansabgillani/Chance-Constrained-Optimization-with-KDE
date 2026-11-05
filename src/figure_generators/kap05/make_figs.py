@@ -15,13 +15,13 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
 from scipy import stats
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, WBOX, width_in
+from thesis_style import apply_style, COLORS, HATCH_UNSAFE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
 
 apply_style()
 BLUE, GREEN, RED = COLORS["unbiased"], COLORS["biased"], COLORS["violation"]
 GRAY, ORANGE, TRUTH = COLORS["nominal"], COLORS["scenario"], COLORS["truth"]
 ANN = COLORS["annotation"]
-LRED, LGREEN = "#e6b8b3", "#a9d2b9"   # light shading: optimism credit, safety margin
+LRED, LGREEN = UNSAFE_FILL, SAFE_FILL   # light shading: optimism credit, safety margin
 
 
 def tint(c, a):
@@ -50,12 +50,13 @@ phi_bias = C_epan((-y - h)/h)           # biased Epanechnikov, b = h
 
 fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.7))
 ax = axes[0]
-ax.step([-4.0, 0, 0, 2.6], [1, 1, 0, 0], where="post", color=TRUTH,
-        lw=1.4, label="indicator $\\mathbf{1}\\{y\\leq 0\\}$")
-ax.plot(y, phi_unb, color=BLUE, lw=1.6, label="unbiased (Gaussian)")
-ax.plot(y, phi_bias, color=GREEN, lw=1.6,
-        label="biased (Epanechnikov, $b=h$)")
-ax.fill_between(y, phi_unb, ind, where=(y > 0), color=LRED, lw=0)
+ax.step([-4.0, 0, 0, 2.6], [1, 1, 0, 0], where="post", lw=1.4,
+        label="indicator $\\mathbf{1}\\{y\\leq 0\\}$", **style("truth"))
+ax.plot(y, phi_unb, lw=1.6, label="unbiased (Gaussian)", **style("unbiased"))
+ax.plot(y, phi_bias, lw=1.6, label="biased (Epanechnikov, $b=h$)",
+        **style("biased"))
+ax.fill_between(y, phi_unb, ind, where=(y > 0), facecolor=LRED,
+                edgecolor=RED, hatch=HATCH_UNSAFE, lw=0)
 ax.fill_between(y, phi_bias, ind, where=(phi_bias < ind),
                 color=LGREEN, lw=0)
 ax.text(1.8, 0.62, "optimism:\ncredit for\nviolating\nsamples",
