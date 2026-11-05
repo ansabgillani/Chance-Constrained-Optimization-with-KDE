@@ -56,7 +56,7 @@
   frame=lines, captionpos=t,
   breaklines=true, postbreak=\mbox{$\hookrightarrow$\space},
   columns=fullflexible, keepspaces=true,
-  showstringspaces=false, upquote=true,
+  showstringspaces=false, upquote=true, breakatwhitespace=true,
 }
 % Verbatim excerpt of src/kde_cco/#2, lines #3--#4, numbered as in the source file.
 \newcommand{\codepart}[4][]{%
@@ -88,11 +88,10 @@
 \Crefname{figure}{Figure}{Figures}
 \crefname{equation}{Eq.}{Eqs.}
 \Crefname{equation}{Eq.}{Eqs.}
-\crefname{lstlisting}{Listing}{Listings}
-\Crefname{lstlisting}{Listing}{Listings}
 \usepackage{caption}
 \usepackage{subcaption}
 \captionsetup{font=small,labelfont=bf,width=0.92\textwidth}
+\captionsetup[lstlisting]{justification=raggedright,singlelinecheck=true}
 \usepackage{fancyhdr}
 \usepackage{etoolbox}
 \pretocmd{\section}{\thispagestyle{plain}}{}{}
