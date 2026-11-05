@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, HATCH_UNSAFE, SAFE_FILL, LINE, WBOX, style, width_in
+from thesis_style import apply_style, COLORS, HATCH_UNSAFE, SAFE_FILL, LINE, WBOX, style, width_in, TEXT
 apply_style()
 BLUE = COLORS["unbiased"]; RED = COLORS["violation"]; GRAY = COLORS["nominal"]
 GREEN = COLORS["safe"]; ORANGE = COLORS["scenario"]; TRUTH = COLORS["truth"]
@@ -83,7 +83,7 @@ for ax, f, title, ok in [
     fstar = 1.0
     delta = 0.55
     ebar = (f_sharp if ok else f_flat)[np.argmin(np.abs(t - delta))] - fstar
-    ax.scatter([0], [fstar], color=GREEN, marker="^", s=48, zorder=6, ec="white")
+    ax.scatter([0], [fstar], color=GREEN, marker="^", s=70, zorder=7, ec="white")
     ax.axvspan(-delta, delta, color=SAFE_FILL, lw=0)
     ax.axhline(fstar + ebar, color=TRUTH, lw=1.0, ls=":")
     # approximate solutions
@@ -98,13 +98,13 @@ for ax, f, title, ok in [
     ax.set_xlim(-2.2, 2.2)
 axes[0].set_ylabel("objective $f$")
 axes[0].set_ylim(0.45, 4.8)
-axes[0].text(0, 0.62, "$B_\\delta(x^*)$", color=GREEN,
+axes[0].text(0, 0.62, "$B_\\delta(x^*)$", color=TEXT["safe"],
              ha="center", zorder=7)
 axes[0].text(0, 3.2,
              "outside the ball,\n$f > f(x^*) + \\kappa$:\n"
              "approximate solutions\nare trapped near $x^*$",
              color=ANN, ha="center", zorder=7)
-axes[1].text(0, 0.62, "$B_\\delta(x^*)$", color=GREEN,
+axes[1].text(0, 0.62, "$B_\\delta(x^*)$", color=TEXT["safe"],
              ha="center", zorder=7)
 axes[1].text(0, 3.2,
              "near-optimal points exist\nfar from $x^*$: the sequence\n"

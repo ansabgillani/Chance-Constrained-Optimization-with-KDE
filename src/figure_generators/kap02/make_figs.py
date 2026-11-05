@@ -23,7 +23,7 @@ import matplotlib.patches as mpatches
 from scipy import stats
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, LINE, SAFE_FILL, WBOX, style, width_in
+from thesis_style import apply_style, COLORS, LINE, SAFE_FILL, WBOX, TEXT, style, width_in
 apply_style()
 
 BLUE = COLORS["unbiased"]
@@ -96,11 +96,12 @@ def fig_taxonomy():
     box(0.8, 1.2, 2.3, 2.0, GRAY, "Deterministic",
         "mean values,\nno guarantee", tcolor=TXTGRAY)
     box(3.8, 7.2, 2.5, 2.0, ORANGE, "Robust",
-        "all of $\\Xi$,\nworst case")
+        "all of $\\Xi$,\nworst case", tcolor=TEXT["scenario"])
     box(7.0, 1.6, 2.6, 2.0, PURPLE, "Stochastic\nprogramming",
-        "expected cost\n(+ recourse)", tfrac=0.76, sfrac=0.24)
+        "expected cost\n(+ recourse)", tfrac=0.76, sfrac=0.24,
+        tcolor=TEXT["stochastic"])
     box(7.0, 4.4, 2.6, 4.4, COLORS["chance"], "Chance-\nconstrained", "",
-        tfrac=0.84)
+        tfrac=0.84, tcolor=TEXT["chance"])
     ax.annotate("", xy=(7.45, 8.55), xytext=(7.45, 4.65),
                 arrowprops=dict(arrowstyle="<->", lw=0.8, color=BLUE))
     ax.text(8.6, 6.0, "reliability dial\n$1-\\varepsilon$",
@@ -141,7 +142,7 @@ def fig_levelsets():
         ax.contour(X1, X2, P, levels=[level], colors=[c], linewidths=1.6,
                    linestyles=["--" if mixture else "-"])
         ax.text(label_x, label_y, rf"$\{{x: p(x)\geq {level:g}\}}$",
-                fontsize=8.5, color=c, bbox=WBOX, zorder=7)
+                fontsize=8.5, color=TEXT["safe"], bbox=WBOX, zorder=7)
         ax.set_title(title)
         ticks = [-0.5, 0, 0.5, 1, 1.5]
         ax.set_xticks(ticks)
@@ -515,7 +516,7 @@ def fig_scenariogrowth():
             label="SAA: empirical $q_{0.95}$")
     ax.axhline(TRUE_Q, color=GREEN, lw=1.4, ls="--")
     ax.text(24, TRUE_Q - 7.5, "exact requirement $q_{0.95}$",
-            color=GREEN, fontsize=8.5, bbox=WBOX, zorder=7)
+            color=TEXT["biased"], fontsize=8.5, bbox=WBOX, zorder=7)
     ax.set_xscale("log")
     ax.set_xlabel("sample size $N$ (= number of hard constraints)")
     ax.set_ylabel("required capacity [MW]")

@@ -34,7 +34,7 @@ from scipy import stats
 
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, HATCH_UNSAFE, LINE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
+from thesis_style import apply_style, COLORS, HATCH_UNSAFE, LINE, SAFE_FILL, UNSAFE_FILL, WBOX, TEXT, style, width_in
 from matplotlib.colors import to_rgba
 apply_style()
 
@@ -85,14 +85,14 @@ def fig_meanvalue():
     # mean-value label: upper-left, arrow down to the dashed line
     ax.annotate("mean-value\nplan\n$x=\\bar{\\xi}$",
                 xy=(mean_xi, ymax * 1.02), xytext=(mean_xi + 3, ymax * 1.45),
-                ha="right", va="center", color=GRAY, zorder=8)
+                ha="right", va="center", color=TEXT["nominal"], zorder=8)
     # 95%-reliable label: upper-right, arrow down to the green line
     ax.annotate("95% reliable\nplan\n$x=q_{0.95}$",
                 xy=(q95, ymax * 0.78), xytext=(q95 - 3, ymax * 1.45),
-                ha="left", va="center", color=BLUE, zorder=8)
+                ha="left", va="center", color=TEXT["unbiased"], zorder=8)
     # shortfall label inside the shaded region, clear of both lines
     ax.text(166, ymax * 0.50, f"shortfall\n{viol * 100:.1f}%",
-            color=RED, ha="center", va="center", zorder=8)
+            color=TEXT["violation"], ha="center", va="center", zorder=8)
 
     ax.set_xlabel("net demand $\\xi$ [MW]")
     ax.set_ylabel("density")
@@ -111,11 +111,11 @@ def fig_meanvalue():
 
     ax.annotate("mean-value plan",
                 xy=(viol * 100, mean_xi), xytext=(62, 122),
-                ha="center", color=GRAY, zorder=8,
+                ha="center", color=TEXT["nominal"], zorder=8,
                 arrowprops=dict(arrowstyle="->", lw=0.8, color=GRAY, shrinkB=3))
     ax.annotate("$\\varepsilon = 0.05$",
                 xy=(5, q95), xytext=(16, q95 - 1),
-                color=BLUE, ha="center", zorder=8,
+                color=TEXT["unbiased"], ha="center", zorder=8,
                 arrowprops=dict(arrowstyle="->", lw=0.8, color=BLUE,
                                 shrinkB=3))
     ax.set_xlabel("accepted shortfall probability $\\varepsilon$ [%]")
@@ -194,21 +194,21 @@ def fig_spectrum():
     # deterministic label: lower-middle, arrow to the red dot
     ax.annotate("deterministic (mean value):\ncheap, no guarantee",
                 xy=(50, det_y), xytext=(49.5, 123),
-                color=GRAY, ha="left", va="bottom", zorder=8,
+                color=TEXT["nominal"], ha="left", va="bottom", zorder=8,
                 arrowprops=dict(arrowstyle="->", lw=0.9, color=GRAY,
                                 shrinkB=4))
     # bounded-set robust proxy: upper-left of the dot, arrow pointing right to it,
     # so the arrow never overlaps the text
     ax.annotate("bounded-set robust design:\nhigh-quantile proxy",
                 xy=(100, rob_y), xytext=(82, rob_y * 1),
-                color=ORANGE, ha="center", va="center",
+                color=TEXT["scenario"], ha="center", va="center",
                 zorder=8, bbox=WBOX,
                 arrowprops=dict(arrowstyle="->", lw=0.9, color=ORANGE,
                                 shrinkB=4))
     # operating-range label inside the shaded band, low so it clears the curve
     ax.text(89.5, 104, "chance-constrained\noperating range\n"
             "$1-\\varepsilon \\in [0.90,\\ 0.999]$",
-            ha="center", va="center", color=BLUE,
+            ha="center", va="center", color=TEXT["unbiased"],
             zorder=8, bbox=WBOX)
 
     ax.set_xlabel("reliability level $1-\\varepsilon$ [%]")
@@ -335,7 +335,7 @@ def fig_mismatch():
     ax.text(3.65, 4e-4, "true tail:\n%.1f%%" % (p_true * 100),
             color=TRUTH, ha="right", zorder=8, bbox=WBOX)
     ax.text(3.65, 6e-6, "Gaussian:\n%.2f%%" % (p_g * 100),
-            color=GRAY, ha="right", zorder=8, bbox=WBOX)
+            color=TEXT["nominal"], ha="right", zorder=8, bbox=WBOX)
     ax.set_xlabel("forecast error")
     ax.set_ylabel("density (log scale)")
     ax.set_title("(b) Tail underestimated ~%.0fx" % (p_true / p_g))
@@ -372,11 +372,11 @@ def fig_residual():
     ax.text(-2.75, dens.max() * 1.52,
             "$\\hat{P}(Y(x)\\leq 0)=\\int_{-\\infty}^{0}\\hat{\\rho}\\,dy"
             "\\approx %.2f$" % psafe,
-            color=GREEN, ha="left", va="center",
+            color=TEXT["safe"], ha="left", va="center",
             zorder=8, bbox=WBOX)
-    ax.text(-1.0, 0.06, "safe", color=GREEN, ha="center",
+    ax.text(-1.0, 0.06, "safe", color=TEXT["safe"], ha="center",
             zorder=8, bbox=WBOX)
-    ax.text(0.95, 0.06, "unsafe", color=RED, ha="center",
+    ax.text(0.95, 0.06, "unsafe", color=TEXT["violation"], ha="center",
             zorder=8, bbox=WBOX)
 
     ax.set_xlabel("constraint residual $y$")

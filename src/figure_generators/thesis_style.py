@@ -51,6 +51,18 @@ HATCH_UNSAFE = "////"
 SAFE_FILL = "#cfe9da"    # 0.88 printed gray
 UNSAFE_FILL = "#ecceca"  # 0.84 printed gray
 
+# Dark text shade per role (printed gray <= 0.40), so labels drawn in a role
+# colour stay legible in black-and-white print. Lines and fills keep COLORS.
+TEXT = {
+    "truth": "#222222", "annotation": "#333333", "muted": "#555555",
+    "unbiased": "#1f4e79", "chance": "#1f4e79",
+    "violation": "#b3392e",
+    "biased": "#2c774c", "safe": "#2c774c",
+    "nominal": "#555555",
+    "scenario": "#895218",
+    "stochastic": "#694b91",
+}
+
 
 def style(role, every=0.12):
     """Line2D kwargs for a role.
@@ -123,4 +135,5 @@ if __name__ == "__main__":
     assert len({(LINE[r]["ls"], LINE[r].get("marker")) for r in roles}) == len(roles)
     assert style("unbiased")["markevery"] == 0.12 and "marker" not in style("biased", every=False)
     assert gray(SAFE_FILL) >= 0.85 and gray(UNSAFE_FILL) >= 0.80
+    assert all(gray(c) <= 0.40 for c in TEXT.values()), TEXT
     print("thesis_style ok:", [f"{v:.2f}" for v in levels])

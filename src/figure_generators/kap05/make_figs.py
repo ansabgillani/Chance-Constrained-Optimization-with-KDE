@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgb
 from scipy import stats
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, HATCH_UNSAFE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
+from thesis_style import apply_style, COLORS, TEXT, HATCH_UNSAFE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
 
 apply_style()
 BLUE, GREEN, RED = COLORS["unbiased"], COLORS["biased"], COLORS["violation"]
@@ -60,9 +60,9 @@ ax.fill_between(y, phi_unb, ind, where=(y > 0), facecolor=LRED,
 ax.fill_between(y, phi_bias, ind, where=(phi_bias < ind),
                 color=LGREEN, lw=0)
 ax.text(1.8, 0.62, "optimism:\ncredit for\nviolating\nsamples",
-        color=RED, ha="center", va="center")
+        color=TEXT["violation"], ha="center", va="center")
 ax.text(-2.5, 0.19, "safety margin:\ndiscount for\nboundary\nsamples",
-        color=GREEN, ha="center", va="center")
+        color=TEXT["biased"], ha="center", va="center")
 ax.set_xlabel("residual $y$ (units of $h$)")
 ax.set_ylabel("contribution to $\\hat p$")
 ax.set_title("(a) The domination condition")
@@ -231,9 +231,9 @@ for st in stages[:-1]:
 ax.text(2.5, 9.5, "warm start: each solution\ninitializes the next stage",
         color=ANN, ha="center")
 ax.text(1.0, 2.4, "Gaussian\nkernel\n(smooth, fast)",
-        color=BLUE, ha="center")
+        color=TEXT["unbiased"], ha="center")
 ax.text(4.62, 0.5, "switch to split-Bernstein\n(exact safety)",
-        color=GREEN, ha="center")
+        color=TEXT["biased"], ha="center")
 ax.text(4.85, 6.8, "$N$ increases as\n$h$ decreases",
         color=ANN, ha="center")
 ax.set_xticks(stages)
