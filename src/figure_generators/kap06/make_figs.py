@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, WBOX, width_in
+from thesis_style import apply_style, COLORS, HATCH_UNSAFE, SAFE_FILL, LINE, WBOX, style, width_in
 apply_style()
 BLUE = COLORS["unbiased"]; RED = COLORS["violation"]; GRAY = COLORS["nominal"]
 GREEN = COLORS["safe"]; ORANGE = COLORS["scenario"]; TRUTH = COLORS["truth"]
@@ -41,6 +41,8 @@ for half, alpha_f, lab in [(0.60*gamma, 0.13, None),
                             "uniform KDE error tube, shrinking in $N$")]:
     ax.fill_between(xs, p - half, p + half, color=BLUE, alpha=alpha_f,
                     label=lab)
+    ax.fill_between(xs, p - half, p + half, facecolor="none",
+                    edgecolor=BLUE, lw=0.6)
 ax.plot(xs, p, color=TRUTH, lw=1.7, label="true probability $p(x)$")
 ax.axhline(alpha, color=TRUTH, ls="--", lw=1.1)
 ax.text(119.5, alpha - 0.013, "$\\alpha = 1-\\varepsilon$",
@@ -81,8 +83,8 @@ for ax, f, title, ok in [
     fstar = 1.0
     delta = 0.55
     ebar = (f_sharp if ok else f_flat)[np.argmin(np.abs(t - delta))] - fstar
-    ax.scatter([0], [fstar], color=GREEN, s=40, zorder=6, ec="white")
-    ax.axvspan(-delta, delta, color=GREEN, alpha=0.10)
+    ax.scatter([0], [fstar], color=GREEN, marker="^", s=48, zorder=6, ec="white")
+    ax.axvspan(-delta, delta, color=SAFE_FILL, lw=0)
     ax.axhline(fstar + ebar, color=TRUTH, lw=1.0, ls=":")
     # approximate solutions
     if ok:
@@ -136,9 +138,10 @@ err_x = np.array(err_x)
 slope, intercept = np.polyfit(np.log(Ns), np.log(err_x[:, 0]), 1)
 
 fig, ax = plt.subplots(figsize=(width_in(0.84), 3.0))
-ax.loglog(Ns, err_x[:, 0], "-o", ms=4, lw=1.6, color=BLUE,
+ax.loglog(Ns, err_x[:, 0], ms=4, lw=1.6, **style("unbiased", every=None),
           label="mean $|x_N - x^*|$")
-ax.fill_between(Ns, err_x[:, 1], err_x[:, 2], color=BLUE, alpha=0.13)
+ax.fill_between(Ns, err_x[:, 1], err_x[:, 2], color=BLUE, alpha=0.13,
+                edgecolor=BLUE, lw=0.6)
 fit = np.exp(intercept)*Ns**slope
 ax.loglog(Ns, fit, color=TRUTH, lw=1.2, ls="--",
           label=f"fitted slope $\\approx {slope:.2f}$")
