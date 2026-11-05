@@ -36,7 +36,7 @@ import matplotlib.patches as mpatches
 from matplotlib.colors import to_rgb
 from scipy import stats
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from thesis_style import apply_style, COLORS, HATCH_UNSAFE, LINE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
+from thesis_style import apply_style, COLORS, HATCH_UNSAFE, SAFE_FILL, UNSAFE_FILL, WBOX, style, width_in
 
 apply_style()
 BLUE, GREEN, RED = COLORS["unbiased"], COLORS["biased"], COLORS["violation"]
@@ -138,9 +138,9 @@ def fig_smoothing():
                 .mean(axis=1) / h)
 
     _k = lambda **kw: dict(color=BLUE, **kw)
-    KDES = [(2.0, _k(ls="--", marker="^", markevery=0.12)),
-            (h_silv, _k(ls="-", marker="o", markevery=0.12)),
-            (15.0, _k(ls="-.", marker="s", markevery=0.12))]
+    KDES = [(2.0, _k(ls="--")),
+            (h_silv, style("unbiased")),
+            (15.0, _k(ls="-."))]
     fig, axes = plt.subplots(1, 2, figsize=(width_in(1.0), 2.75))
 
     # panel (a): constraint functions
